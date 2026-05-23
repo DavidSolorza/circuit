@@ -1,0 +1,188 @@
+@startuml
+!theme plain
+skinparam class {
+  BackgroundColor #1e293b
+  BorderColor #3b82f6
+  FontColor #e2e8f0
+  HeaderFontColor #3b82f6
+  ArrowFontColor #94a3b8
+}
+skinparam arrow {
+  Color #94a3b8
+}
+skinparam package {
+  BackgroundColor #0f172a
+  BorderColor #475569
+  FontColor #e2e8f0
+}
+
+package "Core (core/)" {
+  enum ComponentType {
+    resistor
+    capacitor
+    inductor
+    voltageSource
+    currentSource
+    switch
+    led
+    ground
+  }
+
+  class Point {
+    + x: number
+    + y: number
+  }
+
+  class Terminal {
+    + id: string
+    + componentId: string
+    + index: 0 | 1
+    + nodeId: number
+  }
+
+  class CircuitComponent {
+    + id: string
+    + type: ComponentType
+    + label: string
+    + position: Point
+    + rotation: number
+    + params: Record<string, number>
+    + terminalIds: [string, string]
+  }
+
+  class WireDef {
+    + id: string
+    + fromTerminalId: string
+    + toTerminalId: string
+  }
+
+  class SimResults {
+    + nodeVoltages: Record<number, number>
+    + branchCurrents: Record<string, number>
+    + timestep: number
+    + time: number
+  }
+
+  class OscilloscopeProbe {
+    + id: string
+    + label: string
+    + type: 'voltage' | 'current'
+    + componentId: string
+    + terminalIndex?: 0 | 1
+    + color: string
+    + visible: boolean
+  }
+
+  class CircuitState {
+    + components: Record<string, CircuitComponent>
+    + terminals: Record<string, Terminal>
+    + wires: Record<string, WireDef>
+    + nextNodeId: number
+  }
+
+  class MnaSolver {
+    - capPrevV: Map<string, number>
+    - indPrevI: Map<string, number>
+    - simTime: number
+    + reset(): void
+    + solve(circuit: CircuitState, dt: number): SimResults
+    - stampG(A, nI, nJ, G, idx): void
+    - stampI(B, nI, nJ, I, idx): void
+  }
+
+  ComponentType <.. CircuitComponent : type
+  Point *-- CircuitComponent : position
+  Terminal *-- CircuitState : terminals
+  CircuitComponent *-- CircuitState : components
+  WireDef *-- CircuitState : wires
+  MnaSolver ..> CircuitState : solve
+  MnaSolver ..> SimResults : produce
+  CircuitComponent ..> Terminal : terminalIds >
+}
+
+package "Store (store/)" {
+  class AppState {
+    + circuit: CircuitState
+    + selectedComponentId: string | null
+    + activeTool: ComponentType | 'select' | 'wire' | 'probe'
+    + simulationRunning: boolean
+    + simResults: SimResults | null
+    + probes: OscilloscopeProbe[]
+    + oscData: Record<string, Array<{t, v}>>
+    + connectingFrom: string | null
+    + simTime: number
+  }
+
+  interface CircuitStore {
+    + addComponent(type, pos): void
+    + removeComponent(id): void
+    + moveComponent(id, pos): void
+    + rotateComponent(id): void
+    + startConnection(tid): void
+    + completeConnection(tid): void
+    + cancelConnection(): void
+    + selectComponent(id): void
+    + setActiveTool(tool): void
+    + setSimulationRunning(run): void
+    + setSimResults(results): void
+    + addProbe(type, compId, idx): void
+    + removeProbe(id): void
+    + toggleProbe(id): void
+    + appendOscData(probeId, t, v): void
+    + clearOscData(): void
+  }
+
+  AppState <.. CircuitStore : manages
+  CircuitState <-- AppState
+  SimResults <-- AppState
+  OscilloscopeProbe <-- AppState
+}
+
+package "Hooks (hooks/)" {
+  class useSimulationLoop {
+    + rafRef: MutableRefObject<number>
+    + lastTimeRef: MutableRefObject<number>
+    + tick(timestamp): void
+  }
+
+  useSimulationLoop ..> MnaSolver : instancia
+  useSimulationLoop ..> CircuitStore : getState
+}
+
+package "Features (features/)" {
+  package "CircuitCanvas" {
+    class CircuitCanvas {
+      + width: number
+      + height: number
+    }
+
+    class ComponentShape {
+      + component: CircuitComponent
+      + isSelected: boolean
+      + isConnecting: boolean
+      + onDragEnd(pos): void
+      + onTerminalClick(tid): void
+      + onClick(): void
+    }
+
+    class WireLines {
+      + wireId: string
+    }
+
+    class Grid { }
+  }
+
+  class Toolbar { }
+  class PropertiesPanel { }
+  class Oscilloscope { }
+}
+
+AppState <.. CircuitCanvas : subscribe
+AppState <.. Toolbar : subscribe
+AppState <.. PropertiesPanel : subscribe
+AppState <.. Oscilloscope : subscribe
+CircuitCanvas *-- ComponentShape : contiene
+CircuitCanvas *-- WireLines : contiene
+CircuitCanvas *-- Grid : contiene
+
+@enduml

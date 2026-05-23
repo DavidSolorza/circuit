@@ -1,0 +1,135 @@
+@startuml
+!theme plain
+skinparam rectangle {
+  BackgroundColor #1e293b
+  BorderColor #3b82f6
+  FontColor #e2e8f0
+}
+skinparam package {
+  BackgroundColor #0f172a
+  BorderColor #475569
+  FontColor #e2e8f0
+}
+skinparam arrow {
+  Color #94a3b8
+  FontColor #94a3b8
+}
+skinparam node {
+  BackgroundColor #334155
+  BorderColor #64748b
+  FontColor #e2e8f0
+}
+skinparam interface {
+  BackgroundColor #1e3a5f
+  BorderColor #3b82f6
+  FontColor #93c5fd
+}
+skinparam database {
+  BackgroundColor #1a2e1a
+  BorderColor #22c55e
+  FontColor #86efac
+}
+
+title "Arquitectura del Circuit Simulator"
+
+package "UI Layer (React Components)" as UILayer {
+
+  rectangle Toolbar as TOOLBAR
+  rectangle CircuitCanvas as CANVAS
+  rectangle PropertiesPanel as PROPS
+  rectangle Oscilloscope as OSC
+
+  TOOLBAR -d-> CANVAS : "activa herramientas"
+  CANVAS -d-> PROPS : "selección → edición"
+  CANVAS -d-> OSC : "sondas → visualización"
+}
+
+package "Canvas Render (react-konva)" as CANVASLAYER {
+
+  rectangle Grid
+  rectangle ComponentShape
+  rectangle WireLines
+
+  Grid -d-- CANVAS
+  ComponentShape -d-- CANVAS
+  WireLines -d-- CANVAS
+}
+
+package "Store (Zustand)" as STORE {
+  interface CircuitStoreActions as ACTIONS {
+    + addComponent(type, pos)
+    + removeComponent(id)
+    + moveComponent(id, pos)
+    + rotateComponent(id)
+    + startConnection(tid)
+    + completeConnection(tid)
+    + cancelConnection()
+    + selectComponent(id)
+    + setActiveTool(tool)
+    + setSimulationRunning(run)
+    + setSimResults(results)
+    + addProbe(type, compId, idx)
+    + removeProbe(id)
+    + toggleProbe(id)
+    + appendOscData(probeId, t, v)
+    + clearOscData()
+  }
+
+  database AppState as STATE {
+    CircuitState
+    SimResults
+    OscilloscopeProbe[]
+    herramenta activa
+    simulación corriendo
+  }
+}
+
+package "Simulation Engine" as SIMENGINE {
+  node "RAF Loop" as RAFLOOP {
+    (60 fps)
+    requestAnimationFrame
+  }
+  node "MnaSolver" as SOLVER {
+    MNA stamps
+    Backward Euler
+    lusolve (mathjs)
+  }
+
+  RAFLOOP -d-> SOLVER : "solve(circuit, dt)"
+}
+
+package "Core Domain" as DOMAIN {
+  rectangle Types as TYPES
+  rectangle Constants as CONSTS
+}
+
+' Flujo de datos
+TOOLBAR --> ACTIONS : dispatch
+CANVAS --> ACTIONS : dispatch
+PROPS --> ACTIONS : dispatch
+ACTIONS --> STATE : set state
+STATE <-- CANVAS : subscribe
+STATE <-- TOOLBAR : subscribe
+STATE <-- PROPS : subscribe
+STATE <-- OSC : subscribe
+
+' Flujo de simulación
+SOLVER --> ACTIONS : setSimResults
+ACTIONS --> STATE : simResults update
+STATE --> CANVAS : re-render
+STATE --> PROPS : multimeter update
+STATE --> OSC : osciloscopio update
+
+' Flujo de osciloscopio
+ACTIONS --> STATE : appendOscData
+STATE --> OSC : re-render traces
+
+' Dependencias
+SOLVER -u-> TYPES : CircuitState / SimResults
+SOLVER -u-> CONSTS : DT
+TYPES <-- STATE
+TYPES <-- ACTIONS
+
+RAFLOOP ..> ACTIONS : getState / setSimResults
+
+@enduml
