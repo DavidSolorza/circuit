@@ -1,28 +1,7 @@
 import { create } from 'zustand';
-import type {
-  AppState,
-  CircuitComponent,
-  Terminal,
-  WireDef,
-  OscilloscopeProbe,
-  SimResults,
-  ComponentType,
-  Point,
-  CircuitState,
-} from '../core/types';
-import { COMPONENT_TEMPLATES, PROBE_COLORS, GRID_SIZE } from '../core/constants';
-
-let idCounter = 0;
-function genId(prefix: string): string {
-  return `${prefix}_${++idCounter}_${Math.random().toString(36).slice(2, 6)}`;
-}
-
-function snapToGrid(p: Point): Point {
-  return {
-    x: Math.round(p.x / GRID_SIZE) * GRID_SIZE,
-    y: Math.round(p.y / GRID_SIZE) * GRID_SIZE,
-  };
-}
+import type { AppState, CircuitComponent, Terminal, WireDef, MeasurementProbe, SimResults, ComponentType, Point, CircuitState, ToolType } from '../types';
+import { COMPONENT_TEMPLATES, PROBE_COLORS } from '../core/constants';
+import { genId, makeComponent, makeTerminal, initCircuitState, snapToGrid } from '../utils/circuit';
 
 interface CircuitStore extends AppState {
   addComponent: (type: ComponentType, position: Point) => void;
@@ -30,8 +9,9 @@ interface CircuitStore extends AppState {
   updateComponentParam: (id: string, key: string, value: number) => void;
   moveComponent: (id: string, position: Point) => void;
   rotateComponent: (id: string) => void;
+  duplicateComponent: (id: string) => void;
   selectComponent: (id: string | null) => void;
-  setActiveTool: (tool: ComponentType | 'select' | 'wire' | 'probe') => void;
+  setActiveTool: (tool: ToolType) => void;
   startConnection: (terminalId: string) => void;
   completeConnection: (terminalId: string) => void;
   cancelConnection: () => void;
@@ -42,40 +22,19 @@ interface CircuitStore extends AppState {
   toggleProbeVisibility: (id: string) => void;
   appendOscData: (probeId: string, t: number, v: number) => void;
   clearOscData: () => void;
-  getCircuitState: () => CircuitState;
   resetSimulation: () => void;
+  toggleDarkMode: () => void;
+  undo: () => void;
+  redo: () => void;
+  pushUndo: () => void;
 }
 
-function makeComponent(type: ComponentType, position: Point): CircuitComponent {
-  const template = COMPONENT_TEMPLATES[type];
-  const cmpId = genId('cmp');
-  return {
-    id: cmpId,
-    type,
-    label: template.label,
-    position: snapToGrid(position),
-    rotation: 0,
-    params: { ...template.defaultParams },
-    terminalIds: [genId('term'), genId('term')],
-  };
-}
-
-function makeTerminal(componentId: string, index: 0 | 1, nodeId: number): Terminal {
-  return {
-    id: genId('term'),
-    componentId,
-    index,
-    nodeId,
-  };
+function deepCloneCircuit(c: CircuitState): CircuitState {
+  return JSON.parse(JSON.stringify(c));
 }
 
 export const useCircuitStore = create<CircuitStore>((set, get) => ({
-  circuit: {
-    components: {},
-    terminals: {},
-    wires: {},
-    nextNodeId: 1,
-  },
+  circuit: initCircuitState(),
   selectedComponentId: null,
   activeTool: 'select',
   simulationRunning: false,
@@ -84,35 +43,63 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
   oscData: {},
   connectingFrom: null,
   simTime: 0,
+  darkMode: true,
+  undoStack: [],
+  redoStack: [],
 
-  getCircuitState: () => get().circuit,
+  pushUndo: () => {
+    const state = get();
+    const stack = [...state.undoStack, deepCloneCircuit(state.circuit)];
+    if (stack.length > 50) stack.shift();
+    set({ undoStack: stack, redoStack: [] });
+  },
+
+  undo: () => {
+    const state = get();
+    if (state.undoStack.length === 0) return;
+    const prev = state.undoStack[state.undoStack.length - 1];
+    const newStack = state.undoStack.slice(0, -1);
+    set({
+      circuit: deepCloneCircuit(prev),
+      undoStack: newStack,
+      redoStack: [...state.redoStack, deepCloneCircuit(state.circuit)],
+      simResults: null,
+      simTime: 0,
+    });
+  },
+
+  redo: () => {
+    const state = get();
+    if (state.redoStack.length === 0) return;
+    const next = state.redoStack[state.redoStack.length - 1];
+    const newStack = state.redoStack.slice(0, -1);
+    set({
+      circuit: deepCloneCircuit(next),
+      redoStack: newStack,
+      undoStack: [...state.undoStack, deepCloneCircuit(state.circuit)],
+      simResults: null,
+      simTime: 0,
+    });
+  },
 
   addComponent: (type, position) => {
     const state = get();
+    state.pushUndo();
     const comp = makeComponent(type, position);
-    let nodeIdA: number;
-    let nodeIdB: number;
-
-    if (type === 'ground') {
-      nodeIdA = 0;
-      nodeIdB = 0;
-    } else {
-      nodeIdA = state.circuit.nextNodeId;
-      nodeIdB = state.circuit.nextNodeId + 1;
-    }
-
+    let nodeIdA: number, nodeIdB: number;
+    if (type === 'ground') { nodeIdA = 0; nodeIdB = 0; }
+    else { nodeIdA = state.circuit.nextNodeId; nodeIdB = state.circuit.nextNodeId + 1; }
     const tA = makeTerminal(comp.id, 0, nodeIdA);
     const tB = makeTerminal(comp.id, 1, nodeIdB);
-    const updatedComp = { ...comp, terminalIds: [tA.id, tB.id] as [string, string] };
-
+    const c = { ...comp, terminalIds: [tA.id, tB.id] as [string, string] };
     set({
       circuit: {
-        components: { ...state.circuit.components, [comp.id]: updatedComp },
+        components: { ...state.circuit.components, [c.id]: c },
         terminals: { ...state.circuit.terminals, [tA.id]: tA, [tB.id]: tB },
         wires: { ...state.circuit.wires },
         nextNodeId: type === 'ground' ? state.circuit.nextNodeId : nodeIdB + 1,
       },
-      selectedComponentId: comp.id,
+      selectedComponentId: c.id,
     });
   },
 
@@ -120,40 +107,24 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
     const state = get();
     const comp = state.circuit.components[id];
     if (!comp) return;
-
+    state.pushUndo();
     const newComponents = { ...state.circuit.components };
     delete newComponents[id];
-
     const newTerminals = { ...state.circuit.terminals };
-    for (const tid of comp.terminalIds) {
-      delete newTerminals[tid];
-    }
-
+    for (const tid of comp.terminalIds) delete newTerminals[tid];
     const newWires = { ...state.circuit.wires };
-    for (const [wid, wire] of Object.entries(newWires)) {
-      const ft = state.circuit.terminals[wire.fromTerminalId];
-      const tt = state.circuit.terminals[wire.toTerminalId];
-      if (ft?.componentId === id || tt?.componentId === id) {
-        delete newWires[wid];
-      }
+    for (const [wid, w] of Object.entries(newWires)) {
+      const ft = state.circuit.terminals[w.fromTerminalId];
+      const tt = state.circuit.terminals[w.toTerminalId];
+      if (ft?.componentId === id || tt?.componentId === id) delete newWires[wid];
     }
-
     const newProbes = state.probes.filter(p => p.componentId !== id);
     const newOscData: Record<string, Array<{ t: number; v: number }>> = {};
-    for (const p of newProbes) {
-      if (state.oscData[p.id]) newOscData[p.id] = state.oscData[p.id];
-    }
-
+    for (const p of newProbes) if (state.oscData[p.id]) newOscData[p.id] = state.oscData[p.id];
     set({
-      circuit: {
-        components: newComponents,
-        terminals: newTerminals,
-        wires: newWires,
-        nextNodeId: state.circuit.nextNodeId,
-      },
+      circuit: { components: newComponents, terminals: newTerminals, wires: newWires, nextNodeId: state.circuit.nextNodeId },
       selectedComponentId: state.selectedComponentId === id ? null : state.selectedComponentId,
-      probes: newProbes,
-      oscData: newOscData,
+      probes: newProbes, oscData: newOscData, simResults: null, simTime: 0,
     });
   },
 
@@ -161,14 +132,13 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
     const state = get();
     const comp = state.circuit.components[id];
     if (!comp) return;
+    state.pushUndo();
     set({
       circuit: {
         ...state.circuit,
-        components: {
-          ...state.circuit.components,
-          [id]: { ...comp, params: { ...comp.params, [key]: value } },
-        },
+        components: { ...state.circuit.components, [id]: { ...comp, params: { ...comp.params, [key]: value } } },
       },
+      simResults: null, simTime: 0,
     });
   },
 
@@ -179,10 +149,7 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
     set({
       circuit: {
         ...state.circuit,
-        components: {
-          ...state.circuit.components,
-          [id]: { ...comp, position: snapToGrid(position) },
-        },
+        components: { ...state.circuit.components, [id]: { ...comp, position: snapToGrid(position) } },
       },
     });
   },
@@ -191,24 +158,44 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
     const state = get();
     const comp = state.circuit.components[id];
     if (!comp) return;
+    state.pushUndo();
     set({
       circuit: {
         ...state.circuit,
-        components: {
-          ...state.circuit.components,
-          [id]: { ...comp, rotation: (comp.rotation + 90) % 360 },
-        },
+        components: { ...state.circuit.components, [id]: { ...comp, rotation: (comp.rotation + 90) % 360 } },
       },
+      simResults: null, simTime: 0,
+    });
+  },
+
+  duplicateComponent: (id) => {
+    const state = get();
+    const comp = state.circuit.components[id];
+    if (!comp) return;
+    state.pushUndo();
+    const newComp = makeComponent(comp.type, { x: comp.position.x + 40, y: comp.position.y + 40 });
+    let nodeIdA: number, nodeIdB: number;
+    if (comp.type === 'ground') { nodeIdA = 0; nodeIdB = 0; }
+    else { nodeIdA = state.circuit.nextNodeId; nodeIdB = state.circuit.nextNodeId + 1; }
+    const tA = makeTerminal(newComp.id, 0, nodeIdA);
+    const tB = makeTerminal(newComp.id, 1, nodeIdB);
+    const nc = { ...newComp, terminalIds: [tA.id, tB.id] as [string, string] };
+    set({
+      circuit: {
+        components: { ...state.circuit.components, [nc.id]: nc },
+        terminals: { ...state.circuit.terminals, [tA.id]: tA, [tB.id]: tB },
+        wires: { ...state.circuit.wires },
+        nextNodeId: comp.type === 'ground' ? state.circuit.nextNodeId : nodeIdB + 1,
+      },
+      selectedComponentId: nc.id,
     });
   },
 
   selectComponent: (id) => set({ selectedComponentId: id }),
-
   setActiveTool: (tool) => set({ activeTool: tool, connectingFrom: null }),
 
   startConnection: (terminalId) => {
-    const state = get();
-    if (state.activeTool !== 'wire') return;
+    if (get().activeTool !== 'wire') return;
     set({ connectingFrom: terminalId });
   },
 
@@ -216,30 +203,19 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
     const state = get();
     const from = state.connectingFrom;
     if (!from || from === terminalId) { set({ connectingFrom: null }); return; }
-
     const fTerm = state.circuit.terminals[from];
     const tTerm = state.circuit.terminals[terminalId];
-    if (!fTerm || !tTerm || fTerm.nodeId === tTerm.nodeId) {
-      set({ connectingFrom: null });
-      return;
-    }
-
+    if (!fTerm || !tTerm || fTerm.nodeId === tTerm.nodeId) { set({ connectingFrom: null }); return; }
+    state.pushUndo();
     const mergeTo = Math.min(fTerm.nodeId, tTerm.nodeId);
     const mergeFrom = Math.max(fTerm.nodeId, tTerm.nodeId);
-
     const newTerminals: Record<string, Terminal> = {};
     for (const [tid, term] of Object.entries(state.circuit.terminals)) {
       newTerminals[tid] = term.nodeId === mergeFrom ? { ...term, nodeId: mergeTo } : term;
     }
-
     const wireId = genId('wire');
     set({
-      circuit: {
-        ...state.circuit,
-        terminals: newTerminals,
-        wires: { ...state.circuit.wires, [wireId]: { id: wireId, fromTerminalId: from, toTerminalId: terminalId } },
-        nextNodeId: state.circuit.nextNodeId,
-      },
+      circuit: { ...state.circuit, terminals: newTerminals, wires: { ...state.circuit.wires, [wireId]: { id: wireId, fromTerminalId: from, toTerminalId: terminalId } } },
       connectingFrom: null,
     });
   },
@@ -249,10 +225,7 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
   toggleSimulation: () => {
     const state = get();
     const willRun = !state.simulationRunning;
-    set({
-      simulationRunning: willRun,
-      simTime: willRun ? 0 : state.simTime,
-    });
+    set({ simulationRunning: willRun, simTime: willRun ? 0 : state.simTime });
   },
 
   setSimResults: (results) => set({ simResults: results }),
@@ -262,59 +235,39 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
     const comp = state.circuit.components[componentId];
     if (!comp) return;
     if (state.probes.find(p => p.componentId === componentId && p.type === type && p.terminalIndex === terminalIndex)) return;
-
     const colorIdx = state.probes.length % PROBE_COLORS.length;
-    const probe: OscilloscopeProbe = {
-      id: genId('probe'),
-      label: `${comp.label} (${type === 'voltage' ? 'V' : 'I'})`,
-      type,
-      componentId,
-      terminalIndex,
-      color: PROBE_COLORS[colorIdx],
-      visible: true,
+    const probe: MeasurementProbe = {
+      id: genId('probe'), label: `${comp.label} (${type === 'voltage' ? 'V' : 'I'})`,
+      type, componentId, terminalIndex, color: PROBE_COLORS[colorIdx], visible: true,
     };
-
-    set({
-      probes: [...state.probes, probe],
-      oscData: { ...state.oscData, [probe.id]: [] },
-    });
+    set({ probes: [...state.probes, probe], oscData: { ...state.oscData, [probe.id]: [] } });
   },
 
   removeProbe: (id) => {
     const state = get();
-    const newOscData = { ...state.oscData };
-    delete newOscData[id];
-    set({
-      probes: state.probes.filter(p => p.id !== id),
-      oscData: newOscData,
-    });
+    const o = { ...state.oscData }; delete o[id];
+    set({ probes: state.probes.filter(p => p.id !== id), oscData: o });
   },
 
   toggleProbeVisibility: (id) => {
-    const state = get();
-    set({
-      probes: state.probes.map(p => p.id === id ? { ...p, visible: !p.visible } : p),
-    });
+    set({ probes: get().probes.map(p => p.id === id ? { ...p, visible: !p.visible } : p) });
   },
 
   appendOscData: (probeId, t, v) => {
     const state = get();
     const data = state.oscData[probeId];
     if (!data) return;
-    const maxPoints = 3000;
-    const newData = [...data, { t, v }];
-    if (newData.length > maxPoints) newData.splice(0, newData.length - maxPoints);
-    set({ oscData: { ...state.oscData, [probeId]: newData } });
+    const nd = [...data, { t, v }];
+    if (nd.length > 3000) nd.splice(0, nd.length - 3000);
+    set({ oscData: { ...state.oscData, [probeId]: nd } });
   },
 
   clearOscData: () => {
-    const state = get();
-    const cleared: Record<string, Array<{ t: number; v: number }>> = {};
-    for (const key of Object.keys(state.oscData)) cleared[key] = [];
-    set({ oscData: cleared });
+    const o: Record<string, Array<{ t: number; v: number }>> = {};
+    for (const k of Object.keys(get().oscData)) o[k] = [];
+    set({ oscData: o });
   },
 
-  resetSimulation: () => {
-    set({ simTime: 0, simResults: null });
-  },
+  resetSimulation: () => set({ simTime: 0, simResults: null }),
+  toggleDarkMode: () => set({ darkMode: !get().darkMode }),
 }));

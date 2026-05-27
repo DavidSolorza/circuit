@@ -9,41 +9,36 @@ function getSolver(): MnaSolver {
   return solverInstance;
 }
 
-export function useSimulationLoop(): void {
+export function useSimulation() {
   const rafRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
+  const simulationRunning = useCircuitStore((s) => s.simulationRunning);
+  const simResults = useCircuitStore((s) => s.simResults);
+  const simTime = useCircuitStore((s) => s.simTime);
 
   useEffect(() => {
     let running = true;
-
     function tick(timestamp: number) {
       if (!running) return;
-
       const state = useCircuitStore.getState();
       if (!state.simulationRunning) {
         rafRef.current = requestAnimationFrame(tick);
         return;
       }
-
       if (lastTimeRef.current === 0) lastTimeRef.current = timestamp;
-
       const elapsed = (timestamp - lastTimeRef.current) / 1000;
       if (elapsed < DT) {
         rafRef.current = requestAnimationFrame(tick);
         return;
       }
       lastTimeRef.current = timestamp;
-
       const circuit = state.circuit;
       const solver = getSolver();
       const results = solver.solve(circuit, DT);
-
       useCircuitStore.getState().setSimResults(results);
-
       for (const probe of state.probes) {
         const comp = circuit.components[probe.componentId];
         if (!comp) continue;
-
         let value = 0;
         if (probe.type === 'voltage') {
           const term = circuit.terminals[comp.terminalIds[probe.terminalIndex ?? 0]];
@@ -53,15 +48,11 @@ export function useSimulationLoop(): void {
         }
         useCircuitStore.getState().appendOscData(probe.id, results.time, value);
       }
-
       rafRef.current = requestAnimationFrame(tick);
     }
-
     rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      running = false;
-      cancelAnimationFrame(rafRef.current);
-      lastTimeRef.current = 0;
-    };
+    return () => { running = false; cancelAnimationFrame(rafRef.current); lastTimeRef.current = 0; };
   }, []);
+
+  return { simulationRunning, simResults, simTime };
 }
