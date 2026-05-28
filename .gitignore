@@ -2,3 +2,6 @@ node_modules/
 dist/
 *.tsbuildinfo
 pnpm-lock.yaml
+__pycache__/
+*.pyc
+backend/venv/
