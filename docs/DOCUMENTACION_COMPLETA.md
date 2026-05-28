@@ -1,60 +1,129 @@
 # Documentación Completa — LabCircuitos
 
-## Simulador de Circuitos Eléctricos Interactivo
+Simulador de circuitos eléctricos interactivo con dark mode profesional.
 
 ---
 
-# 1. INFORMACIÓN DEL PROYECTO
+## 1. Información del Proyecto
 
 | Campo | Valor |
 |---|---|
 | Nombre | LabCircuitos |
-| Tipo | Simulador de circuitos eléctricos |
-| Frontend | React + TypeScript + Vite + Tailwind CSS |
-| Backend | Python + FastAPI + PySpice/Ngspice |
-| Estado | Funcional con correcciones pendientes |
+| Stack Frontend | React 18 + TypeScript + Vite + Tailwind CSS + React Flow + Zustand + Framer Motion + Plotly |
+| Stack Backend | Python + FastAPI + Numpy + PySpice/Ngspice |
 | Puerto Frontend | `localhost:5173` |
 | Puerto Backend | `localhost:8000` |
+| Package Manager | pnpm |
+| Build | 308 módulos, 0 errores TS, 0 errores Vite |
 
 ---
 
-# 2. ESTRUCTURA DEL REPOSITORIO
+## 2. Integrantes del Equipo
+
+| Persona | Rama | Rol Principal |
+|---------|------|---------------|
+| **Luis** | `feature/luis-backend` | Backend — API, simulación MNA/SPICE, validación de circuitos, test de backend |
+| **Miguel** | `feature/miguel-editor` | Editor — React Flow, componentes, store Zustand, conexiones, simulación loop |
+| **Josue** | `feature/josue-ui` | **Supervisor General** — UI/UX, paneles, calculadora, revisión de calidad, nuevas implementaciones, lógica de negocio |
+
+> **Josue es la persona 3 y actúa como supervisor del proyecto.** Su trabajo no es solo UI: debe revisar que todo funcione correctamente, que la lógica tenga sentido, que las conexiones entre frontend y backend sean coherentes, y proponer/implementar nuevas funcionalidades. Aprueba o rechaza los merges a `main`.
+
+---
+
+## 3. REGLAS OBLIGATORIAS — LEER ANTES DE EMPEZAR
+
+### 3.1 Regla de Oro: NADA a `main` sin acuerdo unánime
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  NINGÚN merge a main sin que las 3 personas            │
+│  hayan revisado y aprobado explícitamente.             │
+│                                                         │
+│  Flujo correcto:                                        │
+│  1. Cada uno trabaja en SU rama                         │
+│  2. Al terminar una funcionalidad → PR a release/v1.0   │
+│  3. Josue revisa y coordina revisión entre todos        │
+│  4. Solo cuando los 3 dicen "OK" → merge a main         │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 3.2 Reglas de Git
+
+1. Cada integrante trabaja **SOLO en su rama**. Nunca commitees en otra rama.
+2. **Nunca hacer `git push origin main`** directamente. Solo se mergea vía Pull Request con aprobación de los 3.
+3. Mensajes de commit en **español**, descriptivos. Ejemplo bueno: `"Corrige validador BFS para detectar tierra en circuitos paralelos"`.
+4. Pull Request obligatorio para mergear a `release/v1.0` o `main`.
+5. Antes del Día 4, todas las ramas se mergean a `release/v1.0` para pruebas de integración.
+
+### 3.3 Flujo de Trabajo Diario
+
+```bash
+# INICIO DEL DÍA — actualizar rama propia
+git checkout feature/josue-ui        # (o luis-backend / miguel-editor)
+git pull origin main                 # Traer últimos cambios estables
+
+# TRABAJAR — commits frecuentes y pequeños
+git add .
+git commit -m "Descripción clara del cambio en español"
+git push origin feature/josue-ui
+
+# FIN DEL DÍA — avisar al equipo en el grupo
+
+# CUANDO TERMINAS UNA FUNCIONALIDAD — crear PR a release/v1.0
+# (esto lo hace desde GitHub web o cli)
+```
+
+### 3.4 Rol de Josue como Supervisor
+
+Josue tiene estas responsabilidades adicionales:
+
+- Revisar que la lógica del backend (Luis) tenga coherencia con el frontend
+- Verificar que las nuevas implementaciones no rompan funcionalidad existente
+- Aprobar o rechazar Pull Requests hacia `release/v1.0` y `main`
+- Detectar bugs y asignarlos a `fix/critical-bugs`
+- Proponer mejoras de funcionalidad y usabilidad
+- Mantener la documentación actualizada
+- Asegurar que el build (`npm run build`) pase sin errores antes de cualquier merge
+
+---
+
+## 4. Estructura del Repositorio
 
 ```
 proyectoElectro+/
-├── backend/                    # Código del backend Python
-│   ├── main.py                 # Servidor FastAPI
-│   ├── simulation/
-│   │   ├── engine.py           # Motor MNA con numpy
-│   │   └── netlist_generator.py
-│   ├── validators/
-│   │   └── circuit_validator.py # Validador con BFS
+├── backend/
+│   ├── main.py                       # Servidor FastAPI
+│   ├── api/routes.py                 # Endpoints REST
+│   ├── models/circuit.py             # Modelos de datos
+│   ├── simulation/engine.py          # Motor MNA con numpy
+│   ├── spice/builder.py              # Generador netlist SPICE
+│   ├── validators/circuit_validator.py  # Validador BFS
 │   └── requirements.txt
-├── src/                        # Código del frontend React
-│   ├── App.tsx                 # Layout principal
-│   ├── index.css               # Estilos globales + dark mode
+├── src/
+│   ├── App.tsx                       # Layout principal
+│   ├── index.css                     # Dark mode + estilos
 │   ├── components/
-│   │   ├── calculator/         # Calculadora de ingeniería
-│   │   ├── graph/              # Osciloscopio (Plotly)
-│   │   ├── multimeter/         # Multímetro
-│   │   ├── properties/         # Panel de propiedades
-│   │   ├── status/             # Estado de simulación
-│   │   ├── symbols/            # SVGs de componentes
-│   │   └── toolbar/            # Barra de herramientas
-│   ├── core/
-│   │   └── constants.ts        # Constantes y config
-│   ├── features/
-│   │   └── editor/             # React Flow editor
-│   ├── hooks/                  # Custom hooks
-│   ├── services/
-│   │   └── api.ts              # Llamadas al backend
-│   ├── store/
-│   │   └── circuitStore.ts     # Estado global (Zustand)
-│   ├── types/
-│   │   └── index.ts            # Tipos TypeScript
-│   └── utils/
-├── docs/                       # Documentación
-├── dist/                       # Build de producción
+│   │   ├── calculator/CalculatorPage.tsx   # 7 tabs
+│   │   ├── graph/GraphPanel.tsx            # Plotly osciloscopio
+│   │   ├── multimeter/MultimeterDisplay.tsx
+│   │   ├── properties/PropertiesPanel.tsx  # Sliders + mediciones
+│   │   ├── status/SimulationStatus.tsx     # LED estado
+│   │   ├── symbols/index.tsx               # SVGs (13 comps)
+│   │   └── toolbar/Toolbar.tsx             # Sidebar categorías
+│   ├── core/constants.ts             # Configuración
+│   ├── features/editor/
+│   │   ├── CircuitEditor.tsx         # ReactFlow canvas
+│   │   └── ComponentNode.tsx         # Nodo personalizado
+│   ├── hooks/useSimulation.ts        # Loop de simulación
+│   ├── store/circuitStore.ts         # Estado global Zustand
+│   ├── types/index.ts                # Tipos TypeScript
+│   └── utils/componentHandles.ts     # Handles por componente
+├── docs/
+│   ├── DOCUMENTACION_COMPLETA.md     # Este documento
+│   ├── class-diagram.puml            # Diagrama UML clases
+│   └── design-diagram.puml           # Diagrama de arquitectura
+├── test_backend.py                   # Test de backend
+├── plan_trabajo.tex                  # Plan LaTeX
 ├── tailwind.config.js
 ├── vite.config.ts
 └── package.json
@@ -62,349 +131,266 @@ proyectoElectro+/
 
 ---
 
-# 3. RAMAS DE GIT
-
-## 3.1 Convención de Nombres
-
-| Rama | Propósito | Base |
-|---|---|---|
-| `main` | Rama principal, código estable | — |
-| `feature/luis-backend` | Backend + simulación SPICE | `main` |
-| `feature/miguel-editor` | Editor + componentes + store | `main` |
-| `feature/josue-ui` | UI/UX + paneles + calculadora | `main` |
-| `fix/critical-bugs` | Corrección de bugs críticos | `main` |
-| `release/v1.0` | Preparación para entrega | `main` |
-
-## 3.2 Reglas de Uso
-
-1. Cada integrante trabaja SOLO en su rama.
-2. No hacer merge a `main` sin aprobación del equipo.
-3. Los commits deben tener mensajes descriptivos en español.
-4. Pull Request obligatorio para mergear a `main`.
-5. Antes del Día 4, hacer merge de todas las ramas a `release/v1.0`.
-
-## 3.3 Flujo de Trabajo Diario
-
-```bash
-# Inicio del día: actualizar rama propia
-git checkout feature/luis-backend   # (o miguel-editor / josue-ui)
-git pull origin main                # Traer cambios de main
-
-# Trabajar normalmente
-git add .
-git commit -m "Descripción clara del cambio"
-git push origin feature/luis-backend
-
-# Fin del día: avisar al equipo para revisión
-```
-
-## 3.4 Creación de Ramas (ejecutar ahora)
-
-```bash
-# Desde main:
-git checkout -b feature/luis-backend
-git push origin feature/luis-backend
-
-git checkout main
-git checkout -b feature/miguel-editor
-git push origin feature/miguel-editor
-
-git checkout main
-git checkout -b feature/josue-ui
-git push origin feature/josue-ui
-
-git checkout main
-git checkout -b fix/critical-bugs
-git push origin fix/critical-bugs
-
-git checkout main
-git checkout -b release/v1.0
-git push origin release/v1.0
-```
+## 5. PLAN DE TRABAJO POR PERSONA Y DÍA
 
 ---
 
-# 4. PLAN DE TRABAJO DETALLADO POR PERSONA
-
----
-
-## 4.1 LUIS — BACKEND + INTEGRACIÓN SPICE
+### 5.1 LUIS — Backend + Integración SPICE
 
 **Rama:** `feature/luis-backend`
+**Archivos que le corresponden:**
+- `backend/` (main.py, api/, models/, simulation/, spice/, validators/)
+- `test_backend.py`
+- `src/services/api.ts` (solo si necesita cambiar la comunicación)
 
-### Día 1 — Diagnóstico y reparación del backend
+#### Día 1 — Diagnóstico y reparación del backend
 
 | Hora | Tarea | Archivos | Verificación |
 |---|---|---|---|
-| 1h | Verificar ngspice instalado | — | `ngspice --version` funciona |
-| 1h | Probar endpoint `/api/simulate` | `backend/main.py` | POST con JSON retorna 200 |
-| 2h | Corregir ground validator BFS | `backend/validators/circuit_validator.py` | Detecta tierra conectada vía múltiples nodos |
-| 1h | Agregar tipos: diodo, transistor | `backend/simulation/engine.py` | Acepta componente type='diode', 'transistor' |
+| 1h | Verificar que ngspice esté instalado | — | `ngspice --version` funciona |
+| 1h | Probar endpoint POST /api/simulate | `backend/main.py` | curl retorna 200 con JSON |
+| 2h | Corregir ground validator BFS | `backend/validators/circuit_validator.py` | Detecta tierra conectada indirectamente |
+| 1h | Agregar tipos: diodo, transistor | `backend/simulation/engine.py` | Acepta type='diode', 'transistor' |
 
-**Comandos útiles:**
-```bash
-# Activar backend
-cd backend
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-python main.py
-
-# Probar simulación (desde raíz del proyecto)
-python test_backend.py
-
-# O con curl:
-curl -X POST http://localhost:8000/api/simulate ^
-  -H "Content-Type: application/json" ^
-  -d @test_circuit.json
-```
-
-### Día 2 — Mejoras de simulación
+#### Día 2 — Mejoras de simulación
 
 | Tarea | Archivos | Detalle |
 |---|---|---|
-| Simulación automática al conectar | `backend/main.py` | Endpoint que detecta cambios y re-simula |
-| Probar circuito 9V+R+LED | `backend/tests/` | Crear test con circuito conocido |
-| Validar `nodeVoltages` arrays | `backend/simulation/engine.py` | Asegurar que los arrays por nodo tengan datos |
-| Corregir `branchCurrents` | `backend/simulation/engine.py` | Asegurar que current por componente sea correcto |
+| Simulación automática al conectar | `backend/main.py` | Endpoint detecta cambios y re-simula |
+| Test circuito 9V + R + LED | `test_backend.py` | Corriente esperada ~9mA |
+| Validar nodeVoltages arrays | `backend/simulation/engine.py` | Arrays por nodo con datos correctos |
+| Corregir branchCurrents | `backend/simulation/engine.py` | Current por componente correcto |
 
-### Día 3 — Robustez y rendimiento
+#### Día 3 — Robustez y rendimiento
 
 | Tarea | Archivos | Detalle |
 |---|---|---|
-| Pruebas de estrés (10+ componentes) | `backend/tests/stress_test.py` | Generar circuitos grandes |
+| Pruebas de estrés (10+ comps) | Crear `backend/tests/stress_test.py` | Circuitos grandes |
 | Medir tiempos de simulación | `backend/main.py` | Logging de duración |
-| Cache de resultados | `backend/main.py` | No re-simular si el circuito no cambió |
+| Cache de resultados | `backend/main.py` | No re-simular si no cambió |
 | Manejo de errores robusto | `backend/main.py` | Try/except en toda la simulación |
 
-### Día 4 — Cierre
+#### Día 4 — Cierre
 
 | Tarea | Archivos | Detalle |
 |---|---|---|
-| Pruebas de regresión | `backend/tests/` | Ejecutar todos los tests |
-| Documentación API | `docs/API.md` | Endpoints, request/response ejemplos |
-| Merge a `release/v1.0` | — | Pull Request desde `feature/luis-backend` |
+| Pruebas de regresión | `test_backend.py` + tests | Todo sigue funcionando |
+| Merge a `release/v1.0` | — | PR aprobado por Josue + Miguel |
 
 ---
 
-## 4.2 MIGUEL — EDITOR + COMPONENTES + STORE
+### 5.2 MIGUEL — Editor + Componentes + Store
 
 **Rama:** `feature/miguel-editor`
+**Archivos que le corresponden:**
+- `src/features/editor/CircuitEditor.tsx`
+- `src/features/editor/ComponentNode.tsx`
+- `src/store/circuitStore.ts`
+- `src/hooks/useSimulation.ts`
+- `src/hooks/useCircuit.ts`
+- `src/types/index.ts`
+- `src/core/constants.ts`
+- `src/utils/componentHandles.ts`
+- `src/App.tsx` (solo función loadDemo y shortcuts)
 
-### Día 1 — Diagnóstico y corrección del editor
+#### Día 1 — Diagnóstico y corrección del editor
 
 | Hora | Tarea | Archivos | Verificación |
 |---|---|---|---|
-| 1h | Probar drag de componentes | `src/features/editor/CircuitEditor.tsx` | Arrastrar resistencia se mueve libremente |
-| 1h | Corregir `onNodesChange` | `src/features/editor/CircuitEditor.tsx:84-96` | Eliminar filtro `dragging === false` |
-| 1h | Verificar handles y conexiones | `src/features/editor/ComponentNode.tsx` | Handles aparecen y son cliqueables |
-| 1h | Probar batería terminales +/− | `src/features/editor/ComponentNode.tsx` | Handle izquierdo verde (−), derecho rojo (+) |
-| 1h | Verificar `nodeDragThreshold: 0` | `src/features/editor/CircuitEditor.tsx:208` | Drag inicia inmediatamente |
+| 1h | Probar drag de componentes | `CircuitEditor.tsx` | Arrastrar se mueve libremente |
+| 1h | Verificar onNodesChange sin filtro | `CircuitEditor.tsx:84-96` | Sin `dragging === false` |
+| 1h | Verificar handles y conexiones | `ComponentNode.tsx` | Handles aparecen en hover |
+| 1h | Probar batería +/− coloreados | `ComponentNode.tsx` | Verde (−) izq, rojo (+) der |
+| 1h | nodeDragThreshold: 0 | `CircuitEditor.tsx:208` | Drag inicia inmediato |
 
-**Archivos clave del editor:**
-- `src/features/editor/CircuitEditor.tsx` — Componente principal React Flow
-- `src/features/editor/ComponentNode.tsx` — Nodo personalizado por componente
-- `src/store/circuitStore.ts` — Estado global (Zustand)
-- `src/hooks/useSimulation.ts` — Loop de simulación
-- `src/hooks/useCircuit.ts` — Hook de acceso al circuito
-
-### Día 2 — Corrección de funcionalidades
+#### Día 2 — Corrección de funcionalidades
 
 | Tarea | Archivos | Detalle |
 |---|---|---|
-| Corregir selección múltiple | `src/features/editor/CircuitEditor.tsx` | Shift+click selecciona múltiples |
-| Probar undo/redo (Ctrl+Z) | `src/store/circuitStore.ts` | Deshacer/rehacer cambios |
-| Verificar rotación y duplicado | `src/components/properties/PropertiesPanel.tsx` | Botones Rotar y Duplicar |
-| Probar multi-selección + Delete | `src/App.tsx:100-113` | Eliminar varios componentes |
+| Selección múltiple (Shift+click) | `CircuitEditor.tsx` | Shift selecciona varios |
+| Undo/redo (Ctrl+Z) | `circuitStore.ts` | Deshacer/rehacer |
+| Rotación y duplicado | `PropertiesPanel.tsx` | Botones funcionales |
+| Multi-selección + Delete | `App.tsx:100-113` | Eliminar varios comps |
 
-### Día 3 — Validación completa del editor
+#### Día 3 — Validación completa
 
 | Tarea | Archivos | Detalle |
 |---|---|---|
-| LED on/off con simulación | `src/features/editor/ComponentNode.tsx:47` | `isLit` depende de `simulationRunning && current > 1e-6` |
-| Verificar animación de cables | `src/features/editor/CircuitEditor.tsx:76-81` | Edges tipo `bezier` con `animated: true` |
-| Probar todas las herramientas | `src/store/circuitStore.ts` | Select, Wire, Probe |
-| Probar circuito demo completo | `src/App.tsx:27-67` | Cargar demo y verificar |
+| LED on/off con simulación | `ComponentNode.tsx:47` | `isLit` con `simulationRunning && current > 1e-6` |
+| Cables animados bezier | `CircuitEditor.tsx:76-81` | `animated: true` |
+| Probar Select, Wire, Probe | `circuitStore.ts` | 3 herramientas funcionales |
+| Circuito demo completo | `App.tsx:27-67` | Todo funciona junto |
 
-### Día 4 — Cierre
+#### Día 4 — Cierre
 
 | Tarea | Archivos | Detalle |
 |---|---|---|
 | Build final | — | `npm run build` sin errores |
-| Prueba integración completa | — | Frontend + backend juntos |
-| Merge a `release/v1.0` | — | Pull Request |
-
-**Comandos útiles:**
-```bash
-# Iniciar frontend
-cd C:\Users\Usuario\Desktop\proyectoElectro+
-npm run dev
-
-# Build de producción
-npm run build
-
-# Verificar tipos
-npx tsc --noEmit
-```
+| Integración frontend+backend | — | Probar juntos |
+| Merge a `release/v1.0` | — | PR aprobado |
 
 ---
 
-## 4.3 JOSUE — UI/UX + PANELES + CALCULADORA
+### 5.3 JOSUE — UI/UX + Supervisor General
 
 **Rama:** `feature/josue-ui`
+**Archivos que le corresponden:**
+- `src/index.css` + `tailwind.config.js` — Estilos globales
+- `src/App.tsx` — Layout general (top bar, panel derecho, gráficas)
+- `src/components/toolbar/Toolbar.tsx` — Sidebar + buscador
+- `src/components/status/SimulationStatus.tsx` — LED estado
+- `src/components/symbols/index.tsx` — SVGs de componentes
+- `src/components/multimeter/MultimeterDisplay.tsx` — Multímetro
+- `src/components/properties/PropertiesPanel.tsx` — Panel propiedades
+- `src/components/graph/GraphPanel.tsx` — Osciloscopio Plotly
+- `src/components/calculator/CalculatorPage.tsx` — Calculadora 7 tabs
+- `docs/` — Documentación
 
-### Día 1 — Diagnóstico y verificación de UI
+**Además, como supervisor debe:**
+- Revisar PRs de Luis y Miguel antes del merge
+- Probar la aplicación completa después de cada cambio importante
+- Mantener este documento actualizado
+- Proponer mejoras y nuevas funcionalidades
+
+#### Día 1 — Diagnóstico y verificación de UI
 
 | Hora | Tarea | Archivos | Verificación |
 |---|---|---|---|
-| 1h | Verificar dark mode global | `src/index.css`, `tailwind.config.js` | Fondos oscuros en toda la app |
-| 1h | Probar sidebar y buscador | `src/components/toolbar/Toolbar.tsx` | Buscador filtra categorías |
-| 1h | Verificar traducción español | TODOS los archivos .tsx | Sin texto en inglés |
-| 1h | Reportar bugs encontrados | — | Issues en GitHub o lista escrita |
+| 1h | Verificar dark mode global | `index.css`, `tailwind.config.js` | Todo oscuro, sin zonas claras |
+| 1h | Probar sidebar + buscador | `Toolbar.tsx` | Buscador filtra, categorías funcionales |
+| 1h | Verificar traducción 100% español | TODOS los .tsx | Sin inglés visible |
+| 1h | Reportar bugs al equipo | — | Issues escritos, asignados a `fix/critical-bugs` |
 
-**Archivos clave de UI:**
-- `src/App.tsx` — Layout principal con top bar, sidebar, canvas, panel derecho, gráficas
-- `src/components/toolbar/Toolbar.tsx` — Sidebar con categorías y buscador
-- `src/components/status/SimulationStatus.tsx` — LED + estado en top bar
-- `src/components/symbols/index.tsx` — Todos los SVGs de componentes
-- `src/components/graph/GraphPanel.tsx` — Osciloscopio Plotly
-- `src/components/multimeter/MultimeterDisplay.tsx` — Multímetro
-- `src/components/properties/PropertiesPanel.tsx` — Panel de propiedades
-- `src/components/calculator/CalculatorPage.tsx` — Calculadora de ingeniería
-
-### Día 2 — Mejoras de componentes visuales
+#### Día 2 — Mejoras visuales y funcionales
 
 | Tarea | Archivos | Detalle |
 |---|---|---|
-| Rediseñar SVGs restantes | `src/components/symbols/index.tsx` | Diodo, transistor, potenciómetro profesional |
-| Probar calculadora (7 tabs) | `src/components/calculator/CalculatorPage.tsx` | Ohm, R, Colores, RC, XL/XC, Conv, Fórmulas |
-| Verificar gráficas Plotly | `src/components/graph/GraphPanel.tsx` | Múltiples sondas, zoom, hover |
-| Probar panel de propiedades | `src/components/properties/PropertiesPanel.tsx` | Sliders, mediciones, botones |
+| Rediseñar SVGs restantes | `symbols/index.tsx` | Diodo, transistor, potenciómetro profesionales |
+| Probar calculadora 7 tabs | `CalculatorPage.tsx` | Ohm, R, Colores, RC, XL/XC, Conv, Fórmulas |
+| Verificar gráficas Plotly | `GraphPanel.tsx` | Múltiples sondas, zoom, hover, limpiar |
+| Probar panel propiedades | `PropertiesPanel.tsx` | Sliders, mediciones, botones Rotar/Duplicar/Sonda/Eliminar |
+| Revisar coherencia lógica | `App.tsx`, store | Que los datos fluyan correctamente |
 
-### Día 3 — Pulido final
-
-| Tarea | Archivos | Detalle |
-|---|---|---|
-| Pulir layout y espaciado | `src/App.tsx` | Espaciado vertical consistente |
-| Agregar micro-animaciones | `src/index.css` | Transiciones suaves en hover/focus |
-| Probar calculadora en oscuro | `src/components/calculator/CalculatorPage.tsx` | Fondo surface-900, inputs dark |
-| Verificar responsividad | `src/App.tsx` | Funciona en 1366×768 y 1920×1080 |
-
-### Día 4 — Cierre
+#### Día 3 — Nuevas implementaciones + supervisión
 
 | Tarea | Archivos | Detalle |
 |---|---|---|
-| Revisión final UI | TODOS los .tsx | Consistencia visual |
+| Revisar PR de Luis (backend) | `backend/` | Revisar código, probar endpoint |
+| Revisar PR de Miguel (editor) | `src/features/editor/` | Probar drag, conexiones, LED |
+| Proponer/implementar nueva feature | — | Ej: historial de simulaciones, exportar CSV de gráficas, tema claro/oscuro toggle |
+| Pulir layout y espaciado | `App.tsx` | Consistencia vertical/horizontal |
+| Agregar micro-animaciones | `index.css` | Transiciones suaves hover/focus |
+
+**Ideas de nuevas implementaciones (preguntar al equipo antes):**
+- Botón toggle tema claro/oscuro en la top bar
+- Exportar datos de gráficas a CSV
+- Tooltips explicativos en cada componente
+- Historial de últimas 5 simulaciones
+- Panel de "estadísticas" con total de componentes, nodos, conexiones
+- Snackbar/notificaciones para errores de simulación
+
+#### Día 4 — Cierre y calidad final
+
+| Tarea | Archivos | Detalle |
+|---|---|---|
+| Revisión final UI completa | TODOS los .tsx | Consistencia visual oscura |
+| Ejecutar `npm run build` | — | 0 errores |
+| Prueba manual completa (ver sección 7) | — | Checklist de 10 pasos |
+| Aprobar merge final a `release/v1.0` | — | Solo cuando los 3 digan OK |
 | Preparar presentación | `presentacion.pptx` | Diapositivas del proyecto |
-| Merge a `release/v1.0` | — | Pull Request |
+| Merge a `main` (último paso del Día 4) | — | Aprobación de los 3 |
 
 ---
 
-# 5. CHECKLIST COMPLETO (marcar al completar)
+## 6. Checklist Completo
 
-## Backend (Luis)
+### Backend (Luis)
 
-- [ ] A1 — POST /api/simulate retorna nodeVoltages y branchCurrents
-- [ ] A2 — Ground validator con BFS funcional
-- [ ] A3 — Circuito 9V+R+LED simula correctamente (9mA esperado)
+- [ ] A1 — POST /api/simulate retorna nodeVoltages y branchCurrents correctos
+- [ ] A2 — Ground validator BFS detecta tierra directa e indirecta
+- [ ] A3 — Circuito 9V+R+LED simula ~9mA
 - [ ] A4 — Errores descriptivos sin crash del servidor
-- [ ] A5 — Simulación de 10+ componentes en <2 segundos
+- [ ] A5 — Simulación de 10+ componentes en <2s
 - [ ] A6 — Netlist SPICE bien formada
 - [ ] A7 — Backend arranca con `python main.py`
+- [ ] A8 — Tipos diodo y transistor implementados en engine.py
 
-## Editor (Miguel)
+### Editor (Miguel)
 
 - [ ] B1 — Todos los componentes se arrastran libremente
-- [ ] B2 — Cables con curvas suaves desde handles reales
-- [ ] B3 — Batería con terminal + rojo y − verde
+- [ ] B2 — Cables bezier animados desde handles reales
+- [ ] B3 — Batería: terminal + rojo, terminal − verde
 - [ ] B4 — LED se apaga al pausar, enciende al reanudar
 - [ ] B5 — Click selecciona, Delete elimina, Shift multi-selección
 - [ ] B6 — Ctrl+Z deshace, Ctrl+Shift+Z rehace
-- [ ] B7 — Rotar y Duplicar funcionan
+- [ ] B7 — Rotar y Duplicar funcionan en el panel
 - [ ] B8 — Herramientas Select, Wire, Probe funcionales
 - [ ] B9 — `npm run build` sin errores
 
-## UI/UX (Josue)
+### UI/UX + Supervisión (Josue)
 
-- [ ] C1 — Dark mode en TODA la aplicación
-- [ ] C2 — Sidebar con categorías + buscador
-- [ ] C3 — Barra superior con botones y estado
+- [ ] C1 — Dark mode en TODA la aplicación (sin excepciones)
+- [ ] C2 — Sidebar con categorías + buscador funcional
+- [ ] C3 — Barra superior compacta con botones + estado
 - [ ] C4 — Multímetro con V/I/P en tiempo real
-- [ ] C5 — Propiedades con sliders y mediciones
-- [ ] C6 — Osciloscopio Plotly funcional
+- [ ] C5 — Panel propiedades con sliders + mediciones
+- [ ] C6 — Osciloscopio Plotly con datos reales
 - [ ] C7 — Calculadora con 7 tabs funcionando
 - [ ] C8 — 100% traducido al español
-- [ ] C9 — SVGs profesionales con terminales
+- [ ] C9 — SVGs profesionales con terminales visibles
+- [ ] C10 — PR de Luis revisado y aprobado
+- [ ] C11 — PR de Miguel revisado y aprobado
+- [ ] C12 — Build final verificado sin errores
+- [ ] C13 — Prueba manual completa pasada
+- [ ] C14 — Documentación actualizada
 
 ---
 
-# 6. PRUEBAS DE VALIDACIÓN FINAL
+## 7. Prueba de Validación Manual (Josue ejecuta)
 
-Ejecutar en orden antes de la entrega:
+Ejecutar en orden ANTES del merge a `main`:
 
-### 6.1 Backend
-```bash
-cd backend
-python main.py
-# En otra terminal:
-python test_backend.py
-```
-
-### 6.2 Frontend (build)
-```bash
-npm run build
-# Debe terminar con: "✓ built in X.Xm"
-```
-
-### 6.3 Prueba manual completa
-1. Abrir `localhost:5173`
-2. Click "Cargar circuito demo"
-3. Arrastrar cada componente (deben moverse)
-4. Pasar mouse sobre handles (deben aparecer puntos)
-5. Click "INICIAR" (LED debe encenderse)
-6. Click "DETENER" (LED debe apagarse)
-7. Abrir calculadora → tab Ohm → probar 9V, 0.011A, 818Ω
-8. Verificar gráficas con datos reales
-9. Abrir panel Propiedades → rotar, duplicar, eliminar
-
-### 6.4 Sin errores de consola
-```bash
-# Abrir Chrome DevTools (F12) → pestaña Console
-# No debe mostrar errores rojos
-```
+1. Abrir `http://localhost:5173`
+2. Hacer clic en **"Cargar circuito demo"**
+3. Arrastrar cada tipo de componente (deben moverse suavemente)
+4. Pasar mouse sobre los terminales de un componente (deben aparecer puntos)
+5. Hacer clic en **INICIAR** (el LED debe encenderse con glow amarillo)
+6. Hacer clic en **DETENER** (el LED debe apagarse inmediatamente)
+7. Abrir la **Calculadora** (icono en top bar) → tab Ohm → probar V=9, I=0.011 → R debe dar ~818Ω
+8. Ir a **Gráficas** (panel inferior) — deben mostrar líneas con datos reales
+9. Panel derecho **Propiedades** → seleccionar batería → mover slider de voltaje → rotar → duplicar → eliminar
+10. Abrir Chrome DevTools (F12) → Console → **0 errores rojos**
 
 ---
 
-# 7. CRITERIOS DE EVALUACIÓN
+## 8. Criterios de Evaluación (100 pts)
 
-| Criterio | Puntos | Cómo se evalúa |
+| Criterio | Pts | Cómo se evalúa |
 |---|---|---|
-| Simulación funcional | 25 | Circuito demo simula correctamente, LED enciende |
+| Simulación funcional | 25 | Circuito demo simula, LED enciende |
 | Interfaz profesional | 20 | Dark mode, SVGs, layout limpio |
-| Todas las herramientas funcionan | 15 | Select, Wire, Probe, Drag, Delete |
+| Herramientas completas | 15 | Select, Wire, Probe, Drag, Delete |
 | Calculadora completa | 10 | 7 tabs funcionales |
-| Gráficas con datos reales | 10 | Plotly muestra señales de simulación |
-| Código sin errores | 10 | Build exitoso, sin errores TS |
-| Documentación | 5 | README, plan de trabajo, documentación |
-| Trabajo en equipo | 5 | Commits en ramas separadas, merges ordenados |
-
-**Puntaje máximo: 100 puntos**
+| Gráficas con datos | 10 | Plotly con señales reales |
+| Sin errores de build | 10 | Build 0 errores TS + Vite |
+| Trabajo en equipo | 5 | Ramas separadas, commits, merges ordenados |
+| Documentación | 5 | README, docs, plan de trabajo |
 
 ---
 
-# 8. COMANDOS RÁPIDOS
+## 9. Comandos Rápidos
 
 ```bash
-# Iniciar backend
+# Backend
 cd backend && python main.py
 
-# Iniciar frontend (otra terminal)
+# Frontend (otra terminal)
 npm run dev
 
 # Build producción
 npm run build
 
-# Verificar tipos TypeScript
+# Verificar tipos
 npx tsc --noEmit
 
 # Estado de git
@@ -412,16 +398,26 @@ git status
 git log --oneline --graph --all
 
 # Cambiar de rama
-git checkout feature/luis-backend
+git checkout feature/josue-ui
 
 # Traer cambios de main
 git pull origin main
 
 # Subir cambios
-git push origin feature/luis-backend
+git push origin feature/josue-ui
 ```
 
 ---
 
-*Documento generado el \today para el Proyecto LabCircuitos*
-*3 Integrantes: Luis (Backend), Miguel (Editor), Josue (UI/UX)*
+## 10. Notas Importantes
+
+- **LED bug corregido:** El LED se apaga al pausar y enciende al reanudar. Depende de `simulationRunning && current > 1e-6`.
+- **Drag corregido:** `nodesDraggable: true`, `nodeDragThreshold: 0`, `onNodesChange` sin filtro de dragging.
+- **Batería:** Terminal rojo (+) es source handle (posición derecha), terminal verde (−) es target handle (posición izquierda).
+- **Cables:** Tipo `bezier` con `MarkerType.ArrowClosed` y `animated: true`.
+- **Dark mode:** Clase `.dark` en `tailwind.config.js`, colores personalizados `surface`, `primary`, `sim-running/error/processing/stopped`.
+- **Build actual:** 308 módulos, 0 errores TypeScript, 0 errores Vite.
+
+---
+
+*3 Integrantes: Luis (Backend), Miguel (Editor), Josue (UI/UX + Supervisor)*
