@@ -22,7 +22,7 @@ Simulador de circuitos eléctricos interactivo con dark mode profesional.
 
 | Persona | Rama | Rol Principal |
 |---------|------|---------------|
-| **Luis** | `feature/luis-backend` | Backend — API, simulación MNA/SPICE, validación de circuitos, test de backend |
+| **Luisa** | `feature/luisa-backend` | Backend — API, simulación MNA/SPICE, validación de circuitos, test de backend |
 | **Miguel** | `feature/miguel-editor` | Editor — React Flow, componentes, store Zustand, conexiones, simulación loop |
 | **Josue** | `feature/josue-ui` | **Supervisor General** — UI/UX, paneles, calculadora, revisión de calidad, nuevas implementaciones, lógica de negocio |
 
@@ -59,7 +59,7 @@ Simulador de circuitos eléctricos interactivo con dark mode profesional.
 
 ```bash
 # INICIO DEL DÍA — actualizar rama propia
-git checkout feature/josue-ui        # (o luis-backend / miguel-editor)
+git checkout feature/josue-ui        # (o luisa-backend / miguel-editor)
 git pull origin main                 # Traer últimos cambios estables
 
 # TRABAJAR — commits frecuentes y pequeños
@@ -79,23 +79,23 @@ git push origin feature/josue-ui
 
 Este ejemplo muestra cómo una tarea viaja desde que se empieza hasta que llega a `main`:
 
-**Ejemplo: Luis agrega un nuevo componente "Transformador" al backend**
+**Ejemplo: Luisa agrega un nuevo componente "Transformador" al backend**
 
 ```
-DÍA 1 — Luis trabaja en su rama
-  feature/luis-backend$ git add .
-  feature/luis-backend$ git commit -m "Agrega modelo de transformador al engine MNA"
-  feature/luis-backend$ git push origin feature/luis-backend
+DÍA 1 — Luisa trabaja en su rama
+  feature/luisa-backend$ git add .
+  feature/luisa-backend$ git commit -m "Agrega modelo de transformador al engine MNA"
+  feature/luisa-backend$ git push origin feature/luisa-backend
 
-DÍA 1 — Luis termina y crea Pull Request
+DÍA 1 — Luisa termina y crea Pull Request
   → Va a GitHub.com → Pull Requests → New PR
-  → base: release/v1.0  ←  compare: feature/luis-backend
+  → base: release/v1.0  ←  compare: feature/luisa-backend
   → Título: "Agrega transformador al backend MNA"
   → Asigna revisores: Josue y Miguel
 
 DÍA 2 — Josue revisa el PR
   → Ve el código en GitHub, revisa que la lógica sea correcta
-  → Prueba local: git checkout feature/luis-backend, python test_backend.py
+  → Prueba local: git checkout feature/luisa-backend, python test_backend.py
   → Comenta si hay cambios o aprueba
 
 DÍA 2 — Miguel también revisa
@@ -103,7 +103,7 @@ DÍA 2 — Miguel también revisa
   → Prueba que el editor funcione con el nuevo componente
 
 DÍA 2 — Aprobación
-  → Josue: "Apruebo" | Miguel: "Apruebo" | Luis: "Listo"
+  → Josue: "Apruebo" | Miguel: "Apruebo" | Luisa: "Listo"
   → SOLO AHORA se mergea el PR a release/v1.0
 
 DÍA 4 — Merge a main (último día)
@@ -131,7 +131,7 @@ DÍA 4 — Merge a main (último día)
 
 Josue tiene estas responsabilidades adicionales:
 
-- Revisar que la lógica del backend (Luis) tenga coherencia con el frontend
+- Revisar que la lógica del backend (Luisa) tenga coherencia con el frontend
 - Verificar que las nuevas implementaciones no rompan funcionalidad existente
 - Aprobar o rechazar Pull Requests hacia `release/v1.0` y `main`
 - Detectar bugs y asignarlos a `fix/critical-bugs`
@@ -191,7 +191,7 @@ proyectoElectro+/
 
 ### 5.1 LUIS — Backend + Integración SPICE
 
-**Rama:** `feature/luis-backend`
+**Rama:** `feature/luisa-backend`
 **Archivos que le corresponden:**
 - `backend/` (main.py, api/, models/, simulation/, spice/, validators/)
 - `test_backend.py`
@@ -301,7 +301,7 @@ proyectoElectro+/
 - `docs/` — Documentación
 
 **Además, como supervisor debe:**
-- Revisar PRs de Luis y Miguel antes del merge
+- Revisar PRs de Luisa y Miguel antes del merge
 - Probar la aplicación completa después de cada cambio importante
 - Mantener este documento actualizado
 - Proponer mejoras y nuevas funcionalidades
@@ -329,7 +329,7 @@ proyectoElectro+/
 
 | Tarea | Archivos | Detalle |
 |---|---|---|
-| Revisar PR de Luis (backend) | `backend/` | Revisar código, probar endpoint |
+| Revisar PR de Luisa (backend) | `backend/` | Revisar código, probar endpoint |
 | Revisar PR de Miguel (editor) | `src/features/editor/` | Probar drag, conexiones, LED |
 | Proponer/implementar nueva feature | — | Ej: historial de simulaciones, exportar CSV de gráficas, tema claro/oscuro toggle |
 | Pulir layout y espaciado | `App.tsx` | Consistencia vertical/horizontal |
@@ -358,7 +358,7 @@ proyectoElectro+/
 
 ## 6. Checklist Completo
 
-### Backend (Luis)
+### Backend (Luisa)
 
 - [ ] A1 — POST /api/simulate retorna nodeVoltages y branchCurrents correctos
 - [ ] A2 — Ground validator BFS detecta tierra directa e indirecta
@@ -392,7 +392,7 @@ proyectoElectro+/
 - [ ] C7 — Calculadora con 7 tabs funcionando
 - [ ] C8 — 100% traducido al español
 - [ ] C9 — SVGs profesionales con terminales visibles
-- [ ] C10 — PR de Luis revisado y aprobado
+- [ ] C10 — PR de Luisa revisado y aprobado
 - [ ] C11 — PR de Miguel revisado y aprobado
 - [ ] C12 — Build final verificado sin errores
 - [ ] C13 — Prueba manual completa pasada
@@ -474,4 +474,4 @@ git push origin feature/josue-ui
 
 ---
 
-*3 Integrantes: Luis (Backend), Miguel (Editor), Josue (UI/UX + Supervisor)*
+*3 Integrantes: Luisa (Backend), Miguel (Editor), Josue (UI/UX + Supervisor)*

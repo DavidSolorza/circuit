@@ -34,7 +34,7 @@ Resistencia, Capacitor, Inductor, Batería (+/−), Fuente Corriente, LED (con g
 | Rama | Persona | Rol |
 |------|---------|-----|
 | `main` | — | Código estable |
-| `feature/luis-backend` | Luis | Backend + SPICE |
+| `feature/luisa-backend` | Luisa | Backend + SPICE |
 | `feature/miguel-editor` | Miguel | Editor React Flow + store |
 | `feature/josue-ui` | Josue | UI/UX + supervisor general |
 | `release/v1.0` | Equipo | Entrega final |
