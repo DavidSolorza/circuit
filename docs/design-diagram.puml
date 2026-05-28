@@ -30,106 +30,96 @@ skinparam database {
   FontColor #86efac
 }
 
-title "Arquitectura del Circuit Simulator"
+title "Arquitectura de LabCircuitos"
 
-package "UI Layer (React Components)" as UILayer {
+package "Frontend React" as FELAYER {
 
-  rectangle Toolbar as TOOLBAR
-  rectangle CircuitCanvas as CANVAS
-  rectangle PropertiesPanel as PROPS
-  rectangle Oscilloscope as OSC
-
-  TOOLBAR -d-> CANVAS : "activa herramientas"
-  CANVAS -d-> PROPS : "selección → edición"
-  CANVAS -d-> OSC : "sondas → visualización"
-}
-
-package "Canvas Render (react-konva)" as CANVASLAYER {
-
-  rectangle Grid
-  rectangle ComponentShape
-  rectangle WireLines
-
-  Grid -d-- CANVAS
-  ComponentShape -d-- CANVAS
-  WireLines -d-- CANVAS
-}
-
-package "Store (Zustand)" as STORE {
-  interface CircuitStoreActions as ACTIONS {
-    + addComponent(type, pos)
-    + removeComponent(id)
-    + moveComponent(id, pos)
-    + rotateComponent(id)
-    + startConnection(tid)
-    + completeConnection(tid)
-    + cancelConnection()
-    + selectComponent(id)
-    + setActiveTool(tool)
-    + setSimulationRunning(run)
-    + setSimResults(results)
-    + addProbe(type, compId, idx)
-    + removeProbe(id)
-    + toggleProbe(id)
-    + appendOscData(probeId, t, v)
-    + clearOscData()
+  package "UI Components" as UILAYER {
+    rectangle Toolbar as TOOLBAR
+    rectangle CircuitEditor as EDITOR
+    rectangle ComponentNode as NODE
+    rectangle PropertiesPanel as PROPS
+    rectangle MultimeterDisplay as METER
+    rectangle GraphPanel as GRAPH
+    rectangle CalculatorPage as CALC
+    rectangle SimulationStatus as STATUS
   }
 
-  database AppState as STATE {
-    CircuitState
-    SimResults
-    OscilloscopeProbe[]
-    herramenta activa
-    simulación corriendo
-  }
-}
+  package "Store (Zustand)" as STORE {
+    interface CircuitStoreActions as ACTIONS {
+      addComponent / removeComponent
+      startConnection / completeConnection
+      setSimulationRunning / setSimResults
+      undo / redo
+      addProbe / removeProbe
+    }
 
-package "Simulation Engine" as SIMENGINE {
-  node "RAF Loop" as RAFLOOP {
-    (60 fps)
-    requestAnimationFrame
-  }
-  node "MnaSolver" as SOLVER {
-    MNA stamps
-    Backward Euler
-    lusolve (mathjs)
+    database AppState as STATE {
+      CircuitState
+      SimResults
+      MeasurementProbe[]
+      herramienta activa
+      simulación corriendo
+    }
   }
 
-  RAFLOOP -d-> SOLVER : "solve(circuit, dt)"
+  package "Hooks" as HOOKS {
+    node useSimulation as SIMLOOP {
+      requestAnimationFrame
+      fetch /api/simulate
+    }
+  }
+
+  TOOLBAR --> ACTIONS : dispatch
+  EDITOR --> ACTIONS : dispatch
+  PROPS --> ACTIONS : dispatch
+  ACTIONS --> STATE : set state
+  STATE <-- EDITOR : subscribe
+  STATE <-- METER : subscribe
+  STATE <-- GRAPH : subscribe
+  STATE <-- STATUS : subscribe
+  EDITOR *-- NODE : custom node
+  METER --> STATE : read V/I/P
+  GRAPH --> STATE : read oscData
 }
 
-package "Core Domain" as DOMAIN {
-  rectangle Types as TYPES
-  rectangle Constants as CONSTS
+package "Backend Python (FastAPI)" as BKLAYER {
+  rectangle "REST API\n/api/simulate\n/api/validate\n/api/status" as API
+
+  package "Simulation Engine" as SIMENGINE {
+    node "MNA Engine\n(numpy)" as MNA {
+      Modified Nodal Analysis
+      Backward Euler
+      numpy.linalg.solve
+    }
+    node "SPICE Bridge\n(PySpice/Ngspice)" as SPICE {
+      Netlist generation
+      Ngspice subprocess
+    }
+  }
+
+  rectangle "Validator\n(BFS ground, floats,\ncortocircuitos)" as VALIDATOR
+
+  API --> MNA : solve(circuit)
+  API --> SPICE : run(netlist)
+  API --> VALIDATOR : validate(circuit)
 }
 
-' Flujo de datos
-TOOLBAR --> ACTIONS : dispatch
-CANVAS --> ACTIONS : dispatch
-PROPS --> ACTIONS : dispatch
-ACTIONS --> STATE : set state
-STATE <-- CANVAS : subscribe
-STATE <-- TOOLBAR : subscribe
-STATE <-- PROPS : subscribe
-STATE <-- OSC : subscribe
-
-' Flujo de simulación
-SOLVER --> ACTIONS : setSimResults
-ACTIONS --> STATE : simResults update
-STATE --> CANVAS : re-render
-STATE --> PROPS : multimeter update
-STATE --> OSC : osciloscopio update
+' Flujo de datos frontend-backend
+SIMLOOP --> API : POST /api/simulate (JSON)
+API --> SIMLOOP : SimResults (JSON)
+SIMLOOP --> ACTIONS : setSimResults
+ACTIONS --> STATE : actualiza
 
 ' Flujo de osciloscopio
 ACTIONS --> STATE : appendOscData
-STATE --> OSC : re-render traces
+STATE --> GRAPH : re-render traces
 
 ' Dependencias
-SOLVER -u-> TYPES : CircuitState / SimResults
-SOLVER -u-> CONSTS : DT
-TYPES <-- STATE
-TYPES <-- ACTIONS
-
-RAFLOOP ..> ACTIONS : getState / setSimResults
+NODE --> STATE : read component params
+PROPS --> STATE : read/write selected
+METER --> STATE : latest V/I/P
+STATUS --> STATE : sim status + time
+CALC ..> CALC : standalone
 
 @enduml

@@ -16,7 +16,7 @@ skinparam package {
   FontColor #e2e8f0
 }
 
-package "Core (core/)" {
+package "Tipos (types/)" {
   enum ComponentType {
     resistor
     capacitor
@@ -26,6 +26,20 @@ package "Core (core/)" {
     switch
     led
     ground
+    diode
+    transistor
+    potentiometer
+    voltmeter
+    ammeter
+  }
+
+  enum ComponentCategory {
+    Fuentes
+    Pasivos
+    Semiconductores
+    Logicos
+    Medidores
+    Miscelaneos
   }
 
   class Point {
@@ -33,11 +47,13 @@ package "Core (core/)" {
     + y: number
   }
 
-  class Terminal {
+  class ParamDef {
     + id: string
-    + componentId: string
-    + index: 0 | 1
-    + nodeId: number
+    + label: string
+    + min: number
+    + max: number
+    + step: number
+    + unit: string
   }
 
   class CircuitComponent {
@@ -50,27 +66,34 @@ package "Core (core/)" {
     + terminalIds: [string, string]
   }
 
+  class Terminal {
+    + id: string
+    + componentId: string
+    + index: 0 | 1
+    + nodeId: number
+  }
+
   class WireDef {
     + id: string
     + fromTerminalId: string
     + toTerminalId: string
   }
 
-  class SimResults {
-    + nodeVoltages: Record<number, number>
-    + branchCurrents: Record<string, number>
-    + timestep: number
-    + time: number
-  }
-
-  class OscilloscopeProbe {
+  class MeasurementProbe {
     + id: string
     + label: string
-    + type: 'voltage' | 'current'
+    + type: 'voltage' | 'current' | 'power'
     + componentId: string
-    + terminalIndex?: 0 | 1
     + color: string
     + visible: boolean
+  }
+
+  class SimResults {
+    + nodeVoltages: Record<number, number[]>
+    + branchCurrents: Record<string, number[]>
+    + timestep: number
+    + time: number[]
+    + status: { success: boolean, error?: string }
   }
 
   class CircuitState {
@@ -80,23 +103,12 @@ package "Core (core/)" {
     + nextNodeId: number
   }
 
-  class MnaSolver {
-    - capPrevV: Map<string, number>
-    - indPrevI: Map<string, number>
-    - simTime: number
-    + reset(): void
-    + solve(circuit: CircuitState, dt: number): SimResults
-    - stampG(A, nI, nJ, G, idx): void
-    - stampI(B, nI, nJ, I, idx): void
-  }
-
   ComponentType <.. CircuitComponent : type
+  ComponentCategory ..> ComponentType : agrupa
   Point *-- CircuitComponent : position
   Terminal *-- CircuitState : terminals
   CircuitComponent *-- CircuitState : components
   WireDef *-- CircuitState : wires
-  MnaSolver ..> CircuitState : solve
-  MnaSolver ..> SimResults : produce
   CircuitComponent ..> Terminal : terminalIds >
 }
 
@@ -105,12 +117,16 @@ package "Store (store/)" {
     + circuit: CircuitState
     + selectedComponentId: string | null
     + activeTool: ComponentType | 'select' | 'wire' | 'probe'
+    + connectorMode: boolean
+    + connectingFrom: string | null
+    + connectingTo: string | null
     + simulationRunning: boolean
     + simResults: SimResults | null
-    + probes: OscilloscopeProbe[]
+    + probes: MeasurementProbe[]
     + oscData: Record<string, Array<{t, v}>>
-    + connectingFrom: string | null
     + simTime: number
+    + undoStack: CircuitState[]
+    + redoStack: CircuitState[]
   }
 
   interface CircuitStore {
@@ -118,6 +134,7 @@ package "Store (store/)" {
     + removeComponent(id): void
     + moveComponent(id, pos): void
     + rotateComponent(id): void
+    + duplicateComponent(id): void
     + startConnection(tid): void
     + completeConnection(tid): void
     + cancelConnection(): void
@@ -125,64 +142,129 @@ package "Store (store/)" {
     + setActiveTool(tool): void
     + setSimulationRunning(run): void
     + setSimResults(results): void
-    + addProbe(type, compId, idx): void
+    + addProbe(type, compId): void
     + removeProbe(id): void
     + toggleProbe(id): void
     + appendOscData(probeId, t, v): void
     + clearOscData(): void
+    + undo(): void
+    + redo(): void
+    + pushUndo(): void
   }
 
   AppState <.. CircuitStore : manages
   CircuitState <-- AppState
   SimResults <-- AppState
-  OscilloscopeProbe <-- AppState
+  MeasurementProbe <-- AppState
 }
 
-package "Hooks (hooks/)" {
-  class useSimulationLoop {
-    + rafRef: MutableRefObject<number>
-    + lastTimeRef: MutableRefObject<number>
-    + tick(timestamp): void
+package "Componentes UI" {
+  class CircuitEditor {
+    + nodes: Node[]
+    + edges: Edge[]
+    + onNodesChange(): void
+    + onEdgesChange(): void
+    + onConnect(): void
+    + onDrop(): void
+    + onNodeClick(): void
   }
 
-  useSimulationLoop ..> MnaSolver : instancia
-  useSimulationLoop ..> CircuitStore : getState
-}
-
-package "Features (features/)" {
-  package "CircuitCanvas" {
-    class CircuitCanvas {
-      + width: number
-      + height: number
-    }
-
-    class ComponentShape {
-      + component: CircuitComponent
-      + isSelected: boolean
-      + isConnecting: boolean
-      + onDragEnd(pos): void
-      + onTerminalClick(tid): void
-      + onClick(): void
-    }
-
-    class WireLines {
-      + wireId: string
-    }
-
-    class Grid { }
+  class ComponentNode {
+    + data: { component, selected, isLit }
+    + handles: Handle[]
   }
 
-  class Toolbar { }
-  class PropertiesPanel { }
-  class Oscilloscope { }
+  class Toolbar {
+    + busqueda: string
+    + categoriaActiva: string
+    + onDragStart(): void
+  }
+
+  class PropertiesPanel {
+    + parametros: ParamDef[]
+    + mediciones: { V, I, P }
+    + onRotar(): void
+    + onDuplicar(): void
+    + onEliminar(): void
+  }
+
+  class MultimeterDisplay {
+    + voltage: string
+    + current: string
+    + power: string
+  }
+
+  class GraphPanel {
+    + traces: PlotlyTrace[]
+    + onToggleProbe(): void
+    + onLimpiar(): void
+  }
+
+  class SimulationStatus {
+    + estado: 'running' | 'error' | 'processing' | 'stopped'
+    + tiempo: string
+    + alertaTierra: boolean
+  }
+
+  class CalculatorPage {
+    + tabActivo: number
+    + calcularOhm(): void
+    + calcularColores(): void
+    + calcularRC(): void
+    + calcularXLXC(): void
+  }
+
+  CircuitEditor *-- ComponentNode : renderiza
+  Toolbar ..> CircuitEditor : drag & drop
+  PropertiesPanel ..> CircuitEditor : seleccion
+  MultimeterDisplay ..> CircuitStore : suscribe
+  GraphPanel ..> CircuitStore : oscData
+  SimulationStatus ..> CircuitStore : simResults
+  CalculatorPage ..> CircuitStore : independiente
 }
 
-AppState <.. CircuitCanvas : subscribe
-AppState <.. Toolbar : subscribe
-AppState <.. PropertiesPanel : subscribe
-AppState <.. Oscilloscope : subscribe
-CircuitCanvas *-- ComponentShape : contiene
-CircuitCanvas *-- WireLines : contiene
-CircuitCanvas *-- Grid : contiene
+package "Backend Python" {
+  class FastAPIApp {
+    + POST /api/simulate
+    + POST /api/validate
+    + GET /api/status
+  }
+
+  class MnaEngine {
+    - G: numpy.ndarray
+    - B: numpy.ndarray
+    - solve(circuit): SimResults
+    - stampResistor(): void
+    - stampCapacitor(): void
+    - stampInductor(): void
+    - stampVoltageSource(): void
+    - stampLed(): void
+    - stampDiode(): void
+  }
+
+  class SpiceBuilder {
+    + buildNetlist(circuit): string
+    + runNgspice(netlist): SimResults
+  }
+
+  class CircuitValidator {
+    + validate(circuit): ValidationResult
+    - bfsGroundCheck(): boolean
+    - checkShortCircuit(): boolean
+    - checkFloatingNodes(): boolean
+  }
+
+  FastAPIApp ..> MnaEngine : usa
+  FastAPIApp ..> SpiceBuilder : alternativa
+  FastAPIApp ..> CircuitValidator : valida
+}
+
+' Conexiones
+CircuitStore <.. CircuitEditor : subscribe
+CircuitStore <.. Toolbar : subscribe
+CircuitStore <.. PropertiesPanel : subscribe
+CircuitStore <.. MultimeterDisplay : subscribe
+CircuitStore <.. GraphPanel : subscribe
+CircuitStore <.. SimulationStatus : subscribe
 
 @enduml
