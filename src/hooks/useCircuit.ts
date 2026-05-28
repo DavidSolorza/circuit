@@ -1,6 +1,4 @@
-import { useCallback } from 'react';
 import { useCircuitStore } from '../store/circuitStore';
-import type { ComponentType, Point } from '../types';
 
 export function useCircuit() {
   const components = useCircuitStore((s) => s.circuit.components);

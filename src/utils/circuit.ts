@@ -10,10 +10,10 @@ export function makeComponent(type: ComponentType, position: Point): CircuitComp
   return {
     id,
     type,
-    label: t.label,
+    label: t?.label ?? type,
     position: snapToGrid(position),
     rotation: 0,
-    params: { ...t.defaultParams },
+    params: t ? { ...t.defaultParams } : {},
     terminalIds: [genId('term'), genId('term')],
   };
 }

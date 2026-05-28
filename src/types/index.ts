@@ -6,7 +6,12 @@ export type ComponentType =
   | 'currentSource'
   | 'switch'
   | 'led'
-  | 'ground';
+  | 'diode'
+  | 'transistor'
+  | 'potentiometer'
+  | 'ground'
+  | 'voltmeter'
+  | 'ammeter';
 
 export interface Point {
   x: number;
@@ -43,11 +48,25 @@ export interface CircuitState {
   nextNodeId: number;
 }
 
+export interface BackendStatus {
+  success: boolean;
+  message: string;
+  error: string | null;
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
 export interface SimResults {
-  nodeVoltages: Record<number, number>;
-  branchCurrents: Record<string, number>;
-  timestep: number;
-  time: number;
+  status: BackendStatus;
+  time: number[];
+  nodeVoltages: Record<string, number[]>;
+  branchCurrents: Record<string, number[]>;
+  power: Record<string, number[]>;
+  validation: ValidationResult;
 }
 
 export interface MeasurementProbe {
@@ -73,6 +92,7 @@ export interface AppState {
   activeTool: ToolType;
   simulationRunning: boolean;
   simResults: SimResults | null;
+  simError: string | null;
   probes: MeasurementProbe[];
   oscData: Record<string, GraphTrace[]>;
   connectingFrom: string | null;
@@ -91,10 +111,7 @@ export interface ParamDef {
   unit: string;
 }
 
-export interface ComponentTemplate {
-  type: ComponentType;
-  label: string;
-  icon: string;
-  defaultParams: Record<string, number>;
-  paramDefs: ParamDef[];
+export interface ComponentCategory {
+  name: string;
+  types: ComponentType[];
 }

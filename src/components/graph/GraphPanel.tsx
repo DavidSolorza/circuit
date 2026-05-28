@@ -1,68 +1,93 @@
-import { useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useMemo, memo } from 'react';
+import Plot from 'react-plotly.js';
 import { useGraph } from '../../hooks/useGraph';
 import { useCircuitStore } from '../../store/circuitStore';
 
-export function GraphPanel() {
+function GraphPanelInner() {
   const { traces, clearData } = useGraph();
   const probes = useCircuitStore((s) => s.probes);
   const toggleProbe = useCircuitStore((s) => s.toggleProbeVisibility);
   const removeProbe = useCircuitStore((s) => s.removeProbe);
 
-  const chartData = useMemo(() => {
-    if (traces.length === 0) return [];
-    const maxLen = Math.max(...traces.map(t => t.data.length));
-    const result: Record<string, number | string>[] = [];
-    for (let i = 0; i < maxLen; i++) {
-      const point: Record<string, number | string> = { idx: i };
-      for (const t of traces) {
-        if (t.data[i]) point[t.id] = t.data[i].v;
-      }
-      result.push(point);
-    }
-    return result;
+  const plotTraces = useMemo(() => {
+    return traces.map((t) => ({
+      x: t.data.map((d) => d.t),
+      y: t.data.map((d) => d.v),
+      type: 'scatter' as const,
+      mode: 'lines' as const,
+      name: t.label,
+      line: { color: t.color, width: 1.5 },
+      hovertemplate: `%{x:.3f}s<br>%{y:.4f}<extra>${t.label}</extra>`,
+    }));
   }, [traces]);
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-800">
-        <span className="text-[10px] text-gray-500 uppercase tracking-wider">Oscilloscope</span>
+    <div className="h-full flex flex-col bg-surface-900">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-surface-700 shrink-0">
+        <span className="text-[10px] text-slate-500 uppercase tracking-wider">Osciloscopio</span>
         <div className="flex items-center gap-2">
-          <button onClick={clearData} className="text-[9px] text-gray-600 hover:text-gray-400 transition-colors px-1.5 py-0.5 rounded bg-gray-800">Clear</button>
+          <span className="text-[9px] text-slate-600">{traces.length} señal(es)</span>
+          <button onClick={clearData} className="text-[9px] text-slate-500 hover:text-slate-300 transition-colors px-1.5 py-0.5 rounded bg-surface-800 border border-surface-700">
+            Limpiar
+          </button>
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 p-2">
-        {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="idx" stroke="#475569" tick={{ fontSize: 9 }} tickFormatter={(v) => `${(v * 0.016).toFixed(1)}s`} />
-              <YAxis stroke="#475569" tick={{ fontSize: 9 }} />
-              <Tooltip
-                contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', fontSize: '11px' }}
-                labelStyle={{ color: '#94a3b8' }}
-              />
-              <Legend wrapperStyle={{ fontSize: '10px', color: '#94a3b8' }} />
-              {traces.map((t) => (
-                <Line key={t.id} type="monotone" dataKey={t.id} stroke={t.color} dot={false} strokeWidth={1.5} name={t.label} isAnimationActive={false} />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
+      <div className="flex-1 min-h-0">
+        {plotTraces.length > 0 ? (
+          <Plot
+            data={plotTraces}
+            layout={{
+              autosize: true,
+              margin: { l: 40, r: 10, t: 20, b: 30 },
+              paper_bgcolor: 'rgba(26,27,46,0)',
+              plot_bgcolor: 'rgba(26,27,46,0)',
+              font: { color: '#94a3b8', size: 10 },
+              xaxis: {
+                gridcolor: '#334155',
+                zerolinecolor: '#475569',
+                title: { text: 'Tiempo (s)', font: { size: 9, color: '#94a3b8' } },
+                color: '#64748b',
+              },
+              yaxis: {
+                gridcolor: '#334155',
+                zerolinecolor: '#475569',
+                title: { text: 'Valor', font: { size: 9, color: '#94a3b8' } },
+                color: '#64748b',
+              },
+              legend: {
+                font: { size: 8, color: '#94a3b8' },
+                bgcolor: 'rgba(26,27,46,0.8)',
+                borderColor: '#334155',
+              },
+              dragmode: 'zoom',
+              hovermode: 'closest',
+            }}
+            config={{
+              displayModeBar: false,
+              responsive: true,
+            }}
+            useResizeHandler
+            style={{ width: '100%', height: '100%' }}
+          />
         ) : (
-          <div className="flex items-center justify-center h-full text-xs text-gray-700">
-            {probes.length === 0 ? 'Add probes to components to see traces' : 'Waiting for data...'}
+          <div className="flex items-center justify-center h-full text-xs text-slate-600">
+            {probes.length === 0 ? 'Añade sondas a los componentes para ver señales' : 'Esperando datos...'}
           </div>
         )}
       </div>
 
       {probes.length > 0 && (
-        <div className="border-t border-gray-800 px-2 py-1.5 flex flex-wrap gap-1.5">
+        <div className="border-t border-surface-700 px-2 py-1.5 flex flex-wrap gap-1.5 shrink-0 bg-surface-800/50">
           {probes.map((p) => (
             <div
               key={p.id}
               className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] cursor-pointer transition-all"
-              style={{ backgroundColor: p.visible ? `${p.color}15` : 'transparent', color: p.visible ? p.color : '#4b5563', border: `1px solid ${p.visible ? p.color : '#374151'}` }}
+              style={{
+                backgroundColor: p.visible ? `${p.color}20` : 'transparent',
+                color: p.visible ? p.color : '#64748b',
+                border: `1px solid ${p.visible ? p.color : '#334155'}`,
+              }}
               onClick={() => toggleProbe(p.id)}
             >
               <span>{p.label}</span>
@@ -79,3 +104,5 @@ export function GraphPanel() {
     </div>
   );
 }
+
+export const GraphPanel = memo(GraphPanelInner);

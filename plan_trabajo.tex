@@ -1,0 +1,227 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{float}
+
+\geometry{margin=2.5cm}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Proyecto LabCircuitos}
+\fancyhead[R]{\small Plan de Trabajo}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\definecolor{primary}{RGB}{59,130,246}
+\definecolor{success}{RGB}{34,197,94}
+\definecolor{warning}{RGB}{234,179,8}
+\definecolor{error}{RGB}{239,68,68}
+\definecolor{surface}{RGB}{26,27,46}
+\definecolor{textlight}{RGB}{226,232,240}
+
+\titleformat{\section}{\Large\bfseries\color{primary}}{}{0em}{}[\vspace{-0.3em}\rule{\textwidth}{0.5pt}]
+\titleformat{\subsection}{\large\bfseries\color{primary!80!black}}{}{0em}{}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{3cm}
+    {\Huge\bfseries\color{primary} LabCircuitos\\[0.5em]}
+    {\Large Simulador de Circuitos Eléctricos Interactivo\\[2cm]}
+    {\large\textbf{Plan de Trabajo}}\\[1cm]
+    {\large 3 Integrantes · 4 Días · Corrección y Puesta a Punto}\\[2cm]
+    \vfill
+    {\large Fecha: \today}
+\end{titlepage}
+
+\section{Resumen del Proyecto}
+
+\textbf{LabCircuitos} es un simulador de circuitos eléctricos en tiempo real con arquitectura frontend/backend. Utiliza React + TypeScript + Vite en el frontend y FastAPI + PySpice/Ngspice en el backend. El proyecto se encuentra en un estado funcional avanzado pero requiere corrección de errores, pulido de interfaz, y validación integral para alcanzar un nivel profesional.
+
+\subsection*{Tecnologías Involucradas}
+\begin{minipage}[t]{0.48\textwidth}
+    \textbf{Frontend}\\
+    React, TypeScript, Vite, pnpm, Tailwind CSS, React Flow, Zustand, Plotly, Framer Motion, Lucide React
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+    \textbf{Backend}\\
+    Python, FastAPI, PySpice, Ngspice, NumPy, SciPy, Uvicorn
+\end{minipage}
+
+\section{Objetivos}
+
+\begin{enumerate}[label=\arabic*.]
+    \item Corregir todos los bugs conocidos en frontend y backend.
+    \item Asegurar que la simulación SPICE funcione correctamente con circuitos de prueba.
+    \item Validar que componentes se arrastren, conecten, y respondan en tiempo real.
+    \item Pulir la interfaz de usuario al nivel de un laboratorio profesional.
+    \item Traducir y unificar toda la interfaz en español.
+    \item Generar un build de producción sin errores.
+\end{enumerate}
+
+\section{Distribución de Tareas}
+
+\subsection*{Roles}
+\begin{itemize}
+    \item \textbf{Integrante A} — Backend + Integración (SPICE, simulación, API, validación de circuitos)
+    \item \textbf{Integrante B} — Frontend núcleo (editor, componentes, conexiones, store, hooks)
+    \item \textbf{Integrante C} — Frontend UI/UX (toolbar, paneles, calculadora, gráficas, dark mode, traducción)
+\end{itemize}
+
+\subsection*{Cronograma}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{|c|X|X|X|}
+\hline
+\textbf{Día} & \textbf{A (Backend)} & \textbf{B (Editor)} & \textbf{C (UI/UX)} \\
+\hline
+\textbf{Día 1} &
+\textbullet~Verificar ngspice instalado\\&
+\textbullet~Probar endpoint /api/simulate\\&
+\textbullet~Corregir ground validator BFS\\&
+\textbullet~Agregar tipos: diodo, transistor & 
+\textbullet~Probar drag de componentes\\&
+\textbullet~Corregir onNodesChange\\&
+\textbullet~Verificar handles y conexiones\\&
+\textbullet~Probar batería terminales +/− & 
+\textbullet~Verificar dark mode global\\&
+\textbullet~Probar sidebar y buscador\\&
+\textbullet~Verificar traducción española\\&
+\textbullet~Reportar bugs encontrados \\
+\hline
+\textbf{Día 2} &
+\textbullet~Simulación automática al conectar\\&
+\textbullet~Probar circuito 9V + R + LED\\&
+\textbullet~Validar nodeVoltages arrays\\&
+\textbullet~Corregir errores branchCurrents &
+\textbullet~Corregir selección múltiple\\&
+\textbullet~Probar undo/redo\\&
+\textbullet~Verificar rotación y duplicado\\&
+\textbullet~Probar multi-selección + delete &
+\textbullet~Rediseñar SVGs restantes\\&
+\textbullet~Probar calculadora (7 tabs)\\&
+\textbullet~Verificar gráficas Plotly\\&
+\textbullet~Probar panel de propiedades \\
+\hline
+\textbf{Día 3} &
+\textbullet~Pruebas de estrés: 10+ componentes\\&
+\textbullet~Medir tiempos de simulación\\&
+\textbullet~Cache de resultados\\&
+\textbullet~Manejo de errores robusto &
+\textbullet~Probar LED on/off con simulación\\&
+\textbullet~Verificar animación de cables\\&
+\textbullet~Probar todas las herramientas\\&
+\textbullet~Probar circuito demo completo &
+\textbullet~Pulir layout y espaciado\\&
+\textbullet~Agregar micro-animaciones\\&
+\textbullet~Probar calculadora en oscuro\\&
+\textbullet~Verificar responsividad \\
+\hline
+\textbf{Día 4} &
+\textbullet~Pruebas de regresión backend\\&
+\textbullet~Documentación API\\&
+\textbullet~Últimas correcciones &
+\textbullet~Build final sin errores\\&
+\textbullet~Prueba integración completa\\&
+\textbullet~Correcciones menores &
+\textbullet~Revisión final UI\\&
+\textbullet~Preparar presentación\\&
+\textbullet~Generar reporte \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Checklist de Validación}
+
+Cada integrante debe marcar como listo cada ítem antes del Día 4.
+
+\subsection*{Backend — Integrante A}
+\begin{enumerate}[label=\textbf{A\arabic*}]
+    \item \textbf{Simulación funcional} — POST /api/simulate retorna nodeVoltages y branchCurrents correctos.
+    \item \textbf{Ground validator} — Detecta tierra conectada mediante BFS sobre el grafo del circuito.
+    \item \textbf{Circuitos de prueba} — 9V + R + LED, RLC, divisor de voltaje.
+    \item \textbf{Manejo de errores} — Circuito inválido retorna error descriptivo, no crash.
+    \item \textbf{Rendimiento} — Simulación de 10+ componentes en <2 segundos.
+    \item \textbf{Netlist correcta} — Generación SPICE bien formada.
+\end{enumerate}
+
+\subsection*{Editor — Integrante B}
+\begin{enumerate}[label=\textbf{B\arabic*}]
+    \item \textbf{Drag de componentes} — Todos los componentes se mueven libremente en el canvas.
+    \item \textbf{Conexiones} — Cables se crean desde handles reales, siguen curvas suaves.
+    \item \textbf{Batería} — Terminal + (rojo) y − (verde) funcionales y visibles.
+    \item \textbf{LED} — Se enciende solo con simulación activa y corriente > 1e-6 A.
+    \item \textbf{Selección} — Click selecciona, multi-selección con Shift, Delete elimina.
+    \item \textbf{Undo/Redo} — Ctrl+Z deshace, Ctrl+Shift+Z rehace.
+    \item \textbf{Rotación/Duplicado} — Botones funcionales en panel de propiedades.
+    \item \textbf{Herramientas} — Select, Wire, Probe funcionan correctamente.
+\end{enumerate}
+
+\subsection*{UI/UX — Integrante C}
+\begin{enumerate}[label=\textbf{C\arabic*}]
+    \item \textbf{Dark mode} — Tema oscuro consistente en toda la aplicación.
+    \item \textbf{Sidebar} — Categorías, buscador, componentes compactos con drag.
+    \item \textbf{Barra superior} — Botones (Nuevo, Abrir, Guardar, Exportar), estado de simulación.
+    \item \textbf{Panel derecho} — Multímetro y Propiedades con mediciones en tiempo real.
+    \item \textbf{Gráficas} — Plotly con múltiples sondas, zoom, toggle, limpiar.
+    \item \textbf{Calculadora} — 7 tabs funcionales con modo oscuro.
+    \item \textbf{Traducción} — 100\% en español, sin términos en inglés.
+    \item \textbf{SVGs} — Todos los componentes con diseño profesional y terminales.
+\end{enumerate}
+
+\section{Pruebas de Integración Final}
+
+\subsection{Circuito de Prueba Completo}
+\begin{enumerate}
+    \item Cargar circuito demo desde la pantalla de bienvenida.
+    \item Verificar que aparecen 6 componentes en el canvas.
+    \item Arrastrar cada componente para confirmar movimiento libre.
+    \item Hover sobre handles → deben aparecer puntos azules.
+    \item Iniciar simulación → LED debe encenderse (amarillo brillante).
+    \item Verificar que el voltaje del LED se muestra en el nodo.
+    \item Pausar simulación → LED debe apagarse inmediatamente.
+    \item Reanudar → LED debe encenderse de nuevo.
+    \item Abrir calculadora → probar Ley de Ohm (9V, 0.011A, 818Ω).
+    \item Verificar gráficas con datos reales del osciloscopio.
+\end{enumerate}
+
+\subsection{Criterios de Aceptación}
+\begin{itemize}
+    \item El build de producción se completa sin errores (\texttt{npm run build}).
+    \item El backend responde en <2 segundos para circuitos de até 15 componentes.
+    \item La interfaz no muestra errores de consola en Chrome/Firefox.
+    \item Todos los textos están en español.
+    \item El LED responde correctamente al estado de simulación.
+    \item Los componentes se arrastran sin bloqueos.
+\end{itemize}
+
+\section{Entregables}
+
+\begin{enumerate}
+    \item Código fuente completo (frontend + backend) en repositorio Git.
+    \item Build de producción en \texttt{dist/}.
+    \item Backend ejecutable con \texttt{python main.py}.
+    \item Documentación de API (endpoints, request/response).
+    \item Video de demostración (opcional).
+    \item Este plan de trabajo cumplimentado.
+\end{enumerate}
+
+\vfill
+\begin{center}
+\rule{0.6\textwidth}{0.5pt}\\[0.5em]
+{\small Documento generado el \today}
+\end{center}
+
+\end{document}

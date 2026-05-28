@@ -1,14 +1,14 @@
-import { useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import ReactFlow, {
   Background,
   Controls,
   MiniMap,
+  MarkerType,
   type Node,
   type Edge,
   type Connection,
   type NodeChange,
   type EdgeChange,
-  MarkerType,
   useReactFlow,
   ReactFlowProvider,
   SelectionMode,
@@ -17,7 +17,7 @@ import 'reactflow/dist/style.css';
 import ComponentNode, { type ComponentNodeData } from './ComponentNode';
 import { useCircuitStore } from '../../store/circuitStore';
 import type { ComponentType, Point } from '../../types';
-import { COMPONENT_WIDTH, GRID_SIZE } from '../../core/constants';
+import { GRID_SIZE } from '../../core/constants';
 
 const nodeTypes = { component: ComponentNode };
 
@@ -30,18 +30,19 @@ function CanvasInner({ width, height }: Props) {
   const rf = useReactFlow();
   const components = useCircuitStore((s) => s.circuit.components);
   const wires = useCircuitStore((s) => s.circuit.wires);
+  const terminals = useCircuitStore((s) => s.circuit.terminals);
   const selectedId = useCircuitStore((s) => s.selectedComponentId);
   const activeTool = useCircuitStore((s) => s.activeTool);
   const addComponent = useCircuitStore((s) => s.addComponent);
   const moveComponent = useCircuitStore((s) => s.moveComponent);
   const selectComponent = useCircuitStore((s) => s.selectComponent);
   const removeComponent = useCircuitStore((s) => s.removeComponent);
-  const startConnection = useCircuitStore((s) => s.startConnection);
-  const completeConnection = useCircuitStore((s) => s.completeConnection);
-  const cancelConnection = useCircuitStore((s) => s.cancelConnection);
-  const connectingFrom = useCircuitStore((s) => s.connectingFrom);
   const setActiveTool = useCircuitStore((s) => s.setActiveTool);
   const addProbe = useCircuitStore((s) => s.addProbe);
+  const connectTerminals = useCircuitStore((s) => s.connectTerminals);
+  const startConnection = useCircuitStore((s) => s.startConnection);
+  const completeConnection = useCircuitStore((s) => s.completeConnection);
+  const connectingFrom = useCircuitStore((s) => s.connectingFrom);
 
   const nodes: Node<ComponentNodeData>[] = useMemo(() =>
     Object.values(components).map((c) => ({
@@ -57,57 +58,89 @@ function CanvasInner({ width, height }: Props) {
       },
       selected: c.id === selectedId,
       deletable: true,
+      draggable: true,
+      selectable: true,
     })),
     [components, selectedId],
   );
 
-  const edges: Edge[] = useMemo(() =>
-    Object.values(wires).map((w) => ({
+  const edges: Edge[] = useMemo(() => {
+    const termToComp = (tid: string) => terminals[tid]?.componentId ?? '';
+    const termIndex = (tid: string) => terminals[tid]?.index ?? 0;
+    return Object.values(wires).map((w) => ({
       id: w.id,
-      source: components[w.fromTerminalId]?.id ?? '',
-      target: components[w.toTerminalId]?.id ?? '',
-      sourceHandle: 'term0',
-      targetHandle: 'term1',
-      type: 'smoothstep',
+      source: termToComp(w.fromTerminalId),
+      target: termToComp(w.toTerminalId),
+      sourceHandle: `term${termIndex(w.fromTerminalId)}`,
+      targetHandle: `term${termIndex(w.toTerminalId)}`,
+      type: 'bezier',
       animated: true,
-      style: { stroke: '#64748b', strokeWidth: 2 },
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#64748b' },
-    })),
-    [wires, components],
-  );
+      style: { stroke: '#64748b', strokeWidth: 2.5 },
+      active: false,
+        markerEnd: { type: MarkerType.ArrowClosed, color: '#64748b' },
+    }));
+  }, [wires, components, terminals]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     for (const ch of changes) {
-      if (ch.type === 'position' && ch.dragging === false && ch.position) {
+      if (ch.type === 'position' && ch.position) {
         moveComponent(ch.id, ch.position as Point);
       }
       if (ch.type === 'remove') {
         removeComponent(ch.id);
       }
       if (ch.type === 'select') {
-        selectComponent(ch.id ?? null);
+        if (ch.selected) selectComponent(ch.id);
       }
     }
   }, [moveComponent, removeComponent, selectComponent]);
 
-  const onEdgesChange = useCallback((_changes: EdgeChange[]) => {
-    // edges are managed by our store; no direct edge changes from RF
-  }, []);
+  const onEdgesChange = useCallback((_changes: EdgeChange[]) => {}, []);
 
   const onConnect = useCallback((conn: Connection) => {
-    if (!conn.source || !conn.target) return;
+    if (!conn.source || !conn.target || !conn.sourceHandle || !conn.targetHandle) return;
+    
     const state = useCircuitStore.getState();
     const srcComp = state.circuit.components[conn.source];
     const tgtComp = state.circuit.components[conn.target];
+    
     if (!srcComp || !tgtComp) return;
-    const srcTerm = srcComp.terminalIds[1];
-    const tgtTerm = tgtComp.terminalIds[0];
-    const fTerm = state.circuit.terminals[srcTerm];
-    const tTerm = state.circuit.terminals[tgtTerm];
-    if (!fTerm || !tTerm || fTerm.nodeId === tTerm.nodeId) return;
-    startConnection(srcTerm);
-    setTimeout(() => completeConnection(tgtTerm), 0);
-  }, [startConnection, completeConnection]);
+    
+    // Get handle IDs from connection
+    const srcHandleId = conn.sourceHandle;
+    const tgtHandleId = conn.targetHandle;
+    
+    // Find terminal IDs that match the handles
+    const srcTerminal = srcComp.terminalIds.find(tid => {
+      const term = state.circuit.terminals[tid];
+      const handleIndex = term?.index ?? 0;
+      return srcHandleId === `term${handleIndex}`;
+    });
+    
+    const tgtTerminal = tgtComp.terminalIds.find(tid => {
+      const term = state.circuit.terminals[tid];
+      const handleIndex = term?.index ?? 0;
+      return tgtHandleId === `term${handleIndex}`;
+    });
+    
+    if (srcTerminal && tgtTerminal) {
+      state.connectTerminals(srcTerminal, tgtTerminal);
+      
+      // Auto-add probes to interesting components for visualization
+      const componentsToProbe = ['led', 'capacitor', 'inductor', 'resistor'];
+      if (componentsToProbe.includes(srcComp.type) && !state.probes.some(p => p.componentId === srcComp.id && p.type === 'current')) {
+        state.addProbe('current', srcComp.id);
+      }
+      if (componentsToProbe.includes(tgtComp.type) && !state.probes.some(p => p.componentId === tgtComp.id && p.type === 'current')) {
+        state.addProbe('current', tgtComp.id);
+      }
+      
+      // Auto-start simulation after connection
+      if (!state.simulationRunning) {
+        setTimeout(() => { state.toggleSimulation(); }, 300);
+      }
+    }
+  }, []);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -123,32 +156,36 @@ function CanvasInner({ width, height }: Props) {
     setActiveTool('select');
   }, [rf, addComponent, setActiveTool]);
 
-  const onClick = useCallback(() => {
-    if (activeTool === 'wire' && connectingFrom) {
-      cancelConnection();
-    }
-  }, [activeTool, connectingFrom, cancelConnection]);
-
   const handlePaneClick = useCallback(() => {
-    if (activeTool === 'wire' && connectingFrom) {
-      cancelConnection();
-    }
     if (activeTool !== 'select' && activeTool !== 'wire' && activeTool !== 'probe') {
       setActiveTool('select');
     }
-  }, [activeTool, connectingFrom, cancelConnection, setActiveTool]);
+  }, [activeTool, setActiveTool]);
 
   const handleNodeClick = useCallback((_e: React.MouseEvent, node: Node) => {
     if (activeTool === 'probe') {
       addProbe('voltage', node.id, 0);
-      setActiveTool('select');
+      return;
+    }
+    if (activeTool === 'wire') {
+      const state = useCircuitStore.getState();
+      const comp = state.circuit.components[node.id];
+      if (!comp) return;
+      const terminalId = state.connectingFrom === null
+        ? comp.terminalIds[1]
+        : comp.terminalIds[0];
+      if (state.connectingFrom) {
+        state.completeConnection(terminalId);
+      } else {
+        state.startConnection(terminalId);
+      }
       return;
     }
     selectComponent(node.id);
   }, [activeTool, addProbe, selectComponent, setActiveTool]);
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full" style={{ width: Math.max(width, 200), height: Math.max(height, 200) }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -165,23 +202,28 @@ function CanvasInner({ width, height }: Props) {
         snapToGrid
         snapGrid={[GRID_SIZE, GRID_SIZE]}
         selectionMode={SelectionMode.Partial}
+        nodesDraggable={true}
+        nodesConnectable={true}
+        elementsSelectable={true}
+        nodeDragThreshold={0}
         fitView
         fitViewOptions={{ padding: 0.3, maxZoom: 1.5 }}
         minZoom={0.1}
         maxZoom={3}
         defaultEdgeOptions={{
-          type: 'smoothstep',
+          type: 'bezier',
           animated: true,
-          style: { stroke: '#64748b', strokeWidth: 2 },
+          style: { stroke: '#64748b', strokeWidth: 2.5 },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#64748b' },
         }}
       >
         <Background color="#334155" gap={GRID_SIZE} size={1} />
-        <Controls showInteractive={false} className="!bg-gray-800 !border-gray-700 !rounded-lg" />
+        <Controls showInteractive={false} className="!bg-surface-800 !border-surface-700 !rounded-lg !shadow-sm !text-slate-400" />
         <MiniMap
           nodeStrokeColor="#3b82f6"
-          nodeColor="#1e293b"
-          maskColor="rgba(0,0,0,0.7)"
-          className="!bg-gray-900 !border !border-gray-700 !rounded-lg"
+          nodeColor="#28283d"
+          maskColor="rgba(15,16,25,0.8)"
+          className="!bg-surface-900 !border !border-surface-700 !rounded-lg !shadow-sm"
         />
       </ReactFlow>
     </div>

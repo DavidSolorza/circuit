@@ -11,12 +11,14 @@ export const api = axios.create({
 export interface BackendComponent {
   id: string;
   type: string;
+  label?: string;
   params: Record<string, number>;
 }
 
 export interface BackendTerminal {
   id: string;
   componentId: string;
+  index: number;
   nodeId: number;
 }
 
@@ -34,11 +36,25 @@ export interface SimulateRequest {
   timestep?: number;
 }
 
+export interface SimulationStatus {
+  success: boolean;
+  message: string;
+  error: string | null;
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
 export interface SimulateResponse {
+  status: SimulationStatus;
   time: number[];
   nodeVoltages: Record<string, number[]>;
   branchCurrents: Record<string, number[]>;
   power: Record<string, number[]>;
+  validation: ValidationResult;
 }
 
 export async function healthCheck(): Promise<boolean> {
@@ -52,6 +68,11 @@ export async function healthCheck(): Promise<boolean> {
 
 export async function simulate(req: SimulateRequest): Promise<SimulateResponse> {
   const { data } = await api.post<SimulateResponse>('/api/simulate', req);
+  return data;
+}
+
+export async function validateCircuit(req: SimulateRequest): Promise<ValidationResult> {
+  const { data } = await api.post<ValidationResult>('/api/simulate/validate', req);
   return data;
 }
 

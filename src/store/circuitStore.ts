@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { AppState, CircuitComponent, Terminal, WireDef, MeasurementProbe, SimResults, ComponentType, Point, CircuitState, ToolType } from '../types';
-import { COMPONENT_TEMPLATES, PROBE_COLORS } from '../core/constants';
+import { COMPONENT_TEMPLATES } from '../core/constants';
 import { genId, makeComponent, makeTerminal, initCircuitState, snapToGrid } from '../utils/circuit';
 
 interface CircuitStore extends AppState {
@@ -12,11 +12,14 @@ interface CircuitStore extends AppState {
   duplicateComponent: (id: string) => void;
   selectComponent: (id: string | null) => void;
   setActiveTool: (tool: ToolType) => void;
+  connectTerminals: (fromTerminalId: string, toTerminalId: string) => void;
   startConnection: (terminalId: string) => void;
   completeConnection: (terminalId: string) => void;
   cancelConnection: () => void;
   toggleSimulation: () => void;
   setSimResults: (results: SimResults) => void;
+  setSimTime: (t: number) => void;
+  setSimError: (err: string | null) => void;
   addProbe: (type: 'voltage' | 'current', componentId: string, terminalIndex?: 0 | 1) => void;
   removeProbe: (id: string) => void;
   toggleProbeVisibility: (id: string) => void;
@@ -39,11 +42,12 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
   activeTool: 'select',
   simulationRunning: false,
   simResults: null,
+  simError: null,
   probes: [],
   oscData: {},
   connectingFrom: null,
   simTime: 0,
-  darkMode: true,
+  darkMode: false,
   undoStack: [],
   redoStack: [],
 
@@ -65,6 +69,7 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
       redoStack: [...state.redoStack, deepCloneCircuit(state.circuit)],
       simResults: null,
       simTime: 0,
+      simError: null,
     });
   },
 
@@ -79,6 +84,7 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
       undoStack: [...state.undoStack, deepCloneCircuit(state.circuit)],
       simResults: null,
       simTime: 0,
+      simError: null,
     });
   },
 
@@ -88,16 +94,23 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
     const comp = makeComponent(type, position);
     let nodeIdA: number, nodeIdB: number;
     if (type === 'ground') { nodeIdA = 0; nodeIdB = 0; }
+    else if (type === 'voltmeter' || type === 'ammeter') {
+      nodeIdA = state.circuit.nextNodeId;
+      nodeIdB = state.circuit.nextNodeId;
+    }
     else { nodeIdA = state.circuit.nextNodeId; nodeIdB = state.circuit.nextNodeId + 1; }
     const tA = makeTerminal(comp.id, 0, nodeIdA);
     const tB = makeTerminal(comp.id, 1, nodeIdB);
     const c = { ...comp, terminalIds: [tA.id, tB.id] as [string, string] };
+    const next = (type === 'ground' || type === 'voltmeter' || type === 'ammeter')
+      ? state.circuit.nextNodeId
+      : nodeIdB + 1;
     set({
       circuit: {
         components: { ...state.circuit.components, [c.id]: c },
         terminals: { ...state.circuit.terminals, [tA.id]: tA, [tB.id]: tB },
         wires: { ...state.circuit.wires },
-        nextNodeId: type === 'ground' ? state.circuit.nextNodeId : nodeIdB + 1,
+        nextNodeId: next,
       },
       selectedComponentId: c.id,
     });
@@ -124,7 +137,7 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
     set({
       circuit: { components: newComponents, terminals: newTerminals, wires: newWires, nextNodeId: state.circuit.nextNodeId },
       selectedComponentId: state.selectedComponentId === id ? null : state.selectedComponentId,
-      probes: newProbes, oscData: newOscData, simResults: null, simTime: 0,
+      probes: newProbes, oscData: newOscData, simResults: null, simTime: 0, simError: null,
     });
   },
 
@@ -138,7 +151,7 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
         ...state.circuit,
         components: { ...state.circuit.components, [id]: { ...comp, params: { ...comp.params, [key]: value } } },
       },
-      simResults: null, simTime: 0,
+      simResults: null, simTime: 0, simError: null,
     });
   },
 
@@ -164,7 +177,7 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
         ...state.circuit,
         components: { ...state.circuit.components, [id]: { ...comp, rotation: (comp.rotation + 90) % 360 } },
       },
-      simResults: null, simTime: 0,
+      simResults: null, simTime: 0, simError: null,
     });
   },
 
@@ -176,16 +189,22 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
     const newComp = makeComponent(comp.type, { x: comp.position.x + 40, y: comp.position.y + 40 });
     let nodeIdA: number, nodeIdB: number;
     if (comp.type === 'ground') { nodeIdA = 0; nodeIdB = 0; }
+    else if (comp.type === 'voltmeter' || comp.type === 'ammeter') {
+      nodeIdA = state.circuit.nextNodeId; nodeIdB = state.circuit.nextNodeId;
+    }
     else { nodeIdA = state.circuit.nextNodeId; nodeIdB = state.circuit.nextNodeId + 1; }
     const tA = makeTerminal(newComp.id, 0, nodeIdA);
     const tB = makeTerminal(newComp.id, 1, nodeIdB);
     const nc = { ...newComp, terminalIds: [tA.id, tB.id] as [string, string] };
+    const next = (comp.type === 'ground' || comp.type === 'voltmeter' || comp.type === 'ammeter')
+      ? state.circuit.nextNodeId
+      : nodeIdB + 1;
     set({
       circuit: {
         components: { ...state.circuit.components, [nc.id]: nc },
         terminals: { ...state.circuit.terminals, [tA.id]: tA, [tB.id]: tB },
         wires: { ...state.circuit.wires },
-        nextNodeId: comp.type === 'ground' ? state.circuit.nextNodeId : nodeIdB + 1,
+        nextNodeId: next,
       },
       selectedComponentId: nc.id,
     });
@@ -193,6 +212,29 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
 
   selectComponent: (id) => set({ selectedComponentId: id }),
   setActiveTool: (tool) => set({ activeTool: tool, connectingFrom: null }),
+
+  connectTerminals: (fromTerminalId, toTerminalId) => {
+    const state = get();
+    const fTerm = state.circuit.terminals[fromTerminalId];
+    const tTerm = state.circuit.terminals[toTerminalId];
+    if (!fTerm || !tTerm || fTerm.nodeId === tTerm.nodeId) return;
+    state.pushUndo();
+    const mergeTo = Math.min(fTerm.nodeId, tTerm.nodeId);
+    const mergeFrom = Math.max(fTerm.nodeId, tTerm.nodeId);
+    const newTerminals: Record<string, Terminal> = {};
+    for (const [tid, term] of Object.entries(state.circuit.terminals)) {
+      newTerminals[tid] = term.nodeId === mergeFrom ? { ...term, nodeId: mergeTo } : term;
+    }
+    const wireId = genId('wire');
+    set({
+      circuit: {
+        ...state.circuit,
+        terminals: newTerminals,
+        wires: { ...state.circuit.wires, [wireId]: { id: wireId, fromTerminalId, toTerminalId } },
+      },
+      connectingFrom: null,
+    });
+  },
 
   startConnection: (terminalId) => {
     if (get().activeTool !== 'wire') return;
@@ -215,7 +257,11 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
     }
     const wireId = genId('wire');
     set({
-      circuit: { ...state.circuit, terminals: newTerminals, wires: { ...state.circuit.wires, [wireId]: { id: wireId, fromTerminalId: from, toTerminalId: terminalId } } },
+      circuit: {
+        ...state.circuit,
+        terminals: newTerminals,
+        wires: { ...state.circuit.wires, [wireId]: { id: wireId, fromTerminalId: from, toTerminalId: terminalId } },
+      },
       connectingFrom: null,
     });
   },
@@ -225,20 +271,32 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
   toggleSimulation: () => {
     const state = get();
     const willRun = !state.simulationRunning;
-    set({ simulationRunning: willRun, simTime: willRun ? 0 : state.simTime });
+    if (willRun && !state.selectedComponentId) {
+      const first = Object.values(state.circuit.components).find(c => c.type !== 'ground');
+      if (first) state.selectComponent(first.id);
+    }
+    set({
+      simulationRunning: willRun,
+      simTime: willRun ? 0 : state.simTime,
+      simError: null,
+      simResults: willRun ? null : state.simResults,
+    });
   },
 
   setSimResults: (results) => set({ simResults: results }),
+  setSimTime: (t) => set({ simTime: t }),
+  setSimError: (err) => set({ simError: err }),
 
   addProbe: (type, componentId, terminalIndex) => {
     const state = get();
     const comp = state.circuit.components[componentId];
     if (!comp) return;
+    const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
     if (state.probes.find(p => p.componentId === componentId && p.type === type && p.terminalIndex === terminalIndex)) return;
-    const colorIdx = state.probes.length % PROBE_COLORS.length;
+    const colorIdx = state.probes.length % colors.length;
     const probe: MeasurementProbe = {
       id: genId('probe'), label: `${comp.label} (${type === 'voltage' ? 'V' : 'I'})`,
-      type, componentId, terminalIndex, color: PROBE_COLORS[colorIdx], visible: true,
+      type, componentId, terminalIndex, color: colors[colorIdx], visible: true,
     };
     set({ probes: [...state.probes, probe], oscData: { ...state.oscData, [probe.id]: [] } });
   },
@@ -268,6 +326,6 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
     set({ oscData: o });
   },
 
-  resetSimulation: () => set({ simTime: 0, simResults: null }),
+  resetSimulation: () => set({ simTime: 0, simResults: null, simError: null }),
   toggleDarkMode: () => set({ darkMode: !get().darkMode }),
 }));

@@ -1,4 +1,4 @@
-import type { ComponentType } from './types';
+import type { ComponentType, ComponentCategory } from '../types';
 
 export const GRID_SIZE = 30;
 export const CANVAS_WIDTH = 2000;
@@ -11,23 +11,30 @@ export const TERMINAL_RADIUS = 6;
 export const DT = 1 / 60;
 
 export const COLORS = {
-  grid: '#e5e7eb',
-  gridMinor: '#f3f4f6',
-  background: '#f9fafb',
-  wire: '#4b5563',
+  grid: '#334155',
+  gridMinor: '#1e293b',
+  background: '#0f172a',
+  wire: '#64748b',
   wireHighlight: '#3b82f6',
-  terminal: '#6b7280',
-  terminalHover: '#3b82f6',
+  terminal: '#3b82f6',
+  terminalHover: '#60a5fa',
   currentDot: '#f59e0b',
-  resistor: '#8b5cf6',
-  capacitor: '#06b6d4',
-  inductor: '#f59e0b',
-  voltageSource: '#ef4444',
-  currentSource: '#f97316',
-  switch: '#10b981',
+  resistor: '#a78bfa',
+  capacitor: '#22d3ee',
+  inductor: '#fbbf24',
+  voltageSource: '#f87171',
+  currentSource: '#fb923c',
+  switch: '#34d399',
   led: '#facc15',
-  ground: '#6b7280',
+  diode: '#f472b6',
+  transistor: '#818cf8',
+  potentiometer: '#94a3b8',
+  ground: '#94a3b8',
+  voltmeter: '#60a5fa',
+  ammeter: '#60a5fa',
   selected: '#3b82f6',
+  error: '#ef4444',
+  success: '#22c55e',
 } as const;
 
 export const PROBE_COLORS = [
@@ -39,6 +46,33 @@ export const PROBE_COLORS = [
   '#ec4899',
   '#06b6d4',
   '#f97316',
+];
+
+export const COMPONENT_CATEGORIES: ComponentCategory[] = [
+  {
+    name: 'Fuentes',
+    types: ['voltageSource', 'currentSource'],
+  },
+  {
+    name: 'Pasivos',
+    types: ['resistor', 'capacitor', 'inductor', 'potentiometer'],
+  },
+  {
+    name: 'Semiconductores',
+    types: ['led', 'diode', 'transistor'],
+  },
+  {
+    name: 'Lógicos',
+    types: ['switch'],
+  },
+  {
+    name: 'Medidores',
+    types: ['voltmeter', 'ammeter'],
+  },
+  {
+    name: 'Misceláneos',
+    types: ['ground'],
+  },
 ];
 
 export interface ComponentTemplate {
@@ -55,13 +89,13 @@ export interface ComponentTemplate {
   }>;
 }
 
-export const COMPONENT_TEMPLATES: Record<ComponentType, ComponentTemplate> = {
+export const COMPONENT_TEMPLATES: Record<string, ComponentTemplate> = {
   resistor: {
     type: 'resistor',
-    label: 'Resistor',
+    label: 'Resistencia',
     defaultParams: { resistance: 1000 },
     paramDefs: [
-      { key: 'resistance', label: 'Resistance', min: 1, max: 10_000_000, step: 100, unit: '\u03A9' },
+      { key: 'resistance', label: 'Resistencia', min: 1, max: 10_000_000, step: 100, unit: '\u03A9' },
     ],
   },
   capacitor: {
@@ -69,7 +103,7 @@ export const COMPONENT_TEMPLATES: Record<ComponentType, ComponentTemplate> = {
     label: 'Capacitor',
     defaultParams: { capacitance: 1e-6 },
     paramDefs: [
-      { key: 'capacitance', label: 'Capacitance', min: 1e-12, max: 1e-3, step: 1e-6, unit: 'F' },
+      { key: 'capacitance', label: 'Capacitancia', min: 1e-12, max: 1e-3, step: 1e-6, unit: 'F' },
     ],
   },
   inductor: {
@@ -77,23 +111,23 @@ export const COMPONENT_TEMPLATES: Record<ComponentType, ComponentTemplate> = {
     label: 'Inductor',
     defaultParams: { inductance: 1e-3 },
     paramDefs: [
-      { key: 'inductance', label: 'Inductance', min: 1e-9, max: 10, step: 1e-3, unit: 'H' },
+      { key: 'inductance', label: 'Inductancia', min: 1e-9, max: 10, step: 1e-3, unit: 'H' },
     ],
   },
   voltageSource: {
     type: 'voltageSource',
-    label: 'Battery',
+    label: 'Bater\u00EDa',
     defaultParams: { voltage: 9 },
     paramDefs: [
-      { key: 'voltage', label: 'Voltage', min: 0.1, max: 30, step: 0.1, unit: 'V' },
+      { key: 'voltage', label: 'Voltaje', min: 0.1, max: 30, step: 0.1, unit: 'V' },
     ],
   },
   currentSource: {
     type: 'currentSource',
-    label: 'Current Source',
+    label: 'Fuente Corriente',
     defaultParams: { current: 0.01 },
     paramDefs: [
-      { key: 'current', label: 'Current', min: 0.0001, max: 5, step: 0.001, unit: 'A' },
+      { key: 'current', label: 'Corriente', min: 0.0001, max: 5, step: 0.001, unit: 'A' },
     ],
   },
   led: {
@@ -101,20 +135,57 @@ export const COMPONENT_TEMPLATES: Record<ComponentType, ComponentTemplate> = {
     label: 'LED',
     defaultParams: { forwardVoltage: 2.0 },
     paramDefs: [
-      { key: 'forwardVoltage', label: 'Forward V', min: 0.5, max: 3.3, step: 0.1, unit: 'V' },
+      { key: 'forwardVoltage', label: 'V. directa', min: 0.5, max: 3.3, step: 0.1, unit: 'V' },
+    ],
+  },
+  diode: {
+    type: 'diode',
+    label: 'Diodo',
+    defaultParams: { forwardVoltage: 0.7 },
+    paramDefs: [
+      { key: 'forwardVoltage', label: 'V. directa', min: 0.1, max: 1.5, step: 0.05, unit: 'V' },
+    ],
+  },
+  transistor: {
+    type: 'transistor',
+    label: 'Transistor',
+    defaultParams: { beta: 100 },
+    paramDefs: [
+      { key: 'beta', label: '\u03B2', min: 10, max: 1000, step: 10, unit: '' },
+    ],
+  },
+  potentiometer: {
+    type: 'potentiometer',
+    label: 'Potenciómetro',
+    defaultParams: { maxResistance: 10000, wiper: 0.5 },
+    paramDefs: [
+      { key: 'maxResistance', label: 'R. máxima', min: 100, max: 1_000_000, step: 100, unit: '\u03A9' },
+      { key: 'wiper', label: 'Cursor', min: 0, max: 1, step: 0.01, unit: '' },
     ],
   },
   switch: {
     type: 'switch',
-    label: 'Switch',
+    label: 'Interruptor',
     defaultParams: { isClosed: 0 },
     paramDefs: [
-      { key: 'isClosed', label: 'Closed', min: 0, max: 1, step: 1, unit: '' },
+      { key: 'isClosed', label: 'Cerrado', min: 0, max: 1, step: 1, unit: '' },
     ],
   },
   ground: {
     type: 'ground',
-    label: 'Ground',
+    label: 'Tierra',
+    defaultParams: {},
+    paramDefs: [],
+  },
+  voltmeter: {
+    type: 'voltmeter',
+    label: 'Voltímetro',
+    defaultParams: {},
+    paramDefs: [],
+  },
+  ammeter: {
+    type: 'ammeter',
+    label: 'Amperímetro',
     defaultParams: {},
     paramDefs: [],
   },
