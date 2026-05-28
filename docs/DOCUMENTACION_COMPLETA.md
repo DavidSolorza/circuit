@@ -24,9 +24,9 @@ Simulador de circuitos eléctricos interactivo con dark mode profesional.
 |---------|------|---------------|
 | **Luisa** | `feature/luisa-backend` | Backend — API, simulación MNA/SPICE, validación de circuitos, test de backend |
 | **Miguel** | `feature/miguel-editor` | Editor — React Flow, componentes, store Zustand, conexiones, simulación loop |
-| **Josue** | `feature/josue-ui` | **Supervisor General** — UI/UX, paneles, calculadora, revisión de calidad, nuevas implementaciones, lógica de negocio |
+| **Josue** | `feature/josue-ui` | UI/UX, paneles, calculadora, revisión de calidad, coordinación del equipo |
 
-> **Josue es la persona 3 y actúa como supervisor del proyecto.** Su trabajo no es solo UI: debe revisar que todo funcione correctamente, que la lógica tenga sentido, que las conexiones entre frontend y backend sean coherentes, y proponer/implementar nuevas funcionalidades. Aprueba o rechaza los merges a `main`.
+> Josue coordina la calidad del proyecto: revisa que todo funcione correctamente, que la lógica tenga sentido, que las conexiones entre frontend y backend sean coherentes, y propone mejoras. Él indica qué hacer y cuándo, pero las decisiones de merge se toman entre los 3.
 
 ---
 
@@ -42,7 +42,7 @@ Simulador de circuitos eléctricos interactivo con dark mode profesional.
 │  Flujo correcto:                                        │
 │  1. Cada uno trabaja en SU rama                         │
 │  2. Al terminar una funcionalidad → PR a release/v1.0   │
-│  3. Josue revisa y coordina revisión entre todos        │
+│  3. El equipo revisa entre todos, Josue coordina        │
 │  4. Solo cuando los 3 dicen "OK" → merge a main         │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -73,7 +73,16 @@ git push origin feature/josue-ui
 # (esto lo hace desde GitHub web o cli)
 ```
 
-### 3.4 Rol de Josue como Supervisor
+### 3.4 Josue — Coordinación del equipo
+
+Josue tiene estas responsabilidades adicionales:
+- Revisar que la lógica del backend (Luisa) tenga coherencia con el frontend
+- Verificar que las nuevas implementaciones no rompan funcionalidad existente
+- Coordinar las revisiones de Pull Requests hacia `release/v1.0` y `main`
+- Detectar bugs y asignarlos a `fix/critical-bugs`
+- Proponer mejoras de funcionalidad y usabilidad
+- Mantener la documentación actualizada
+- Asegurar que el build (`pnpm build`) pase sin errores antes de cualquier merge
 
 ### 3.5 Ejemplo Concreto: Ciclo Completo de una Funcionalidad
 
@@ -126,18 +135,6 @@ DÍA 4 — Merge a main (último día)
 | Mergear a release | Josue | Hace merge del PR |
 | Probar integración | Los 3 | Prueban todo junto |
 | Merge a main | Josue | PR desde `release/v1.0` → `main` |
-
-### 3.7 Rol de Josue como Supervisor
-
-Josue tiene estas responsabilidades adicionales:
-
-- Revisar que la lógica del backend (Luisa) tenga coherencia con el frontend
-- Verificar que las nuevas implementaciones no rompan funcionalidad existente
-- Aprobar o rechazar Pull Requests hacia `release/v1.0` y `main`
-- Detectar bugs y asignarlos a `fix/critical-bugs`
-- Proponer mejoras de funcionalidad y usabilidad
-- Mantener la documentación actualizada
-- Asegurar que el build (`npm run build`) pase sin errores antes de cualquier merge
 
 ---
 
@@ -279,13 +276,13 @@ proyectoElectro+/
 
 | Tarea | Archivos | Detalle |
 |---|---|---|
-| Build final | — | `npm run build` sin errores |
+| Build final | — | `pnpm build` sin errores |
 | Integración frontend+backend | — | Probar juntos |
 | Merge a `release/v1.0` | — | PR aprobado |
 
 ---
 
-### 5.3 JOSUE — UI/UX + Supervisor General
+### 5.3 JOSUE — UI/UX + Coordinación
 
 **Rama:** `feature/josue-ui`
 **Archivos que le corresponden:**
@@ -300,7 +297,7 @@ proyectoElectro+/
 - `src/components/calculator/CalculatorPage.tsx` — Calculadora 7 tabs
 - `docs/` — Documentación
 
-**Además, como supervisor debe:**
+**Además, coordina y revisa:**
 - Revisar PRs de Luisa y Miguel antes del merge
 - Probar la aplicación completa después de cada cambio importante
 - Mantener este documento actualizado
@@ -348,7 +345,7 @@ proyectoElectro+/
 | Tarea | Archivos | Detalle |
 |---|---|---|
 | Revisión final UI completa | TODOS los .tsx | Consistencia visual oscura |
-| Ejecutar `npm run build` | — | 0 errores |
+| Ejecutar `pnpm build` | — | 0 errores |
 | Prueba manual completa (ver sección 7) | — | Checklist de 10 pasos |
 | Aprobar merge final a `release/v1.0` | — | Solo cuando los 3 digan OK |
 | Preparar presentación | `presentacion.pptx` | Diapositivas del proyecto |
@@ -379,7 +376,7 @@ proyectoElectro+/
 - [ ] B6 — Ctrl+Z deshace, Ctrl+Shift+Z rehace
 - [ ] B7 — Rotar y Duplicar funcionan en el panel
 - [ ] B8 — Herramientas Select, Wire, Probe funcionales
-- [ ] B9 — `npm run build` sin errores
+- [ ] B9 — `pnpm build` sin errores
 
 ### UI/UX + Supervisión (Josue)
 
@@ -439,13 +436,13 @@ Ejecutar en orden ANTES del merge a `main`:
 cd backend && python main.py
 
 # Frontend (otra terminal)
-npm run dev
+pnpm dev
 
 # Build producción
-npm run build
+pnpm build
 
 # Verificar tipos
-npx tsc --noEmit
+pnpm tsc --noEmit
 
 # Estado de git
 git status
@@ -474,4 +471,4 @@ git push origin feature/josue-ui
 
 ---
 
-*3 Integrantes: Luisa (Backend), Miguel (Editor), Josue (UI/UX + Supervisor)*
+*3 Integrantes: Luisa (Backend), Miguel (Editor), Josue (UI/UX + Coordinación)*

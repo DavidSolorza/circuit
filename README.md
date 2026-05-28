@@ -1,12 +1,12 @@
 # LabCircuitos
 
-Simulador de circuitos eléctricos interactivo con dark mode profesional. Frontend React + TypeScript + Vite. Backend Python + FastAPI + MNA/Ngspice.
+Simulador de circuitos eléctricos interactivo con dark mode profesional. Frontend React + TypeScript + Vite (pnpm). Backend Python + FastAPI + MNA/Ngspice.
 
 ## Stack
 
 | Capa | Tecnología |
 |------|-----------|
-| Frontend | React 18 + TypeScript + Vite + pnpm |
+| Frontend | React 18 + TypeScript + Vite + **pnpm** |
 | UI | Tailwind CSS + React Flow + Framer Motion |
 | Gráficas | Plotly.js |
 | Estado | Zustand |
@@ -36,7 +36,7 @@ Resistencia, Capacitor, Inductor, Batería (+/−), Fuente Corriente, LED (con g
 | `main` | — | Código estable |
 | `feature/luisa-backend` | Luisa | Backend + SPICE |
 | `feature/miguel-editor` | Miguel | Editor React Flow + store |
-| `feature/josue-ui` | Josue | UI/UX + supervisor general |
+| `feature/josue-ui` | Josue | UI/UX + coordinación del equipo |
 | `release/v1.0` | Equipo | Entrega final |
 
 **Regla principal:** Nada se mergea a `main` sin aprobación unánime de las 3 personas.
