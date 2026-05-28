@@ -75,6 +75,60 @@ git push origin feature/josue-ui
 
 ### 3.4 Rol de Josue como Supervisor
 
+### 3.5 Ejemplo Concreto: Ciclo Completo de una Funcionalidad
+
+Este ejemplo muestra cómo una tarea viaja desde que se empieza hasta que llega a `main`:
+
+**Ejemplo: Luis agrega un nuevo componente "Transformador" al backend**
+
+```
+DÍA 1 — Luis trabaja en su rama
+  feature/luis-backend$ git add .
+  feature/luis-backend$ git commit -m "Agrega modelo de transformador al engine MNA"
+  feature/luis-backend$ git push origin feature/luis-backend
+
+DÍA 1 — Luis termina y crea Pull Request
+  → Va a GitHub.com → Pull Requests → New PR
+  → base: release/v1.0  ←  compare: feature/luis-backend
+  → Título: "Agrega transformador al backend MNA"
+  → Asigna revisores: Josue y Miguel
+
+DÍA 2 — Josue revisa el PR
+  → Ve el código en GitHub, revisa que la lógica sea correcta
+  → Prueba local: git checkout feature/luis-backend, python test_backend.py
+  → Comenta si hay cambios o aprueba
+
+DÍA 2 — Miguel también revisa
+  → Revisa que los cambios no rompan el frontend
+  → Prueba que el editor funcione con el nuevo componente
+
+DÍA 2 — Aprobación
+  → Josue: "Apruebo" | Miguel: "Apruebo" | Luis: "Listo"
+  → SOLO AHORA se mergea el PR a release/v1.0
+
+DÍA 4 — Merge a main (último día)
+  → Se hace PR desde release/v1.0 → main
+  → Los 3 revisan y aprueban
+  → Josue hace clic en "Merge pull request"
+  → Listo, el código está en main
+```
+
+**Regla clave:** Si alguien dice "no" o pide cambios, NO se mergea hasta que esté resuelto.
+
+### 3.6 Qué hacer en cada etapa (resumen en tabla)
+
+| Etapa | Quién | Acción |
+|-------|-------|--------|
+| Trabajar | Cada uno | Commits en su rama, push diario |
+| Funcionalidad lista | El que terminó | Crea PR a `release/v1.0` |
+| Revisar | Josue + los otros 2 | Revisan código, prueban |
+| Aprobar | Los 3 | Dan su "OK" en el PR |
+| Mergear a release | Josue | Hace merge del PR |
+| Probar integración | Los 3 | Prueban todo junto |
+| Merge a main | Josue | PR desde `release/v1.0` → `main` |
+
+### 3.7 Rol de Josue como Supervisor
+
 Josue tiene estas responsabilidades adicionales:
 
 - Revisar que la lógica del backend (Luis) tenga coherencia con el frontend
