@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { symbolComponents } from '../symbols';
 import type { ComponentType, ToolType } from '../../types';
 import { useCircuitStore } from '../../store/circuitStore';
-import { COMPONENT_CATEGORIES } from '../../core/constants';
+import { COMPONENT_CATEGORIES, COMPONENT_TEMPLATES } from '../../core/constants';
 
 const nonComponentTools: Array<{ type: ToolType; label: string; icon: string }> = [
   { type: 'select', label: 'Seleccionar', icon: 'M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3zM13 13l6 6' },
@@ -98,12 +98,7 @@ export function Toolbar() {
                       </div>
                     )}
                     <span className={`text-[9px] truncate ${isActive ? 'text-primary-400 font-medium' : 'text-slate-400'}`}>
-                      {type === 'voltageSource' ? 'Batería'
-                        : type === 'currentSource' ? 'Fuente Cte'
-                        : type === 'potentiometer' ? 'Potenciómetro'
-                        : type === 'voltmeter' ? 'Voltímetro'
-                        : type === 'ammeter' ? 'Amperímetro'
-                        : type.charAt(0).toUpperCase() + type.slice(1)}
+                      {COMPONENT_TEMPLATES[type]?.label ?? type}
                     </span>
                   </div>
                 );

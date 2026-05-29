@@ -40,12 +40,12 @@ export function MultimeterDisplay() {
         <div className="bg-surface-800 rounded-lg p-2.5 border border-surface-700">
           <div className="text-[9px] text-slate-500 mb-1">Voltaje</div>
           <div className="text-base font-mono text-primary-400 font-bold">{fmtV(r.voltage)}</div>
-          <div className="text-[8px] text-slate-600 mt-0.5">DC</div>
+          <div className="text-[8px] text-slate-600 mt-0.5">CC</div>
         </div>
         <div className="bg-surface-800 rounded-lg p-2.5 border border-surface-700">
           <div className="text-[9px] text-slate-500 mb-1">Corriente</div>
           <div className="text-base font-mono text-cyan-400 font-bold">{fmtI(r.current)}</div>
-          <div className="text-[8px] text-slate-600 mt-0.5">DC</div>
+          <div className="text-[8px] text-slate-600 mt-0.5">CC</div>
         </div>
       </div>
       {isRunning && (

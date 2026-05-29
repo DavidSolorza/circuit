@@ -54,12 +54,12 @@ async function runSimulationStep(): Promise<void> {
       }
       currentState.setSimTime(baseTime + (res.time[res.time.length - 1] ?? DT));
     } else {
-      currentState.setSimError(res.status.error || 'Simulation failed');
+      currentState.setSimError(res.status.error || 'Simulación fallida');
     }
   } catch (err) {
     const currentState = useCircuitStore.getState();
     if (currentState.simulationRunning) {
-      currentState.setSimError(err instanceof Error ? err.message : 'Backend connection failed');
+      currentState.setSimError(err instanceof Error ? err.message : 'Error de conexión con el servidor');
     }
   }
 }
