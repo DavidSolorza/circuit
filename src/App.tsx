@@ -140,11 +140,10 @@ function AppInner() {
           <button 
             onClick={() => {
               if (confirm('¿Crear un nuevo circuito? Se perderán los cambios no guardados.')) {
-                useCircuitStore.setState({ circuit: useCircuitStore.getState().circuit });
                 clearCircuit();
               }
             }}
-            className="px-2 py-1 text-[10px] text-slate-400 hover:text-white hover:bg-surface-700 rounded transition-colors" 
+            className="px-2 py-1 text-[10px] text-slate-400 hover:text-white hover:bg-surface-700 rounded transition-all hover:scale-105 active:scale-95" 
             title="Nuevo"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -160,24 +159,17 @@ function AppInner() {
               };
               input.click();
             }}
-            className="px-2 py-1 text-[10px] text-slate-400 hover:text-white hover:bg-surface-700 rounded transition-colors" 
+            className="px-2 py-1 text-[10px] text-slate-400 hover:text-white hover:bg-surface-700 rounded transition-all hover:scale-105 active:scale-95" 
             title="Abrir"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
           </button>
           <button 
             onClick={() => exportCircuit()}
-            className="px-2 py-1 text-[10px] text-slate-400 hover:text-white hover:bg-surface-700 rounded transition-colors" 
-            title="Guardar como..."
+            className="px-2 py-1 text-[10px] text-slate-400 hover:text-white hover:bg-surface-700 rounded transition-all hover:scale-105 active:scale-95" 
+            title="Guardar"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-          </button>
-          <button 
-            onClick={() => exportCircuit()}
-            className="px-2 py-1 text-[10px] text-slate-400 hover:text-white hover:bg-surface-700 rounded transition-colors" 
-            title="Exportar"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           </button>
         </div>
 
@@ -187,9 +179,10 @@ function AppInner() {
 
         <div className="ml-auto flex items-center gap-2">
           <button onClick={() => setCalculatorOpen(true)}
-            className="px-2 py-1 text-[10px] bg-surface-800 hover:bg-surface-700 text-slate-400 hover:text-white rounded border border-surface-700 transition-colors font-medium"
+            className="px-2 py-1 text-[10px] bg-surface-800 hover:bg-surface-700 text-slate-400 hover:text-white rounded border border-surface-700 transition-all hover:scale-105 active:scale-95 font-medium"
           >
-            ∑ Calculadora
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="inline mr-1"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10.01"/><line x1="12" y1="10" x2="12" y2="10.01"/><line x1="16" y1="10" x2="16" y2="10.01"/><line x1="8" y1="14" x2="8" y2="14.01"/><line x1="12" y1="14" x2="12" y2="14.01"/><line x1="16" y1="14" x2="16" y2="14.01"/><line x1="8" y1="18" x2="8" y2="18.01"/><line x1="12" y1="18" x2="12" y2="18.01"/><line x1="16" y1="18" x2="16" y2="18.01"/></svg>
+            Calculadora
           </button>
           <span className="text-[9px] text-slate-600 hidden md:inline">v1.0</span>
         </div>
@@ -199,7 +192,7 @@ function AppInner() {
 
       {!hasCircuit && (
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-          <div className="bg-surface-900/95 backdrop-blur-sm rounded-xl border border-surface-700 px-8 py-6 text-center max-w-sm pointer-events-auto shadow-2xl">
+          <div className="bg-surface-900/95 backdrop-blur-sm rounded-xl border border-surface-700 px-8 py-6 text-center max-w-sm pointer-events-auto shadow-2xl animate-slide-up">
             <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-primary-500/20 to-primary-700/20 border border-primary-500/30 flex items-center justify-center">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.5">
                 <line x1="2" y1="12" x2="6" y2="12" /><line x1="6" y1="9" x2="6" y2="15" /><line x1="6" y1="12" x2="10" y2="12" />
@@ -214,10 +207,10 @@ function AppInner() {
               Usa <span className="text-primary-400 font-medium">Cable</span> para conectar terminales.<br />
               Presiona <span className="text-green-400 font-medium">INICIAR</span> para simular.
             </p>
-            <button onClick={() => useCircuitStore.getState().setActiveTool('resistor')} className="mt-4 px-4 py-1.5 bg-primary-600 hover:bg-primary-500 text-white rounded-lg text-xs font-medium transition-colors shadow-sm w-full">
+            <button onClick={() => useCircuitStore.getState().setActiveTool('resistor')} className="mt-4 px-4 py-1.5 bg-primary-600 hover:bg-primary-500 text-white rounded-lg text-xs font-medium transition-all hover:scale-[1.02] active:scale-95 shadow-sm w-full">
               Colocar primer componente
             </button>
-            <button onClick={loadDemo} className="mt-2 px-4 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-medium transition-colors w-full shadow-sm">
+            <button onClick={loadDemo} className="mt-2 px-4 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-medium transition-all hover:scale-[1.02] active:scale-95 w-full shadow-sm">
               Cargar circuito demo
             </button>
           </div>
@@ -236,7 +229,7 @@ function AppInner() {
             </Suspense>
 
             {simErrorMsg && (
-              <div className="absolute top-2 left-2 bg-surface-900/95 backdrop-blur-sm rounded-lg border border-red-800/50 px-2.5 py-1.5 text-[10px] shadow-lg max-w-xs">
+              <div className="absolute top-2 left-2 bg-surface-900/95 backdrop-blur-sm rounded-lg border border-red-800/50 px-2.5 py-1.5 text-[10px] shadow-lg max-w-xs animate-fade-in">
                 <div className="flex items-center gap-1.5 text-red-400 font-semibold tracking-wider mb-0.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                   Error de Simulación
@@ -246,7 +239,7 @@ function AppInner() {
             )}
 
             {simulationRunning && simResults?.status.success && (
-              <div className="absolute top-2 right-2 bg-surface-900/95 backdrop-blur-sm rounded-lg border border-surface-700 px-2.5 py-1.5 text-[10px] shadow-lg pointer-events-none">
+              <div className="absolute top-2 right-2 bg-surface-900/95 backdrop-blur-sm rounded-lg border border-surface-700 px-2.5 py-1.5 text-[10px] shadow-lg pointer-events-none animate-fade-in">
                 <div className="text-slate-500 leading-relaxed">
                   {Object.keys(simResults.nodeVoltages).length - 1} nodos · {Object.keys(simResults.branchCurrents).length} ramas
                 </div>
@@ -255,7 +248,7 @@ function AppInner() {
           </div>
 
           <div className={`border-t border-surface-700 bg-surface-900 transition-all duration-200 ${graphOpen ? 'h-56' : 'h-8'}`}>
-            <button onClick={() => setGraphOpen(!graphOpen)} className="w-full h-8 flex items-center justify-between px-4 text-[10px] text-slate-500 hover:text-slate-300 transition-colors border-b border-surface-800">
+            <button onClick={() => setGraphOpen(!graphOpen)} className="w-full h-8 flex items-center justify-between px-4 text-[10px] text-slate-500 hover:text-slate-300 transition-all hover:bg-surface-800/50 border-b border-surface-800">
               <div className="flex items-center gap-2">
                 <span className="text-primary-400 font-medium">Osciloscopio</span>
                 <span className="text-slate-600">|</span>
@@ -269,25 +262,25 @@ function AppInner() {
 
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="absolute right-0 top-10 z-20 w-5 h-8 bg-surface-800 border border-surface-700 rounded-l-md flex items-center justify-center text-slate-500 hover:text-slate-300 text-[10px] shadow-sm xl:hidden"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-5 h-10 bg-surface-800 border border-surface-700 rounded-l-md flex items-center justify-center text-slate-500 hover:text-slate-300 hover:w-6 text-[10px] shadow-sm xl:hidden transition-all active:scale-95"
         >
-          {sidebarOpen ? '\u25B6' : '\u25C0'}
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points={sidebarOpen ? "15 18 9 12 15 6" : "9 18 15 12 9 6"}/></svg>
         </button>
 
         <aside className={`${sidebarOpen ? 'w-60' : 'w-0'} bg-surface-900 border-l border-surface-700 shrink-0 flex flex-col transition-all duration-200 overflow-hidden`}>
           <div className="flex border-b border-surface-700 min-w-0">
-            <button
-              onClick={() => setSidebarTab('multimeter')}
-              className={`flex-1 h-8 text-[10px] font-medium uppercase tracking-wider transition-colors ${sidebarTab === 'multimeter' ? 'text-emerald-400 border-b-2 border-emerald-500' : 'text-slate-500 hover:text-slate-300'}`}
-            >
-              Multímetro
-            </button>
-            <button
-              onClick={() => setSidebarTab('properties')}
-              className={`flex-1 h-8 text-[10px] font-medium uppercase tracking-wider transition-colors ${sidebarTab === 'properties' ? 'text-primary-400 border-b-2 border-primary-500' : 'text-slate-500 hover:text-slate-300'}`}
-            >
-              Propiedades
-            </button>
+          <button
+            onClick={() => setSidebarTab('multimeter')}
+            className={`flex-1 h-8 text-[10px] font-medium uppercase tracking-wider transition-all ${sidebarTab === 'multimeter' ? 'text-emerald-400 border-b-2 border-emerald-500' : 'text-slate-500 hover:text-slate-300 hover:bg-surface-800'}`}
+          >
+            Multímetro
+          </button>
+          <button
+            onClick={() => setSidebarTab('properties')}
+            className={`flex-1 h-8 text-[10px] font-medium uppercase tracking-wider transition-all ${sidebarTab === 'properties' ? 'text-primary-400 border-b-2 border-primary-500' : 'text-slate-500 hover:text-slate-300 hover:bg-surface-800'}`}
+          >
+            Propiedades
+          </button>
           </div>
           <div className="flex-1 overflow-y-auto">
             {sidebarTab === 'multimeter' ? <MultimeterDisplay /> : <PropertiesPanel />}
