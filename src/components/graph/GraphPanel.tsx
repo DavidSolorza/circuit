@@ -58,7 +58,7 @@ function GraphPanelInner() {
               legend: {
                 font: { size: 8, color: '#94a3b8' },
                 bgcolor: 'rgba(26,27,46,0.8)',
-                borderColor: '#334155',
+                bordercolor: '#334155',
               },
               dragmode: 'zoom',
               hovermode: 'closest',
