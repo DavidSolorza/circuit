@@ -177,16 +177,16 @@ export const LedSvg: React.FC<{ size?: number; color?: string; highlight?: boole
 };
 
 export const DiodeSvg: React.FC<{ size?: number; color?: string; highlight?: boolean }> = ({ size = 80, color = colors.diode, highlight }) => {
-  const hh = size * 0.2;
+  const hh = size * 0.22;
   const left = -size / 2;
   const right = size / 2;
   const hc = highlight ? '#60a5fa' : color;
   return (
     <svg width={size} height={size * 0.5} viewBox={`${left} ${-size * 0.25} ${size} ${size * 0.5}`}>
-      <line x1={left} y1={0} x2={-8} y2={0} {...sp(hc)} />
-      <polygon points={`-8,0 8,${-hh} 8,${hh}`} fill={hc} opacity={0.4} stroke={hc} strokeWidth={1.5} />
-      <line x1={8} y1={-hh} x2={8} y2={hh} stroke={hc} strokeWidth={2} strokeLinecap="round" />
-      <line x1={8} y1={0} x2={right} y2={0} {...sp(hc)} />
+      <line x1={left} y1={0} x2={-10} y2={0} {...sp(hc, 2)} />
+      <polygon points={`-10,0 10,${-hh} 10,${hh}`} fill="none" stroke={hc} strokeWidth={2} strokeLinejoin="round" />
+      <line x1={10} y1={-hh} x2={10} y2={hh} stroke={hc} strokeWidth={2.5} strokeLinecap="round" />
+      <line x1={10} y1={0} x2={right} y2={0} {...sp(hc, 2)} />
       <TerminalDot x={left} y={0} color={hc} />
       <TerminalDot x={right} y={0} color={hc} />
     </svg>
@@ -198,18 +198,16 @@ export const TransistorSvg: React.FC<{ size?: number; color?: string; highlight?
   const left = -size / 2;
   const right = size / 2;
   const hc = highlight ? '#60a5fa' : color;
+  const cx = -4;
   return (
     <svg width={size} height={size * 0.55} viewBox={`${left} ${-size * 0.28} ${size} ${size * 0.55}`}>
-      <line x1={left} y1={0} x2={-10} y2={0} {...sp(hc)} />
-      <line x1={10} y1={0} x2={right} y2={0} {...sp(hc)} />
-      <line x1={-10} y1={0} x2={-10} y2={-hh} {...sp(hc)} />
-      <line x1={-10} y1={0} x2={-10} y2={hh} {...sp(hc)} />
-      <line x1={-10} y1={-hh} x2={10} y2={-hh} {...sp(hc, 2)} />
-      <line x1={-10} y1={hh} x2={10} y2={hh} {...sp(hc, 2)} />
-      <polygon points={`-10,0 6,${-hh * 0.7} 6,${hh * 0.7}`} fill="none" stroke={hc} strokeWidth={1.5} />
-      <line x1={6} y1={-hh * 0.35} x2={6} y2={hh * 0.35} stroke={hc} strokeWidth={1.5} />
-      <line x1={6} y1={hh * 0.35} x2={12} y2={0} stroke={hc} strokeWidth={1.5} />
-      <line x1={6} y1={-hh * 0.35} x2={12} y2={0} stroke={hc} strokeWidth={1.5} />
+      <line x1={left} y1={0} x2={cx} y2={0} {...sp(hc, 2)} />
+      <line x1={cx} y1={-hh} x2={cx} y2={hh} stroke={hc} strokeWidth={2.5} strokeLinecap="round" />
+      <line x1={cx} y1={-hh} x2={right - 8} y2={-hh} {...sp(hc, 2)} />
+      <line x1={cx} y1={hh} x2={right - 8} y2={hh} {...sp(hc, 2)} />
+      <line x1={right - 8} y1={-hh} x2={right} y2={0} {...sp(hc, 2)} />
+      <line x1={right - 8} y1={hh} x2={right} y2={0} {...sp(hc, 2)} />
+      <polygon points={`${right - 6},${hh} ${right - 12},${hh + 5} ${right - 6},${hh + 10}`} fill="none" stroke={hc} strokeWidth={1.5} strokeLinejoin="round" />
       <TerminalDot x={left} y={0} color={hc} />
       <TerminalDot x={right} y={0} color={hc} />
     </svg>
@@ -217,16 +215,30 @@ export const TransistorSvg: React.FC<{ size?: number; color?: string; highlight?
 };
 
 export const PotentiometerSvg: React.FC<{ size?: number; color?: string; highlight?: boolean }> = ({ size = 80, color = colors.potentiometer, highlight }) => {
+  const seg = 5;
+  const sw = size * 0.13;
+  const amp = size * 0.17;
   const left = -size / 2;
   const right = size / 2;
   const hc = highlight ? '#60a5fa' : color;
+  const pts: string[] = [];
+  const startX = -size * 0.35;
+  pts.push(`${startX},0`);
+  for (let i = 0; i < seg; i++) {
+    const sx = startX + i * sw;
+    const ex = startX + (i + 1) * sw;
+    const mx = (sx + ex) / 2;
+    pts.push(`${mx},${(i % 2 === 0 ? -1 : 1) * amp}`);
+    pts.push(`${ex},0`);
+  }
+  const endX = startX + seg * sw;
   return (
-    <svg width={size} height={size * 0.5} viewBox={`${left} ${-size * 0.25} ${size} ${size * 0.5}`}>
-      <line x1={left} y1={0} x2={-size * 0.4} y2={0} {...sp(hc)} />
-      <line x1={size * 0.4} y1={0} x2={right} y2={0} {...sp(hc)} />
-      <rect x={-size * 0.4} y={-size * 0.12} width={size * 0.8} height={size * 0.24} rx={2} {...sp(hc, 1.5)} />
-      <line x1={-size * 0.2} y1={0} x2={0} y2={-size * 0.3} {...sp(hc, 1.5)} />
-      <polygon points={`0,${-size * 0.3} 4,${-size * 0.26} -4,${-size * 0.26}`} fill={hc} />
+    <svg width={size} height={size * 0.55} viewBox={`${left} ${-size * 0.28} ${size} ${size * 0.55}`}>
+      <line x1={left} y1={0} x2={startX} y2={0} {...sp(hc, 2)} />
+      <polyline points={pts.join(' ')} {...sp(hc, 2)} />
+      <line x1={endX} y1={0} x2={right} y2={0} {...sp(hc, 2)} />
+      <line x1={endX - sw * 0.3} y1={0} x2={endX - sw * 1.5} y2={-size * 0.3} {...sp(hc, 1.5)} />
+      <polygon points={`${endX - sw * 1.5},${-size * 0.3} ${endX - sw * 1.5 + 5},${-size * 0.3 + 4} ${endX - sw * 1.5 - 5},${-size * 0.3 + 4}`} fill={hc} />
       <TerminalDot x={left} y={0} color={hc} />
       <TerminalDot x={right} y={0} color={hc} />
     </svg>
