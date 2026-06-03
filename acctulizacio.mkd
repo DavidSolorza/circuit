@@ -1,0 +1,679 @@
+Actúa como un Arquitecto de Software Senior, Tech Lead y Project Manager.
+
+Necesito que analices completamente el proyecto actual, su arquitectura, estructura de carpetas, módulos, dependencias, funcionalidades implementadas y estado general del código.
+
+Tu objetivo es preparar una actualización integral del proyecto siguiendo buenas prácticas de desarrollo colaborativo.
+
+## Objetivos
+
+1. Revisar la rama principal (main) y convertirla en la fuente de verdad del proyecto.
+2. Identificar errores arquitectónicos, deuda técnica, código duplicado, módulos incompletos y oportunidades de mejora.
+3. Actualizar la documentación técnica y funcional.
+4. Generar un plan de trabajo organizado para el equipo.
+5. Distribuir tareas entre las ramas de desarrollo existentes.
+6. Crear una estrategia de integración para evitar conflictos de merge.
+
+---
+
+# Fase 1: Auditoría Técnica
+
+Analiza:
+
+* Arquitectura actual.
+* Estructura de carpetas.
+* Convenciones de nombres.
+* Calidad del código.
+* Cumplimiento de SOLID.
+* Escalabilidad.
+* Seguridad.
+* Rendimiento.
+* Estado de cada módulo.
+* Dependencias instaladas.
+* Dependencias innecesarias.
+* Código muerto.
+* Código duplicado.
+* Componentes sin uso.
+* Servicios sin uso.
+
+Genera un informe detallado con:
+
+* Problemas encontrados.
+* Impacto.
+* Prioridad.
+* Recomendación de solución.
+
+---
+
+# Sistema de Simulación de Circuitos Eléctricos en React + TypeScript
+
+Desarrolla una aplicación web profesional de simulación de circuitos eléctricos en tiempo real utilizando React 19, TypeScript, Vite y Canvas API.
+
+El objetivo es construir una arquitectura escalable, modular y mantenible, inspirada en simuladores como LTSpice, Falstad y KiCad, pero enfocada en simulación DC y transitoria mediante Modified Nodal Analysis (MNA).
+
+---
+
+# Requisitos Generales
+
+* React 19
+* TypeScript estricto
+* Vite
+* ESLint
+* Prettier
+* Arquitectura Feature-Sliced Design (FSD)
+* Principios SOLID
+* Clean Architecture
+* Sin lógica de simulación dentro de componentes React
+* Separación estricta entre:
+
+  * UI
+  * Estado
+  * Motor de simulación
+  * Solver matemático
+  * Renderizado Canvas
+
+Todo el código debe estar preparado para crecimiento futuro.
+
+---
+
+# Estructura del Proyecto
+
+src/
+
+app/
+providers/
+router/
+store/
+
+pages/
+CircuitSimulator/
+
+widgets/
+TopBar/
+PropertiesPanel/
+PlotBar/
+ToolSidebar/
+
+features/
+element-placement/
+wire-placement/
+selection/
+deletion/
+simulation-controls/
+plot-management/
+
+entities/
+circuit/
+element/
+wire/
+node/
+plot/
+
+shared/
+ui/
+hooks/
+utils/
+constants/
+types/
+
+engine/
+core/
+CircuitGraph.ts
+SimulationEngine.ts
+ElementRegistry.ts
+CircuitStore.ts
+
+solvers/
+BaseSolver.ts
+TransientMNASolver.ts
+
+elements/
+BaseElement.ts
+Resistor.ts
+Capacitor.ts
+Inductor.ts
+VoltageSource.ts
+CurrentSource.ts
+Switch.ts
+Ground.ts
+Voltmeter.ts
+Ammeter.ts
+
+math/
+Matrix.ts
+GaussianElimination.ts
+
+graph/
+UnionFind.ts
+NodeResolver.ts
+
+rendering/
+CanvasRenderer.ts
+ElementRenderer.ts
+GridRenderer.ts
+WireRenderer.ts
+SelectionRenderer.ts
+
+---
+
+# Arquitectura del Motor
+
+El motor debe ser completamente independiente de React.
+
+React solamente debe:
+
+* Mostrar datos
+* Recibir eventos
+* Disparar acciones
+
+Toda la lógica de simulación debe vivir dentro de:
+
+engine/
+
+El motor debe poder ejecutarse incluso sin interfaz gráfica.
+
+---
+
+# Estado Global
+
+Implementar Zustand.
+
+CircuitStore contendrá:
+
+elements
+wires
+nodes
+selectedElement
+activeTool
+simulationRunning
+simulationTime
+plotSeries
+viewport
+history
+future
+
+Preparar soporte para:
+
+Undo
+Redo
+Autosave futuro
+Exportación futura
+
+---
+
+# Elementos Soportados
+
+Todos los elementos heredan de BaseElement.
+
+Cada elemento implementa:
+
+stamp(context)
+
+calculateResults(context)
+
+serialize()
+
+clone()
+
+getTerminals()
+
+Cada elemento es responsable de generar su propio stamp MNA.
+
+Eliminar completamente cadenas de if(type==="R").
+
+Utilizar polimorfismo.
+
+---
+
+# Componentes Iniciales
+
+Resistor (Ω)
+
+Capacitor (F)
+Estado interno:
+vc
+
+Inductor (H)
+Estado interno:
+il
+
+Fuente de Voltaje DC
+
+Fuente de Corriente DC
+
+Interruptor
+
+Ground
+
+Voltímetro
+
+Amperímetro
+
+Wire
+
+---
+
+# Simulación
+
+Implementar Modified Nodal Analysis (MNA).
+
+Construcción de nodos mediante:
+
+Union-Find
+
+Asignación automática de nodos
+
+Resolución de conexiones
+
+Detección de tierra
+
+---
+
+# Solver
+
+Implementar:
+
+TransientMNASolver
+
+Utilizar:
+
+Backward Euler
+
+Paso temporal:
+
+DT = 100 µs
+
+Matrices:
+
+Float64Array
+
+Resolver mediante:
+
+Eliminación Gaussiana con pivoteo parcial
+
+No utilizar librerías matemáticas externas.
+
+Toda la implementación debe ser propia.
+
+---
+
+# Flujo de Simulación
+
+1. Construir grafo
+
+2. Resolver nodos
+
+3. Generar matriz MNA
+
+4. Aplicar stamps
+
+5. Resolver sistema
+
+6. Actualizar estados internos
+
+7. Calcular voltajes
+
+8. Calcular corrientes
+
+9. Actualizar gráficas
+
+10. Actualizar UI
+
+---
+
+# Canvas Principal
+
+Implementar con Canvas 2D.
+
+No usar SVG.
+
+Características:
+
+Grid infinita
+
+Snap a grid
+
+Zoom
+
+Pan
+
+Selección múltiple
+
+Drag & Drop
+
+Hover
+
+Preview de cables
+
+Preview de componentes
+
+Hit Testing optimizado
+
+Renderización por capas
+
+---
+
+# Herramientas
+
+Select
+
+Move
+
+Wire
+
+Delete
+
+Place Resistor
+
+Place Capacitor
+
+Place Inductor
+
+Place Voltage Source
+
+Place Current Source
+
+Place Switch
+
+Place Ground
+
+---
+
+# Atajos de Teclado
+
+R
+C
+L
+V
+I
+S
+G
+W
+M
+Delete
+Escape
+Space
+
+Ctrl + Z
+
+Ctrl + Y
+
+---
+
+# Sistema de Gráficas
+
+Cada gráfica debe tener:
+
+Canvas independiente
+
+Autoescalado
+
+Máximo 800 muestras
+
+Renderizado en tiempo real
+
+Actualización continua
+
+Series múltiples
+
+Colores automáticos
+
+Eliminar gráfica individual
+
+Voltaje
+
+Corriente
+
+Escalado dinámico
+
+---
+
+# Diseño Visual
+
+Tema dark industrial premium.
+
+Inspirado en:
+
+* software CAD profesional
+* paneles de ingeniería
+* estaciones de análisis electrónico
+
+Paleta:
+
+Fondo:
+#0a0c10
+
+Paneles:
+#111318
+#181c24
+
+Bordes:
+#2a2f3d
+
+Tipografías:
+
+JetBrains Mono
+
+Syne
+
+Diseño responsive.
+
+---
+
+# Rendimiento
+
+Evitar renders innecesarios.
+
+Utilizar:
+
+React.memo
+
+useCallback
+
+useMemo
+
+requestAnimationFrame
+
+Separar loop de simulación del loop de render.
+
+No recalcular la simulación si el circuito no cambia.
+
+---
+
+# Calidad del Código
+
+Generar código profesional listo para producción.
+
+Aplicar:
+
+SOLID
+
+DRY
+
+KISS
+
+Clean Code
+
+Feature-Sliced Design
+
+Arquitectura basada en dominio
+
+Tipado estricto
+
+Sin código duplicado
+
+Sin archivos gigantes de más de 400 líneas.
+
+Cada módulo debe tener una única responsabilidad.
+
+Generar el proyecto completo con estructura real de carpetas, implementación funcional, comentarios técnicos mínimos y código listo para ejecutar con:
+
+pnpm install
+pnpm dev
+
+
+# Fase 2: Actualización de Main
+
+Realiza los cambios necesarios para que la rama main quede como la base oficial del proyecto.
+
+Asegúrate de:
+
+* Corregir errores críticos.
+* Eliminar código obsoleto.
+* Unificar estilos.
+* Unificar estructura de carpetas.
+* Corregir imports.
+* Corregir dependencias.
+* Actualizar configuración de TypeScript.
+* Actualizar ESLint.
+* Actualizar Prettier.
+* Validar compilación completa.
+* Validar tipado completo.
+
+Al finalizar, genera un resumen técnico de todos los cambios realizados.
+
+---
+
+# Fase 3: Documentación
+
+Actualizar o generar:
+
+README.md
+
+Debe incluir:
+
+* Descripción del proyecto.
+* Objetivos.
+* Arquitectura.
+* Tecnologías utilizadas.
+* Instalación.
+* Variables de entorno.
+* Scripts disponibles.
+* Flujo de trabajo Git.
+* Convenciones de código.
+* Estrategia de ramas.
+* Proceso de despliegue.
+
+Generar además:
+
+docs/
+
+* arquitectura.md
+* estructura-proyecto.md
+* flujo-trabajo.md
+* guia-contribucion.md
+* roadmap.md
+
+---
+
+# Fase 4: Organización del Equipo
+
+Analiza los módulos existentes y divide el trabajo en tareas independientes.
+
+Para cada tarea genera:
+
+* ID
+* Nombre
+* Descripción
+* Objetivo
+* Dependencias
+* Prioridad
+* Tiempo estimado
+* Criterios de aceptación
+
+Ejemplo:
+
+TASK-001
+Sistema de autenticación
+
+TASK-002
+Gestión de usuarios
+
+TASK-003
+Dashboard
+
+TASK-004
+Reportes
+
+TASK-005
+Motor de simulación
+
+etc.
+
+---
+
+# Fase 5: Asignación de Ramas
+
+Crear propuesta de ramas siguiendo Git Flow simplificado:
+
+main
+develop
+
+feature/auth
+feature/users
+feature/dashboard
+feature/reports
+feature/simulator
+feature/payments
+feature/settings
+
+Para cada rama indicar:
+
+* Responsable sugerido.
+* Objetivos.
+* Archivos afectados.
+* Riesgo de conflicto.
+* Dependencias.
+
+---
+
+# Fase 6: Plan de Integración
+
+Generar estrategia de integración:
+
+1. Orden recomendado de desarrollo.
+2. Dependencias entre ramas.
+3. Frecuencia de sincronización.
+4. Estrategia de Pull Requests.
+5. Estrategia de Code Review.
+6. Checklist de aprobación.
+7. Estrategia de pruebas antes de merge.
+
+---
+
+# Fase 7: Gestión del Proyecto
+
+Generar automáticamente:
+
+* Backlog completo.
+* Roadmap por fases.
+* Sprint 1.
+* Sprint 2.
+* Sprint 3.
+* Sprint 4.
+
+Cada sprint debe incluir:
+
+* Objetivos.
+* Historias de usuario.
+* Tareas técnicas.
+* Riesgos.
+* Entregables.
+
+---
+
+# Entregables Esperados
+
+Genera:
+
+1. Informe de auditoría técnica.
+2. Plan de refactorización.
+3. Documentación actualizada.
+4. Backlog completo.
+5. Roadmap.
+6. Distribución de tareas.
+7. Estrategia Git.
+8. Estrategia de integración.
+9. Checklist de calidad.
+10. Resumen ejecutivo para el equipo.
+
+No hagas análisis superficial. Actúa como si fueras el Tech Lead responsable de preparar el proyecto para un equipo profesional de desarrollo y mantenimiento a largo plazo.

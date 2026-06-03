@@ -7,7 +7,7 @@ globs: src/**/*.{ts,tsx}
 3. Performance: no unnecessary re-renders, lazy loading in place
 4. Clean code: no dead code, no console.log, no commented code
 5. Responsive: works at all breakpoints
-6. Dark mode: all new UI has dark: variants
+6. Tema claro: UI usa tokens surface/ink/primary/gold; sin bloques oscuros ni dark:
 7. DRY: no code duplication
 8. Types: no `any`, proper interfaces
 9. Tests: new code has tests covering edge cases

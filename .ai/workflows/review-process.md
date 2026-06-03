@@ -5,6 +5,6 @@
 3. Check for security issues
 4. Review performance implications
 5. Verify clean code standards
-6. Check responsive and dark mode
+6. Check responsive and light theme consistency
 7. Verify no duplication
 8. Approve or reject with specific feedback

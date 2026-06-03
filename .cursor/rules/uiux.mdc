@@ -1,15 +1,15 @@
 description: UIUX standards — spacing, hierarchy, typography, colors, motion, layout
 globs: src/**/*.tsx
 
-## UIUX Rules
-1. Page title: text-2xl font-semibold
-2. Section title: text-lg font-semibold
-3. Body: text-sm
-4. Caption: text-xs text-neutral-500
+## UIUX Rules (LabCircuitos — tema claro fijo)
+1. Page title: text-2xl font-semibold text-ink
+2. Section title: text-lg font-semibold text-ink
+3. Body: text-sm text-ink-muted
+4. Caption: text-xs text-ink-faint
 5. Spacing: Tailwind scale (4 = 16px base)
-6. Cards: rounded-xl, border, bg-white
-7. Colors: primary = blue, success = green, warning = amber, error = red
+6. Cards: rounded-xl, border border-surface-700, bg-surface-800, shadow-panel
+7. Colors: primary = verde bosque (#1F4D3A), gold = acciones INICIAR, ink = texto, surface = fondos crema
 8. No emojis — use initial-letter boxes or text badges
-9. Animations: Framer Motion, 0.2-0.3s, fade+slide-up pattern
-10. Dark mode: always support with dark: prefix
+9. Animations: 0.2-0.3s, fade+slide-up pattern
+10. Tema: solo claro — usar tokens `surface`, `ink`, `primary`, `gold` (ver docs/TEMA_UI.md). No usar `dark:` ni fondos oscuros
 11. Responsive: mobile-first, test at 375/768/1024/1440

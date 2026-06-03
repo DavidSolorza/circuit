@@ -11,9 +11,9 @@ export const TERMINAL_RADIUS = 6;
 export const DT = 1 / 60;
 
 export const COLORS = {
-  grid: '#334155',
-  gridMinor: '#1e293b',
-  background: '#0f172a',
+  grid: '#E8E0D0',
+  gridMinor: '#F5F0E6',
+  background: '#F8F5EF',
   wire: '#64748b',
   wireHighlight: '#3b82f6',
   terminal: '#3b82f6',
@@ -28,8 +28,8 @@ export const COLORS = {
   led: '#facc15',
   diode: '#f472b6',
   transistor: '#818cf8',
-  potentiometer: '#94a3b8',
-  ground: '#94a3b8',
+  potentiometer: '#64748b',
+  ground: '#64748b',
   voltmeter: '#60a5fa',
   ammeter: '#60a5fa',
   selected: '#3b82f6',
@@ -95,7 +95,14 @@ export const COMPONENT_TEMPLATES: Record<string, ComponentTemplate> = {
     label: 'Resistencia',
     defaultParams: { resistance: 1000 },
     paramDefs: [
-      { key: 'resistance', label: 'Resistencia', min: 1, max: 10_000_000, step: 100, unit: '\u03A9' },
+      {
+        key: 'resistance',
+        label: 'Resistencia',
+        min: 1,
+        max: 10_000_000,
+        step: 100,
+        unit: '\u03A9',
+      },
     ],
   },
   capacitor: {
@@ -118,9 +125,7 @@ export const COMPONENT_TEMPLATES: Record<string, ComponentTemplate> = {
     type: 'voltageSource',
     label: 'Bater\u00EDa',
     defaultParams: { voltage: 9 },
-    paramDefs: [
-      { key: 'voltage', label: 'Voltaje', min: 0.1, max: 30, step: 0.1, unit: 'V' },
-    ],
+    paramDefs: [{ key: 'voltage', label: 'Voltaje', min: 0.1, max: 30, step: 0.1, unit: 'V' }],
   },
   currentSource: {
     type: 'currentSource',
@@ -150,16 +155,21 @@ export const COMPONENT_TEMPLATES: Record<string, ComponentTemplate> = {
     type: 'transistor',
     label: 'Transistor',
     defaultParams: { beta: 100 },
-    paramDefs: [
-      { key: 'beta', label: '\u03B2', min: 10, max: 1000, step: 10, unit: '' },
-    ],
+    paramDefs: [{ key: 'beta', label: '\u03B2', min: 10, max: 1000, step: 10, unit: '' }],
   },
   potentiometer: {
     type: 'potentiometer',
     label: 'Potenciómetro',
     defaultParams: { maxResistance: 10000, wiper: 0.5 },
     paramDefs: [
-      { key: 'maxResistance', label: 'R. máxima', min: 100, max: 1_000_000, step: 100, unit: '\u03A9' },
+      {
+        key: 'maxResistance',
+        label: 'R. máxima',
+        min: 100,
+        max: 1_000_000,
+        step: 100,
+        unit: '\u03A9',
+      },
       { key: 'wiper', label: 'Cursor', min: 0, max: 1, step: 0.01, unit: '' },
     ],
   },
@@ -167,9 +177,7 @@ export const COMPONENT_TEMPLATES: Record<string, ComponentTemplate> = {
     type: 'switch',
     label: 'Interruptor',
     defaultParams: { isClosed: 0 },
-    paramDefs: [
-      { key: 'isClosed', label: 'Cerrado', min: 0, max: 1, step: 1, unit: '' },
-    ],
+    paramDefs: [{ key: 'isClosed', label: 'Cerrado', min: 0, max: 1, step: 1, unit: '' }],
   },
   ground: {
     type: 'ground',

@@ -1,32 +1,34 @@
-# Current Architecture
+# Current Architecture — LabCircuitos
 
-## Directory Structure
-```
-src/
-  core/          # Global config, routes, stores (Zustand)
-  shared/        # Types, utilities, UI components, layouts, services
-  features/      # Feature slices (auth, learning-path, recommendations, profile, projects)
-```
+## Pattern
 
-## Layer Rules
-- core/ -> shared/ -> features/ (one-way dependency)
-- features/ can import from shared/ and core/
-- shared/ can import from core/ only
-- core/ imports nothing from the project
+Client-server SPA:
 
-## Data Flow
-Components -> Services (PathStorageService, UserStorageService) -> LocalStorageService
-Components -> Stores (usePathStore, useAuthStore, useStatsStore) -> localStorage (via persist)
+- **Frontend:** React monolith in `src/` with Zustand store
+- **Backend:** FastAPI service with NumPy MNA
 
-## Key Files
-- `src/features/recommendations/services/AiService.ts` — Gemini AI integration + fallback system
-- `src/features/recommendations/services/curatedResources.ts` — Curated tech-only resources
-- `src/features/recommendations/pages/AIAssistantPage.tsx` — Chat + generator modes with survey
-- `src/features/learning-path/pages/LearningPathPage.tsx` — Path display with topic content
-- `src/features/learning-path/pages/DashboardPage.tsx` — Stats dashboard
-- `src/shared/services/LocalStorageService.ts` — localStorage abstraction
-- `src/shared/services/DbAdapter.ts` — Interface for future MongoDB migration
-- `src/shared/services/ApiAdapter.ts` — REST API adapter with localStorage fallback
-- `src/core/config/index.ts` — Central config (API URL, Gemini key, etc.)
-- `src/core/store/index.ts` — All Zustand stores
-- `src/shared/types/index.ts` — Domain types (User, Topic, Stage, LearningPath, etc.)
+## Key modules
+
+| Module | Path | Role |
+|--------|------|------|
+| Layout | `src/App.tsx` | Shell, panels, demo loader |
+| Editor | `src/features/editor/` | React Flow canvas |
+| Store | `src/store/circuitStore.ts` | Circuit + sim state |
+| Simulation hook | `src/hooks/useSimulation.ts` | HTTP loop to backend |
+| API | `src/services/api.ts` | Axios client |
+| MNA engine | `backend/simulation/engine.py` | Matrix build + solve |
+| Validator | `backend/validators/circuit_validator.py` | Ground, wires |
+
+## Data flow
+
+User action → Zustand → (on simulate) → POST /api/simulate → engine → results → UI
+
+## Migration target
+
+Feature-Sliced Design + `src/engine/` independent of React. See docs/arquitectura.md.
+
+## Branch ownership
+
+- Luisa: backend/
+- Miguel: editor + store + future engine/
+- Josue: components/ + docs/ + App layout

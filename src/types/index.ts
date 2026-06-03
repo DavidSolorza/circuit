@@ -97,7 +97,6 @@ export interface AppState {
   oscData: Record<string, GraphTrace[]>;
   connectingFrom: string | null;
   simTime: number;
-  darkMode: boolean;
   undoStack: CircuitState[];
   redoStack: CircuitState[];
 }

@@ -1,7 +1,7 @@
 # Reviewer — Frontend Review
 
 1. Responsive design: check mobile (320px), tablet (768px), desktop (1280px+)
-2. Dark mode handled (class strategy)
+2. Light theme tokens used (surface, ink, primary, gold)
 3. Loading, empty, error states for async data
 4. Keyboard accessibility for interactive elements
 5. Framer Motion animations respect prefers-reduced-motion

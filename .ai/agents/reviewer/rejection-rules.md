@@ -1,6 +1,7 @@
 # Reviewer — Rejection Rules
 
 Reject if:
+
 1. Build fails (tsc -b || vite build)
 2. Tests fail (vitest run)
 3. Any `any` type without strong justification

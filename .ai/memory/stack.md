@@ -1,30 +1,38 @@
-# Stack
+# Stack — LabCircuitos
 
 ## Frontend
-- React 19 + TypeScript 6
-- Vite 8 (dev/build)
+
+- React 18.3 + TypeScript 5.9
+- Vite 5.4
+- Tailwind CSS 3.4
+- Zustand 4.5
+- React Flow 11 (editor)
+- Plotly.js (oscilloscope) — lazy loaded
+- Axios (API client)
 - pnpm (package manager)
-- TailwindCSS v4 (styling)
-- Zustand 5 (state management, persisted)
-- Framer Motion (animations)
-- Lucide React (icons)
-- clsx + class-variance-authority (class utilities)
-- Axios (HTTP client)
-- React Router DOM v7 (routing)
-- React Hook Form + Zod (forms)
 
-## Backend (planned migration)
-- Express + TypeScript
-- MongoDB + Mongoose
-- JWT (auth)
-- Socket.io (real-time sync)
-- bcryptjs (password hashing)
+## Backend
 
-## Architecture
-- Vertical Slice: core/ -> shared/ -> features/
-- All data persists via localStorage (layered: components -> services -> LocalStorageService)
-- Prepared for MongoDB migration (DbAdapter interface)
+- Python 3.10+
+- FastAPI + Uvicorn
+- NumPy (MNA solver)
+- Pydantic v2
+- Optional: PySpice, SciPy
 
-## Testing
-- Vitest + @testing-library/react + @testing-library/jest-dom + jsdom
-- 12 test files, 83 tests
+## Tooling
+
+- ESLint 10 + Prettier 3
+- TypeScript project references (strict)
+- No CI yet (planned)
+
+## Ports
+
+- Frontend: 5174 (vite.config.ts)
+- Backend: 8000
+
+## Target stack (acctulizacio.mkd)
+
+- React 19 — planned Sprint 2
+- Feature-Sliced Design — planned Sprint 2
+- TypeScript MNA engine — planned Sprint 3
+- Canvas 2D — planned v2

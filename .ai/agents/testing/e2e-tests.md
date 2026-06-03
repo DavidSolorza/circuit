@@ -2,6 +2,6 @@
 
 - (Future) Cypress or Playwright for browser testing
 - Test complete user flows: register -> login -> create path -> complete topic
-- Test dark mode toggle
+- Verify light theme renders consistently on all panels
 - Test responsive layout at different viewports
 - Test offline behavior

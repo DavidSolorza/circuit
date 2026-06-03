@@ -1,21 +1,7 @@
 import { useCircuitStore } from '../../store/circuitStore';
 import { COMPONENT_TEMPLATES } from '../../core/constants';
 import { useMultimeter } from '../../hooks/useMultimeter';
-
-function fmtV(v: number): string {
-  const a = Math.abs(v);
-  if (a >= 1) return `${v.toFixed(3)} V`;
-  if (a >= 1e-3) return `${(v * 1e3).toFixed(2)} mV`;
-  return `${(v * 1e6).toFixed(1)} \u00B5V`;
-}
-
-function fmtI(v: number): string {
-  const a = Math.abs(v);
-  if (a >= 1) return `${v.toFixed(3)} A`;
-  if (a >= 1e-3) return `${(v * 1e3).toFixed(2)} mA`;
-  if (a >= 1e-6) return `${(v * 1e6).toFixed(1)} \u00B5A`;
-  return `${(v * 1e9).toFixed(0)} nA`;
-}
+import { fmtV, fmtI } from '../../utils/formatElectrical';
 
 export function PropertiesPanel() {
   const selectedId = useCircuitStore((s) => s.selectedComponentId);
@@ -32,8 +18,22 @@ export function PropertiesPanel() {
 
   if (!comp) {
     return (
-      <div className="p-4 text-xs text-slate-500 text-center mt-8">
-        Ningún componente seleccionado
+      <div className="p-6 flex flex-col items-center justify-center text-center mt-4">
+        <div className="w-10 h-10 rounded-lg bg-surface-800 border border-surface-700 flex items-center justify-center mb-3">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#8A877E"
+            strokeWidth="1.5"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path d="M9 9h6v6H9z" />
+          </svg>
+        </div>
+        <p className="text-xs text-ink-muted">Ningún componente seleccionado</p>
+        <p className="text-[10px] text-ink-faint mt-1">Haz clic en un componente del canvas</p>
       </div>
     );
   }
@@ -43,23 +43,26 @@ export function PropertiesPanel() {
   const simOk = simulationRunning && simResults?.status.success;
 
   return (
-    <div className="p-3 space-y-3">
+    <div className="p-4 space-y-3">
       <div className="space-y-1">
-        <div className="text-xs font-medium text-slate-300 uppercase tracking-wider">
+        <div className="text-sm font-semibold text-ink uppercase tracking-wide">
           {template?.label ?? comp.type}
         </div>
-        <div className="text-[9px] text-slate-600 font-mono">ID: {comp.id.slice(0, 12)}</div>
-        <div className="text-[9px] text-slate-600 font-mono">
-          Pos: ({Math.round(comp.position.x)}, {Math.round(comp.position.y)}) · Rot: {comp.rotation}°
+        <div className="text-[10px] text-ink-faint font-mono">ID: {comp.id.slice(0, 12)}</div>
+        <div className="text-[10px] text-ink-faint font-mono tabular-nums">
+          Pos: ({Math.round(comp.position.x)}, {Math.round(comp.position.y)}) · Rot: {comp.rotation}
+          °
         </div>
       </div>
 
       {template?.paramDefs && template.paramDefs.length > 0 && (
-        <div className="space-y-2 bg-surface-800 rounded-lg p-2.5 border border-surface-700">
-          <div className="text-[9px] text-slate-500 uppercase tracking-wider">Parámetros</div>
+        <div className="panel-section space-y-2.5">
+          <div className="panel-label">Parámetros</div>
           {template.paramDefs.map((def) => (
             <div key={def.key}>
-              <label className="text-[9px] text-slate-400">{def.label} ({def.unit})</label>
+              <label className="text-[10px] text-ink-faint">
+                {def.label} ({def.unit})
+              </label>
               <div className="flex items-center gap-2">
                 <input
                   type="range"
@@ -70,8 +73,14 @@ export function PropertiesPanel() {
                   onChange={(e) => updateParam(comp.id, def.key, parseFloat(e.target.value))}
                   className="flex-1 h-1 bg-surface-700 rounded-lg appearance-none cursor-pointer accent-primary-500"
                 />
-                <span className="text-[10px] text-slate-400 font-mono w-16 text-right">
-                  {comp.params[def.key]?.toFixed(def.step < 1 ? (def.key === 'capacitance' || def.key === 'inductance' ? 8 : 1) : 0)}
+                <span className="text-[10px] text-ink-muted font-mono w-16 text-right tabular-nums">
+                  {comp.params[def.key]?.toFixed(
+                    def.step < 1
+                      ? def.key === 'capacitance' || def.key === 'inductance'
+                        ? 8
+                        : 1
+                      : 0,
+                  )}
                 </span>
               </div>
             </div>
@@ -80,7 +89,9 @@ export function PropertiesPanel() {
             <button
               onClick={() => updateParam(comp.id, 'isClosed', comp.params.isClosed ? 0 : 1)}
               className={`w-full py-1 rounded text-[10px] font-semibold transition-colors ${
-                comp.params.isClosed ? 'bg-green-700/50 text-green-300 border border-green-600/50' : 'bg-surface-700 text-slate-400 border border-surface-600'
+                comp.params.isClosed
+                  ? 'bg-primary-50 text-primary-600 border border-primary-300'
+                  : 'bg-surface-800 text-surface-500 border border-surface-600'
               }`}
             >
               {comp.params.isClosed ? 'ENCENDIDO' : 'APAGADO'}
@@ -90,23 +101,27 @@ export function PropertiesPanel() {
       )}
 
       {simOk && (
-        <div className="bg-surface-800 rounded-lg p-2.5 border border-surface-700 space-y-2">
-          <div className="text-[9px] text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+        <div className="panel-section space-y-2">
+          <div className="panel-label flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             Mediciones
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="bg-surface-900/50 rounded p-1.5">
-              <div className="text-[8px] text-slate-600">Voltaje</div>
-              <div className="text-xs font-mono text-primary-400">{fmtV(readings.voltage)}</div>
+            <div className="bg-surface-950/40 rounded-md p-2 border border-surface-700/50">
+              <div className="metric-label">Voltaje</div>
+              <div className="text-xs font-mono text-primary-600 font-semibold tabular-nums">
+                {fmtV(readings.voltage)}
+              </div>
             </div>
-            <div className="bg-surface-900/50 rounded p-1.5">
-              <div className="text-[8px] text-slate-600">Corriente</div>
-              <div className="text-xs font-mono text-cyan-400">{fmtI(readings.current)}</div>
+            <div className="bg-surface-950/40 rounded-md p-2 border border-surface-700/50">
+              <div className="metric-label">Corriente</div>
+              <div className="text-xs font-mono text-primary-600 font-semibold tabular-nums">
+                {fmtI(readings.current)}
+              </div>
             </div>
-            <div className="bg-surface-900/50 rounded p-1.5 col-span-2">
-              <div className="text-[8px] text-slate-600">Potencia</div>
-              <div className="text-xs font-mono text-emerald-400">
+            <div className="bg-surface-950/40 rounded-md p-2 border border-surface-700/50 col-span-2">
+              <div className="metric-label">Potencia</div>
+              <div className="text-xs font-mono text-gold-600 font-semibold tabular-nums">
                 {Math.abs(readings.voltage * readings.current) >= 1
                   ? `${(readings.voltage * readings.current).toFixed(3)} W`
                   : `${(readings.voltage * readings.current * 1e3).toFixed(2)} mW`}
@@ -118,19 +133,34 @@ export function PropertiesPanel() {
 
       <div className="h-px bg-surface-700" />
 
-      <div className="grid grid-cols-3 gap-1">
-        <button onClick={() => rotate(comp.id)} className="px-1.5 py-1 rounded text-[9px] bg-surface-800 text-slate-400 hover:text-white hover:bg-surface-700 transition-colors border border-surface-700" title="Rotar">
+      <div className="grid grid-cols-3 gap-1.5">
+        <button
+          onClick={() => rotate(comp.id)}
+          className="px-2 py-1.5 rounded-md text-[10px] bg-surface-800 text-ink-muted hover:text-ink hover:bg-surface-700 transition-colors border border-surface-700"
+          title="Rotar"
+        >
           ↻ Rotar
         </button>
-        <button onClick={() => duplicate(comp.id)} className="px-1.5 py-1 rounded text-[9px] bg-surface-800 text-slate-400 hover:text-white hover:bg-surface-700 transition-colors border border-surface-700" title="Duplicar">
+        <button
+          onClick={() => duplicate(comp.id)}
+          className="px-2 py-1.5 rounded-md text-[10px] bg-surface-800 text-ink-muted hover:text-ink hover:bg-surface-700 transition-colors border border-surface-700"
+          title="Duplicar"
+        >
           ⊞ Duplicar
         </button>
-        <button onClick={() => addProbe('voltage', comp.id, 0)} className="px-1.5 py-1 rounded text-[9px] bg-rose-900/30 text-rose-400 hover:bg-rose-800/50 transition-colors border border-rose-800/50" title="Añadir sonda">
-          ⚡ Sonda
+        <button
+          onClick={() => addProbe('voltage', comp.id, 0)}
+          className="px-2 py-1.5 rounded-md text-[10px] bg-gold-50 text-gold-700 hover:bg-gold-100 transition-colors border border-gold-200 font-medium"
+          title="Añadir sonda"
+        >
+          Sonda
         </button>
       </div>
 
-      <button onClick={() => remove(comp.id)} className="w-full py-1.5 rounded text-[10px] bg-red-900/30 text-red-400 hover:bg-red-800/50 transition-colors border border-red-800/50">
+      <button
+        onClick={() => remove(comp.id)}
+        className="w-full py-2 rounded-lg text-[11px] bg-red-50 text-red-600 hover:bg-red-100 transition-colors border border-red-200 font-medium"
+      >
         Eliminar componente
       </button>
     </div>

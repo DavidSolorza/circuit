@@ -1,10 +1,12 @@
 # Business Rules
 
 ## Domain
+
 - EXCLUSIVELY programming and technology topics
 - No generic topics (skateboarding, yoga, music, cooking, etc.)
 
 ## Learning Paths
+
 - AI generates paths with 4 stages, 5 topics each
 - Topics include: name, content (mini-class), difficulty, resources
 - Resources include real documentation URLs when available
@@ -12,6 +14,7 @@
 - Survey data is passed to AI for full personalization
 
 ## AI Behavior
+
 - Prerequisites first: before launching into the learning plan, AI identifies what the user needs to know first
 - No video/YouTube URLs in responses
 - Use expert/author names instead: "Busca a [nombre]"
@@ -20,13 +23,15 @@
 - System prompt defines 12 tech domains + pedagogical capabilities + response modes
 
 ## Authentication
+
 - Email/password registration
 - Demo user: demo@pathforge.ai / 123456
 - All data in localStorage (offline-first)
 
 ## UI Rules
+
 - Minimal, white space, soft shadows
 - Inspired by Linear, Vercel, Notion
 - No emojis anywhere in UI or AI output
-- Dark mode toggle in sidebar
+- Tema claro fijo (crema/verde/dorado) — ver docs/TEMA_UI.md
 - Lazy loading, Suspense, ErrorBoundary, skeletons, empty states, toast notifications

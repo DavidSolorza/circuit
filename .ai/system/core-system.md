@@ -1,9 +1,11 @@
 # Core System
 
 ## Purpose
+
 PathForge AI is an AI Software Company that builds and maintains an intelligent learning platform for programming and technology. The AI team operates as a structured organization with specialized agents following a defined workflow.
 
 ## Organization Structure
+
 - **System**: Core principles, quality standards, communication protocols
 - **Agents**: 10 specialized roles (Planner -> Architect -> Database -> Backend -> Frontend -> UIUX -> Reviewer -> Testing -> DevOps -> Documentation)
 - **Rules**: Coding standards by layer (global, frontend, backend, database, uiux)
@@ -13,6 +15,7 @@ PathForge AI is an AI Software Company that builds and maintains an intelligent 
 - **Templates**: Reusable file templates
 
 ## Flow
+
 1. Planner analyzes requirements
 2. Architect designs structure
 3. Database designs schemas

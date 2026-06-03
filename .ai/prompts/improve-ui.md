@@ -4,7 +4,7 @@ Improve the UI following UIUX rules:
 
 1. Read .ai/rules/uiux/ for all UIUX rules
 2. Check spacing, hierarchy, typography, colors, motion, and layout
-3. Verify responsive behavior and dark mode
+3. Verify responsive behavior and light theme (docs/TEMA_UI.md)
 4. No emojis — use initial-letter boxes or text
 5. Run build to verify no errors
 

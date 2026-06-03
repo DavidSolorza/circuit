@@ -1,41 +1,49 @@
-# Technical Decisions
+# Technical Decisions — LabCircuitos
 
-## ADR-001: Vertical Slice Architecture
-- Context: Need to scale features without cross-contamination
-- Decision: Organize by feature (auth, learning-path, profile, projects) with shared/ and core/ layers
-- Consequences: Clear boundaries, easy to extract features later, consistent patterns
+## ADR-001: Simulation on backend (NumPy)
 
-## ADR-002: Zustand over Redux/Context
-- Context: Need global state without boilerplate
-- Decision: Use Zustand with persist middleware for auth, stats, UI preferences, paths
-- Consequences: Minimal code, built-in persistence, TypeScript-native
+**Status:** Active  
+**Context:** Team split — Luisa owns Python MNA.  
+**Decision:** Frontend sends circuit JSON; backend runs MNA.  
+**Consequence:** Network latency per sim tick; future TS engine for offline.
 
-## ADR-003: localStorage as Primary Store (offline-first)
-- Context: No backend yet, need persistence
-- Decision: All data persists via localStorage through services
-- Consequences: Offline-capable, no sync, migrated via DbAdapter pattern later
+## ADR-002: React Flow for editor MVP
 
-## ADR-004: DbAdapter Pattern for MongoDB Migration
-- Context: Future backend migration should not require rewrites
-- Decision: DbAdapter interface with LocalStorageAdapter (current) and ApiAdapter (future)
-- Consequences: Services can switch adapters transparently
+**Status:** Active  
+**Context:** Faster delivery than custom Canvas.  
+**Decision:** Use reactflow with custom ComponentNode + SVG symbols.  
+**Consequence:** Spec Canvas 2D deferred to v2.
 
-## ADR-005: No Emojis in UI or AI
-- Context: Professional, minimal aesthetic inspired by Linear/Vercel
-- Decision: All emoji usage replaced with CSS-styled initial-letter boxes; AI instructed to never use emojis
-- Consequences: Consistent professional look, requires intentional alternative styling
+## ADR-003: Zustand single store
 
-## ADR-006: Tech-Only Focus
-- Context: Users wanted a focused learning platform
-- Decision: Remove all non-tech categories, topics, and resources
-- Consequences: Smaller codebase, clearer positioning, no fallback for non-tech subjects
+**Status:** Active (to be split)  
+**Decision:** One `circuitStore` for circuit, sim, probes, undo.  
+**Consequence:** ~400 LOC file; refactor planned TASK-007.
 
-## ADR-007: Prerequisites-First AI Approach
-- Context: Users start learning without proper foundation
-- Decision: AI must identify prerequisites before generating the learning plan
-- Consequences: More effective learning paths, better user outcomes
+## ADR-004: Light theme (crema/verde)
 
-## ADR-008: Pre-Path Survey
-- Context: One-size-fits-all paths are ineffective
-- Decision: Before generating a path, AI asks about time, method, level, project preference
-- Consequences: Fully personalized paths, higher engagement
+**Status:** Active  
+**Context:** Josue UI branch; team preference over spec dark theme.  
+**Decision:** Tokens in tailwind + docs/TEMA_UI.md.  
+**Consequence:** Conflict with acctulizacio.mkd dark palette — needs team ADR.
+
+## ADR-005: Plotly for oscilloscope
+
+**Status:** Active  
+**Decision:** react-plotly.js for multichannel plots.  
+**Consequence:** Large bundle; mitigated with lazy import + manualChunks.
+
+## ADR-006: ESLint flat config + Prettier
+
+**Status:** Active (2026-06-02)  
+**Decision:** eslint.config.js, zero warnings policy for errors.
+
+## ADR-007: Git flow with 3-person approval
+
+**Status:** Active  
+**Decision:** feature/* → release/v1.0 → main with unanimous review.
+
+## ADR-008: Backend entry via main.py
+
+**Status:** Active (2026-06-02)  
+**Decision:** sys.path bootstrap for `python main.py` from backend/.

@@ -13,9 +13,9 @@ import { cn } from '@shared/lib/utils'
 
 export function [FeatureName]Page() {
   const [loading, setLoading] = useState(false)
-  
+
   if (loading) return <div>Loading...</div>
-  
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-neutral-900">[Title]</h1>

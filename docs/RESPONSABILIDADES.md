@@ -13,7 +13,7 @@ Tu eres el encargado de que la aplicación se vea profesional y funcione bien vi
 ## Tecnologías que usas
 
 - **React 18 + TypeScript** — Framework de UI
-- **Tailwind CSS** — Estilos (dark mode, colores personalizados)
+- **Tailwind CSS** — Estilos (tema claro, colores personalizados — ver `docs/TEMA_UI.md`)
 - **Framer Motion** — Animaciones
 - **Plotly.js** — Gráficas del osciloscopio
 - **Lucide React** — Iconos
@@ -23,7 +23,7 @@ Tu eres el encargado de que la aplicación se vea profesional y funcione bien vi
 ```
 src/
 ├── App.tsx                                 # Layout principal (top bar, sidebar, paneles, footer)
-├── index.css                               # Estilos globales + dark mode
+├── index.css                               # Estilos globales + tema claro
 
 src/components/
 ├── toolbar/Toolbar.tsx                     # Sidebar izquierda con categorías y buscador
@@ -34,8 +34,8 @@ src/components/
 ├── graph/GraphPanel.tsx                    # Osciloscopio con Plotly
 └── calculator/CalculatorPage.tsx           # Calculadora de ingeniería (7 tabs)
 
-tailwind.config.js                          # Colores, animaciones, dark mode
-docs/                                       # Documentación del proyecto
+tailwind.config.js                          # Colores, animaciones, tema claro
+docs/                                       # Documentación (incl. TEMA_UI.md)
 ```
 
 ## Cómo empezar
@@ -49,7 +49,7 @@ pnpm install
 
 # 3. Iniciar servidor de desarrollo
 pnpm dev
-# El frontend arranca en http://localhost:5173
+# El frontend arranca en http://localhost:5174
 
 # 4. Verificar tipos
 pnpm tsc --noEmit
@@ -62,7 +62,7 @@ pnpm build
 
 ### Día 1 — Diagnóstico de UI
 
-1. **Dark mode global** — Verificar que TODA la app esté en oscuro (fondos surface, texto claro, inputs dark)
+1. **Tema claro global** — Verificar que TODA la app use fondos crema (`surface-*`), texto `ink` y bordes consistentes
 2. **Sidebar + buscador** — El buscador debe filtrar componentes por nombre, las categorías deben funcionar
 3. **Traducción 100% español** — Revisar que no haya texto en inglés en ningún .tsx
 4. **Reportar bugs** — Si encuentras algo mal, escríbelo y asígnalo a `fix/critical-bugs`
@@ -78,7 +78,7 @@ pnpm build
 
 1. **Revisar PR de Luisa** — Entrar a `feature/luisa-backend`, revisar código, probar endpoint
 2. **Revisar PR de Miguel** — Entrar a `feature/miguel-editor`, probar drag, conexiones, LED
-3. **Proponer nueva feature** — Ideas: toggle tema claro/oscuro, exportar CSV de gráficas, tooltips, historial
+3. **Proponer nueva feature** — Ideas: exportar CSV de gráficas, tooltips, historial de simulaciones
 4. **Pulir layout** — Espaciado vertical/horizontal consistente
 5. **Micro-animaciones** — Transiciones suaves en hover/focus
 
@@ -100,7 +100,7 @@ pnpm tsc --noEmit
 pnpm build
 
 # Prueba visual en navegador:
-# 1. http://localhost:5173 → debe verse oscuro y profesional
+# 1. http://localhost:5174 → debe verse con tema claro crema/verde y aspecto profesional
 # 2. Sidebar: buscar "resistencia" → debe filtrar
 # 3. Arrastrar componente al canvas
 # 4. Panel derecho: seleccionar componente → ver sliders y mediciones
@@ -128,10 +128,11 @@ Como coordinador, tu rol extra es:
 
 ## Dependencias con los otros
 
-- **Luisa** (backend): tus paneles muestran datos que vienen de su API (voltajes, corrientes)
-- **Miguel** (editor): tus SVGs se renderizan dentro de sus nodos de React Flow. Si cambias un SVG, avísale
+- **Luisa** (backend + simulación): motor MNA, validación, `src/engine/` — ver `docs/TAREAS-LUISA.md`
+- **Miguel** (editor): tus SVGs se renderizan dentro de sus nodos de React Flow — ver `docs/TAREAS-MIGUEL.md`
 
 **Tip:** Si quieres agregar un SVG nuevo:
+
 1. Crear el SVG en `src/components/symbols/index.tsx`
 2. Usar `TerminalDot` para los puntos de conexión
 3. Agregar `Handle` de React Flow en `src/features/editor/ComponentNode.tsx` (o pedirle a Miguel)

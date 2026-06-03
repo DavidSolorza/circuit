@@ -7,7 +7,7 @@
 @layer base {
   * {
     scrollbar-width: thin;
-    scrollbar-color: #3c3c5c transparent;
+    scrollbar-color: #e8e0d0 transparent;
   }
 
   *::-webkit-scrollbar {
@@ -20,7 +20,7 @@
   }
 
   *::-webkit-scrollbar-thumb {
-    background-color: #3c3c5c;
+    background-color: #e8e0d0;
     border-radius: 3px;
   }
 
@@ -32,8 +32,10 @@
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background: #0f1019;
-    color: #e2e8f0;
+    background: #f8f5ef;
+    color: #1a1a18;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   #root {
@@ -41,67 +43,75 @@
     height: 100vh;
   }
 
-  input[type="range"] {
+  input[type='range'] {
     -webkit-appearance: none;
     appearance: none;
     height: 4px;
-    background: #3c3c5c;
+    background: #e8e0d0;
     border-radius: 2px;
     outline: none;
   }
 
-  input[type="range"]::-webkit-slider-thumb {
+  input[type='range']::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #3b82f6;
+    background: #1f4d3a;
     cursor: pointer;
-    border: 2px solid #1a1b2e;
-    box-shadow: 0 0 4px rgba(59, 130, 246, 0.4);
+    border: 2px solid #fffcf7;
+    box-shadow: 0 0 4px rgba(31, 77, 58, 0.4);
   }
 
-  input[type="text"],
-  input[type="number"] {
-    background: #28283d;
-    border: 1px solid #3c3c5c;
-    color: #e2e8f0;
+  input[type='text'],
+  input[type='number'] {
+    background: #fffcf7;
+    border: 1px solid #e8e0d0;
+    color: #1a1a18;
+    outline: none;
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
+  }
+
+  input[type='text']:focus,
+  input[type='number']:focus {
+    border-color: #1f4d3a;
+    box-shadow: 0 0 0 2px rgba(31, 77, 58, 0.12);
+  }
+
+  select {
+    background: #fffcf7;
+    border: 1px solid #e8e0d0;
+    color: #1a1a18;
     outline: none;
     transition: border-color 0.15s;
   }
 
-  input[type="text"]:focus,
-  input[type="number"]:focus {
-    border-color: #3b82f6;
+  select:focus {
+    border-color: #1f4d3a;
   }
 
-  select {
-    background: #28283d;
-    border: 1px solid #3c3c5c;
-    color: #e2e8f0;
-    outline: none;
-  }
-
-  /* React Flow dark overrides */
+  /* React Flow overrides */
   .react-flow__background {
-    background: #0f1019 !important;
+    background: #f8f5ef !important;
   }
 
   .react-flow__controls-button {
-    background: #28283d !important;
-    border: 1px solid #3c3c5c !important;
-    color: #94a3b8 !important;
-    fill: #94a3b8 !important;
+    background: #fffcf7 !important;
+    border: 1px solid #e8e0d0 !important;
+    color: #6b7280 !important;
+    fill: #6b7280 !important;
   }
 
   .react-flow__controls-button:hover {
-    background: #3c3c5c !important;
-    color: #e2e8f0 !important;
+    background: #f5f0e6 !important;
+    color: #1f2937 !important;
   }
 
   .react-flow__minimap {
-    border: 1px solid #3c3c5c !important;
+    border: 1px solid #e8e0d0 !important;
     border-radius: 8px !important;
     overflow: hidden !important;
   }
@@ -111,17 +121,17 @@
   }
 
   .react-flow__selection {
-    background: rgba(59, 130, 246, 0.08) !important;
-    border: 1px solid rgba(59, 130, 246, 0.4) !important;
+    background: rgba(31, 77, 58, 0.08) !important;
+    border: 1px solid rgba(31, 77, 58, 0.4) !important;
   }
 
   .react-flow__edge-path {
-    stroke: #64748b !important;
+    stroke: #6b7280 !important;
     stroke-width: 2 !important;
   }
 
   .react-flow__edge.selected .react-flow__edge-path {
-    stroke: #3b82f6 !important;
+    stroke: #1f4d3a !important;
     stroke-width: 2.5 !important;
   }
 
@@ -132,5 +142,60 @@
 
   .react-flow__node:hover .react-flow__handle {
     opacity: 1;
+  }
+}
+
+@layer components {
+  .panel-section {
+    @apply bg-surface-800 rounded-lg border border-surface-700 p-3 shadow-panel;
+  }
+
+  .panel-label {
+    @apply text-[10px] font-semibold uppercase tracking-wider text-ink-faint;
+  }
+
+  .btn-icon {
+    @apply p-1.5 rounded-md text-ink-faint hover:text-ink hover:bg-surface-800
+           transition-all duration-150 active:scale-95;
+  }
+
+  .btn-ghost {
+    @apply px-2.5 py-1 text-[11px] font-medium rounded-md text-ink-muted
+           hover:text-ink hover:bg-surface-800 border border-transparent
+           hover:border-surface-700 transition-all duration-150;
+  }
+
+  .btn-primary {
+    @apply px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary-600 text-white
+           hover:bg-primary-500 active:scale-[0.98] transition-all duration-150 shadow-sm;
+  }
+
+  .btn-gold {
+    @apply px-3 py-1.5 text-xs font-semibold rounded-lg bg-gold-500 text-white
+           hover:bg-gold-600 active:scale-[0.98] transition-all duration-150 shadow-sm;
+  }
+
+  .sidebar-tab {
+    @apply flex-1 h-9 text-[10px] font-semibold uppercase tracking-wider transition-all duration-150;
+  }
+
+  .sidebar-tab-active {
+    @apply text-primary-600 border-b-2 border-primary-500 bg-primary-50/50;
+  }
+
+  .sidebar-tab-inactive {
+    @apply text-ink-faint hover:text-ink hover:bg-surface-800;
+  }
+
+  .metric-card {
+    @apply bg-surface-800 rounded-lg p-3 border border-surface-700 shadow-panel;
+  }
+
+  .metric-value {
+    @apply text-lg font-mono font-bold text-primary-600 tabular-nums;
+  }
+
+  .metric-label {
+    @apply text-[10px] text-ink-faint mb-0.5;
   }
 }
