@@ -25,7 +25,13 @@ export function useCircuitPersistence() {
       if (data) {
         const loaded = JSON.parse(data) as CircuitState;
         // Validate structure before loading
-        if (loaded && loaded.components && loaded.terminals && loaded.wires !== undefined && loaded.nextNodeId !== undefined) {
+        if (
+          loaded &&
+          loaded.components &&
+          loaded.terminals &&
+          loaded.wires !== undefined &&
+          loaded.nextNodeId !== undefined
+        ) {
           useCircuitStore.setState({ circuit: loaded });
         }
       }
@@ -55,8 +61,14 @@ export function useCircuitPersistence() {
       try {
         const content = e.target?.result as string;
         const loaded = JSON.parse(content) as CircuitState;
-        if (loaded && loaded.components && loaded.terminals && loaded.wires !== undefined && loaded.nextNodeId !== undefined) {
-          useCircuitStore.setState({ 
+        if (
+          loaded &&
+          loaded.components &&
+          loaded.terminals &&
+          loaded.wires !== undefined &&
+          loaded.nextNodeId !== undefined
+        ) {
+          useCircuitStore.setState({
             circuit: loaded,
             selectedComponentId: null,
             simResults: null,
@@ -75,7 +87,7 @@ export function useCircuitPersistence() {
 
   const clearCircuit = useCallback(() => {
     if (confirm('¿Seguro que deseas limpiar el circuito?')) {
-      useCircuitStore.setState({ 
+      useCircuitStore.setState({
         circuit: initCircuitState(),
         selectedComponentId: null,
         simulationRunning: false,

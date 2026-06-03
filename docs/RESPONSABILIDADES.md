@@ -1,132 +1,77 @@
-# Miguel — Editor + Componentes + Store
+# Miguel — Editor de circuitos
 
 **Rama:** `feature/miguel-editor`
+
+> **Tareas detalladas:** [TAREAS-MIGUEL.md](TAREAS-MIGUEL.md) · [TAREAS-POR-RAMA.md](TAREAS-POR-RAMA.md)
 
 ---
 
 ## ¿Qué hago yo?
 
-Tu eres el encargado del corazón del simulador: el editor visual donde se arrastran componentes, se conectan cables y se ejecuta la simulación. Sin tu trabajo, nadie puede armar circuitos.
+Eres el responsable del **editor visual**: canvas React Flow, componentes, cables, store Zustand y UX de edición.
+
+**No tocas la simulación eléctrica** — eso es de Luisa (`src/engine/`).
 
 ## Tecnologías que usas
 
-- **React 18 + TypeScript** — Framework de UI
-- **React Flow** — Librería de canvas interactivo con nodos y edges
-- **Zustand** — Estado global de la aplicación
-- **Framer Motion** — Animaciones
+- **React 18 + TypeScript**
+- **React Flow** — nodos, edges, handles
+- **Zustand** — estado del circuito
 
 ## Archivos que te corresponden
 
 ```
 src/features/editor/
-├── CircuitEditor.tsx         # Canvas principal con React Flow
-└── ComponentNode.tsx         # Nodo personalizado por tipo de componente
+├── CircuitEditor.tsx
+└── ComponentNode.tsx
 
-src/store/
-└── circuitStore.ts           # Estado global (Zustand) + acciones
-
-src/hooks/
-├── useSimulation.ts          # Loop de simulación (RAF + fetch al backend)
-├── useCircuit.ts             # Hook auxiliar para acceder al circuito
-└── useCircuitPersistence.ts  # Guardar/cargar circuitos (JSON)
-
-src/types/
-└── index.ts                  # Tipos TypeScript (solo si hay que agregar nuevos)
-
-src/core/
-└── constants.ts              # Categorías, templates de componentes (solo si hay que agregar)
-
-src/utils/
-└── componentHandles.ts       # Handles por tipo de componente
-
-src/App.tsx                   # Layout general (solo función loadDemo y shortcuts)
+src/store/circuitStore.ts
+src/utils/circuit.ts
+src/utils/componentHandles.ts
+src/hooks/useCircuit.ts
 ```
+
+## NO tocar
+
+- `src/engine/**` → Luisa
+- `backend/**` → Luisa
+- `src/components/**` → Josue (salvo Handles acordados en ComponentNode)
+
+## Simulación
+
+La simulación corre en el cliente. Solo consume:
+
+```typescript
+import { runLocalSimulationStep } from '../services/localSimulation';
+```
+
+No reimplementes MNA.
 
 ## Cómo empezar
 
 ```bash
-# 1. Desde la raíz del proyecto
-cd C:\Users\Usuario\Desktop\proyectoElectro+
-
-# 2. Instalar dependencias (solo primera vez)
+git checkout feature/miguel-editor
+git pull origin feature/miguel-editor
 pnpm install
-
-# 3. Iniciar servidor de desarrollo
-pnpm dev
-# El frontend arranca en http://localhost:5173
-
-# 4. Verificar tipos (sin errores)
-pnpm tsc --noEmit
-
-# 5. Build de producción (sin errores)
-pnpm build
+pnpm dev          # http://localhost:5174
 ```
 
-## Lo que debes hacer (Día 1-4)
+## Prioridades (P0)
 
-### Día 1 — Diagnóstico del editor
+| ID | Tarea |
+|----|-------|
+| M-02 | Dividir `circuitStore.ts` en slices |
+| M-03 | Reducir re-renders en `ComponentNode` |
+| M-04 | Conexión de cables robusta |
+| M-05 | Atajos teclado (R,C,L,V,I,S,G,W…) |
 
-1. **Probar drag de componentes** — Arrastrar resistencia, capacitor, etc. Deben moverse suavemente
-2. **Verificar `onNodesChange`** en `CircuitEditor.tsx` — Asegurar que no tenga filtro `dragging === false`
-3. **Verificar handles y conexiones** — Pasar mouse sobre terminales, deben aparecer puntos cliqueables
-4. **Probar batería** — Handle izquierdo verde (−) y derecho rojo (+)
-5. **Confirmar `nodeDragThreshold: 0`** — El drag debe iniciar inmediatamente al hacer clic
+## Reglas
 
-### Día 2 — Funcionalidades
+1. Trabaja SOLO en `feature/miguel-editor`
+2. NUNCA push directo a `main`
+3. PR a `release/v1.0` con aprobación de los 3
 
-1. **Selección múltiple** — Shift+click selecciona varios componentes
-2. **Undo/Redo** — Ctrl+Z deshace, Ctrl+Shift+Z rehace (store + teclado)
-3. **Rotar y Duplicar** — Botones en panel de propiedades deben funcionar
-4. **Eliminar múltiples** — Seleccionar varios y presionar Delete
+## Dependencias
 
-### Día 3 — Validación
-
-1. **LED on/off** — Verificar que `isLit` dependa de `simulationRunning && current > 1e-6`
-2. **Cables animados** — Edges tipo `bezier` con `animated: true`
-3. **Probar Select, Wire, Probe** — Las 3 herramientas deben funcionar
-4. **Circuito demo** — Cargar demo y verificar que todo funcione
-
-### Día 4 — Cierre
-
-1. Build final sin errores: `pnpm build`
-2. Probar integración con backend (Luisa)
-3. Merge a `release/v1.0` mediante Pull Request
-4. Josue y Luisa revisan tu PR antes del merge
-
-## Cómo probar tu código
-
-```bash
-# Verificar tipos TypeScript
-pnpm tsc --noEmit
-
-# Build de producción
-pnpm build
-
-# Prueba manual en navegador:
-# 1. Abrir http://localhost:5173
-# 2. Cargar circuito demo
-# 3. Arrastrar cada componente
-# 4. Conectar cables entre terminales
-# 5. Iniciar simulación → LED debe encenderse
-# 6. Detener simulación → LED debe apagarse
-```
-
-## Reglas importantes
-
-1. Trabaja SOLO en tu rama `feature/miguel-editor`
-2. NUNCA hagas push a `main`
-3. Commits en español y descriptivos
-4. Cuando termines una funcionalidad → crea Pull Request a `release/v1.0`
-5. No se mergea nada sin que los 3 digan OK
-
-## Dependencias con los otros
-
-- **Luisa** (backend): tu editor envía el circuito al backend para simular. Si ella cambia la API, avísale
-- **Josue** (UI): él depende de que tus componentes tengan los handles y datos correctos para mostrar mediciones
-
-**Tip:** Si agregas un nuevo tipo de componente (ej: transformador), tienes que:
-1. Agregarlo en `src/types/index.ts` (enum ComponentType)
-2. Agregar template en `src/core/constants.ts`
-3. Agregar SVG en `src/components/symbols/index.tsx` (o pedirle a Josue)
-4. Agregar handles en `src/utils/componentHandles.ts`
-5. Agregar lógica MNA en el backend (pedirle a Luisa)
+- **Luisa** — resultados de simulación correctos
+- **Josue** — SVGs en `symbols/`; coordina cambios visuales

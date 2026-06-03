@@ -1,98 +1,79 @@
 import { useEffect, useRef } from 'react';
 import { useCircuitStore } from '../store/circuitStore';
-import { simulate, type SimulateRequest } from '../services/api';
+import {
+  getElectricalNodeForTerminal,
+  resetLocalSimulation,
+  runLocalSimulationStep,
+} from '../services/localSimulation';
 import { DT } from '../core/constants';
 
-async function runSimulationStep(): Promise<void> {
+function applySimulationResults(): void {
   const state = useCircuitStore.getState();
   if (!state.simulationRunning) return;
 
   const circuit = state.circuit;
-  const components: SimulateRequest['components'] = {};
-  for (const [id, c] of Object.entries(circuit.components)) {
-    components[id] = { id, type: c.type, label: c.label, params: c.params };
-  }
-  const terminals: SimulateRequest['terminals'] = {};
-  for (const [id, t] of Object.entries(circuit.terminals)) {
-    terminals[id] = { id, componentId: t.componentId, index: t.index, nodeId: t.nodeId };
-  }
-  const wires: SimulateRequest['wires'] = Object.values(circuit.wires).map(w => ({
-    fromTerminalId: w.fromTerminalId,
-    toTerminalId: w.toTerminalId,
-  }));
+  const res = runLocalSimulationStep(circuit, DT);
+  const current = useCircuitStore.getState();
+  if (!current.simulationRunning) return;
 
-  const request: SimulateRequest = {
-    components, terminals, wires,
-    analysis: 'transient',
-    duration: DT,
-    timestep: DT,
-  };
+  current.setSimResults(res);
 
-  try {
-    const res = await simulate(request);
-    const currentState = useCircuitStore.getState();
-    if (!currentState.simulationRunning) return;
-    currentState.setSimResults(res);
-    if (res.status.success) {
-      currentState.setSimError(null);
-      const baseTime = currentState.simTime;
-      for (const probe of currentState.probes) {
-        const comp = circuit.components[probe.componentId];
-        if (!comp) continue;
-        let values: number[] | undefined;
-        if (probe.type === 'voltage') {
-          const term = circuit.terminals[comp.terminalIds[probe.terminalIndex ?? 0]];
-          if (term) values = res.nodeVoltages[String(term.nodeId)];
-        } else {
-          values = res.branchCurrents[comp.id];
-        }
-        if (values && values.length > 0) {
-          for (let i = 0; i < res.time.length && i < values.length; i++) {
-            currentState.appendOscData(probe.id, baseTime + res.time[i], values[i]);
-          }
-        }
-      }
-      currentState.setSimTime(baseTime + (res.time[res.time.length - 1] ?? DT));
-    } else {
-      currentState.setSimError(res.status.error || 'Simulation failed');
+  if (res.status.success) {
+    current.setSimError(null);
+    const t = current.simTime + DT;
+
+    for (const probe of current.probes) {
+      const comp = circuit.components[probe.componentId];
+      if (!comp) continue;
+
+      const value =
+        probe.type === 'voltage'
+          ? (() => {
+              const termId = comp.terminalIds[probe.terminalIndex ?? 0];
+              const nodeId = getElectricalNodeForTerminal(circuit, termId);
+              return res.nodeVoltages[String(nodeId)]?.[0] ?? 0;
+            })()
+          : (res.branchCurrents[comp.id]?.[0] ?? 0);
+
+      current.appendOscData(probe.id, t, value);
     }
-  } catch (err) {
-    const currentState = useCircuitStore.getState();
-    if (currentState.simulationRunning) {
-      currentState.setSimError(err instanceof Error ? err.message : 'Backend connection failed');
-    }
+
+    current.setSimTime(t);
+  } else {
+    current.setSimError(res.status.error || res.validation.errors[0] || 'Simulación fallida');
   }
 }
 
 export function useSimulation() {
-  const timerRef = useRef<number>(0);
+  const rafRef = useRef<number>(0);
+  const lastTickRef = useRef<number>(0);
   const simulationRunning = useCircuitStore((s) => s.simulationRunning);
 
   useEffect(() => {
     if (!simulationRunning) {
-      clearTimeout(timerRef.current);
+      cancelAnimationFrame(rafRef.current);
       return;
     }
 
-    let delay = 100;
+    resetLocalSimulation();
+    useCircuitStore.getState().clearOscData();
+    useCircuitStore.getState().setSimTime(0);
+    lastTickRef.current = performance.now();
 
-    const tick = async () => {
-      const wasError = useCircuitStore.getState().simError !== null;
-      await runSimulationStep();
-      const nowError = useCircuitStore.getState().simError !== null;
-      if (!wasError && nowError) {
-        delay = Math.min(delay * 2, 5000);
-      } else if (!nowError) {
-        delay = 100;
+    const loop = (now: number) => {
+      if (!useCircuitStore.getState().simulationRunning) return;
+
+      const elapsed = now - lastTickRef.current;
+      if (elapsed >= DT * 1000) {
+        lastTickRef.current = now - (elapsed % (DT * 1000));
+        applySimulationResults();
       }
-      if (useCircuitStore.getState().simulationRunning) {
-        timerRef.current = window.setTimeout(tick, delay);
-      }
+
+      rafRef.current = requestAnimationFrame(loop);
     };
 
-    tick();
-
-    return () => clearTimeout(timerRef.current);
+    rafRef.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(rafRef.current);
   }, [simulationRunning]);
 
   return { simulationRunning };
