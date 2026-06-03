@@ -2,7 +2,7 @@
 
 ## Visión
 
-LabCircuitos es un simulador web de circuitos eléctricos con editor visual, simulación MNA (DC/transitorio) y paneles de medición. La arquitectura **actual** es cliente-servidor; la arquitectura **objetivo** (según `acctulizacio.mkd`) añade motor TypeScript desacoplado y organización Feature-Sliced Design (FSD).
+LabCircuitos es un simulador web de circuitos eléctricos con editor visual, simulación MNA (DC/transitorio) y paneles de medición. La arquitectura **actual** incluye motor TypeScript local (`src/engine/`) + backend Python opcional. La arquitectura **objetivo** añade organización Feature-Sliced Design (FSD).
 
 ---
 
@@ -15,7 +15,9 @@ flowchart TB
     RF[React Flow Editor]
     Store[Zustand circuitStore]
     Hooks[hooks: simulation, graph, persistence]
-    APIClient[services/api.ts]
+    Engine[src/engine MNA TS]
+    LocalSim[services/localSimulation.ts]
+    APIClient[services/api.ts opcional]
     Plotly[GraphPanel Plotly]
   end
 
@@ -29,9 +31,10 @@ flowchart TB
   App --> RF
   App --> Store
   Hooks --> Store
-  Hooks --> APIClient
+  Hooks --> LocalSim
+  LocalSim --> Engine
   App --> Plotly
-  APIClient -->|POST /api/simulate| Routes
+  APIClient -.->|opcional POST /api/simulate| Routes
   Routes --> Validator
   Routes --> Engine
   Routes --> Spice
@@ -64,21 +67,18 @@ engine/       → motor MNA TS (sin React)
 
 ---
 
-## Flujo de simulación (actual)
+## Flujo de simulación (actual — Jun 2026)
 
 1. Usuario pulsa **INICIAR** → `simulationRunning = true`
-2. `useSimulation` arma `SimulateRequest` desde el store
-3. `POST /api/simulate` con `analysis: transient`, `duration = DT` (~16 ms)
-4. Backend: validar → resolver nodos → armar MNA → `numpy.linalg.solve`
-5. Respuesta → `setSimResults` → LED, multímetro, sondas Plotly
+2. `useSimulation` llama `runLocalSimulationStep()` vía `requestAnimationFrame`
+3. `SimulationEngine.advanceStep(DT)` — MNA + Backward Euler en `src/engine/`
+4. Resultados → multímetro, LED, sondas Plotly
 
-**Problema:** un request HTTP por tick de simulación.
+**Backend Python:** opcional para validación, netlist SPICE y referencia cruzada (Luisa).
 
-### Flujo objetivo
+### Flujo legacy (deprecado)
 
-1. Cambio en circuito → invalidar cache de simulación
-2. Loop `requestAnimationFrame` → `engine.step(DT)` local
-3. Opcional: sync batch al backend para validación SPICE
+~~Polling HTTP `POST /api/simulate` cada tick~~ — reemplazado por motor local.
 
 ---
 

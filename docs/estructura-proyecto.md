@@ -24,13 +24,18 @@ proyectoElectro+/
 │   │   ├── status/
 │   │   └── symbols/
 │   ├── features/editor/        # React Flow canvas
+│   ├── engine/                 # Motor MNA TS (Luisa) — implementado
 │   ├── hooks/
 │   ├── store/circuitStore.ts
 │   ├── services/api.ts
+│   ├── services/localSimulation.ts
 │   ├── core/constants.ts
 │   ├── types/
 │   └── utils/
 ├── docs/                       # Documentación del equipo
+│   ├── TAREAS-POR-RAMA.md      # División de trabajo
+│   ├── DOCUMENTACION_COMPLETA.md
+│   └── …
 ├── test_backend.py
 ├── eslint.config.js
 ├── tailwind.config.js

@@ -8,17 +8,11 @@
 
 ## 1. Resumen ejecutivo
 
-LabCircuitos es un **simulador de circuitos funcional** con frontend React + backend FastAPI/MNA. El producto **compila y corre** (`pnpm build` OK, backend en `:8000`, frontend en `:5174`).
+> **Actualización Jun 2026:** Se implementó `src/engine/` (MNA TS), simulación local en cliente y docs por rama (`docs/TAREAS-POR-RAMA.md`). Los hallazgos A1 y A4 de abajo están **resueltos**.
 
-Sin embargo, la arquitectura actual **no cumple** la especificación objetivo del documento de actualización (FSD, motor TS independiente, Canvas 2D, React 19, tema dark industrial). Existe **deuda técnica moderada-alta** concentrada en:
+LabCircuitos es un **simulador de circuitos funcional** con frontend React + motor MNA TypeScript local + backend FastAPI opcional. El producto **compila y corre** (`pnpm build` OK, frontend en `:5174`).
 
-- Acoplamiento UI ↔ simulación (loop HTTP por tick)
-- Store monolítico (`circuitStore.ts` ~400 líneas)
-- Bundle frontend ~5 MB (Plotly)
-- Duplicación de formateo y resolución de nodos
-- Dependencias frontend sin uso aparente
-
-**Recomendación:** adoptar migración **incremental** (ver `docs/roadmap.md`) sin reescribir todo de golpe.
+Pendiente de la spec `acctulizacio.mkd`: FSD completo, Canvas 2D, React 19, modelos avanzados (diodo/transistor reales).
 
 ---
 
@@ -31,7 +25,7 @@ Sin embargo, la arquitectura actual **no cumple** la especificación objetivo de
 | UI | React 18 + Tailwind + componentes en `src/components/` |
 | Editor | **React Flow** (SVG/DOM), no Canvas 2D |
 | Estado | Zustand monolítico `src/store/circuitStore.ts` |
-| Simulación UI | `useSimulation.ts` — polling HTTP cada ~100 ms |
+| Simulación UI | `useSimulation.ts` — motor local `src/engine/` (~60 FPS) |
 | Gráficas | Plotly (`react-plotly.js`) |
 | Persistencia | `localStorage` + export/import JSON |
 
@@ -58,10 +52,10 @@ Usuario → React Flow / Store → useSimulation → POST /api/simulate
 
 | ID | Problema | Impacto | Prioridad | Recomendación |
 |----|----------|---------|-----------|---------------|
-| A1 | **No hay motor TS en `engine/`** (spec FSD) | Imposible simular offline; latencia de red | **P0** | Fase 2 roadmap: `src/engine/` + adapter API |
+| A1 | ~~No hay motor TS en `engine/`~~ | — | **✅ Resuelto** | `src/engine/` implementado |
 | A2 | **React Flow vs Canvas 2D** (spec) | Desvío arquitectónico mayor | **P1** | Mantener React Flow a corto plazo; evaluar Canvas en v2 |
 | A3 | **`circuitStore.ts` monolítico** (~400 LOC) | Difícil testear y escalar | **P0** | Dividir: circuit / simulation / probes / history |
-| A4 | **Simulación vía HTTP por tick** | Carga servidor, jitter UI | **P0** | Batch steps o motor local + sync opcional |
+| A4 | ~~Simulación vía HTTP por tick~~ | — | **✅ Resuelto** | Motor local + `localSimulation.ts` |
 | A5 | **Bundle ~5 MB** (Plotly en chunk principal) | TTFB / parse lento | **P0** | Lazy-load Plotly + manualChunks |
 | A6 | **Duplicación `fmtV`/`fmtI`** | Mantenimiento | **P2** | `shared/lib/formatElectrical.ts` |
 | A7 | **Duplicación merge nodos** (validator + engine) | Bugs inconsistentes | **P1** | Extraer `resolveNodes()` compartido en backend |

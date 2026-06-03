@@ -110,7 +110,7 @@ Actualiza documentación de arquitectura FSD
 | Panel UI nuevo | `src/components/` | `src/widgets/` |
 | Acción usuario | `src/hooks/` o store | `src/features/` |
 | Tipo de componente | `src/types` + `constants` | `entities/element` |
-| Lógica simulación TS | — | `src/engine/` |
+| Lógica simulación TS | `src/engine/` (Luisa) | `src/engine/` |
 | Endpoint API | `backend/api/` | idem |
 
 Consultar `docs/estructura-proyecto.md` antes de crear carpetas nuevas.

@@ -11,10 +11,11 @@ Simulador de circuitos eléctricos interactivo con **tema claro profesional** (c
 | Nombre          | LabCircuitos                                                                                |
 | Stack Frontend  | React 18 + TypeScript + Vite + Tailwind CSS + React Flow + Zustand + Framer Motion + Plotly |
 | Stack Backend   | Python + FastAPI + Numpy + PySpice/Ngspice                                                  |
-| Puerto Frontend | `localhost:5173`                                                                            |
-| Puerto Backend  | `localhost:8000`                                                                            |
-| Package Manager | pnpm                                                                                        |
-| Build           | 308 módulos, 0 errores TS, 0 errores Vite                                                   |
+| Puerto Frontend | `localhost:5174`                                                                            |
+| Puerto Backend  | `localhost:8000` (opcional; simulación principal en cliente)                                |
+| Package Manager | **pnpm** (no usar npm)                                                                      |
+| Build           | 274 módulos, 0 errores TS, 0 errores Vite                                                   |
+| Tareas equipo   | Ver `docs/TAREAS-POR-RAMA.md`                                                               |
 
 ---
 
@@ -22,11 +23,13 @@ Simulador de circuitos eléctricos interactivo con **tema claro profesional** (c
 
 | Persona    | Rama                    | Rol Principal                                                                 |
 | ---------- | ----------------------- | ----------------------------------------------------------------------------- |
-| **Luisa**  | `feature/luisa-backend` | Backend — API, simulación MNA/SPICE, validación de circuitos, test de backend |
-| **Miguel** | `feature/miguel-editor` | Editor — React Flow, componentes, store Zustand, conexiones, simulación loop  |
-| **Josue**  | `feature/josue-ui`      | UI/UX, paneles, calculadora, revisión de calidad, coordinación del equipo     |
+| **Luisa**  | `feature/luisa-backend` | **Simulación eléctrica** — `src/engine/`, backend MNA, validación, tests      |
+| **Miguel** | `feature/miguel-editor` | **Editor** — React Flow, store, cables, atajos (no toca `src/engine/`)        |
+| **Josue**  | `feature/josue-ui`      | **UI/UX**, paneles, calculadora, docs, coordinación del equipo                |
 
-> Josue coordina la calidad del proyecto: revisa que todo funcione correctamente, que la lógica tenga sentido, que las conexiones entre frontend y backend sean coherentes, y propone mejoras. Él indica qué hacer y cuándo, pero las decisiones de merge se toman entre los 3.
+> **Documentación de tareas por persona:** [TAREAS-POR-RAMA.md](TAREAS-POR-RAMA.md) · [TAREAS-LUISA.md](TAREAS-LUISA.md) · [TAREAS-MIGUEL.md](TAREAS-MIGUEL.md) · [TAREAS-JOSUE.md](TAREAS-JOSUE.md)
+
+> Josue coordina la calidad del proyecto: revisa PRs, mantiene docs y propone mejoras. Las decisiones de merge se toman entre los 3.
 
 ---
 
@@ -189,107 +192,67 @@ proyectoElectro+/
 
 ---
 
-### 5.1 LUIS — Backend + Integración SPICE
+### 5.1 LUIS — Simulación de circuitos (backend + motor TS)
 
-**Rama:** `feature/luisa-backend`
+**Rama:** `feature/luisa-backend`  
+**Guía detallada:** [TAREAS-LUISA.md](TAREAS-LUISA.md)
+
 **Archivos que le corresponden:**
 
 - `backend/` (main.py, api/, models/, simulation/, spice/, validators/)
+- `src/engine/` — motor MNA TypeScript (ownership Luisa)
+- `src/services/localSimulation.ts` — contrato UI ↔ motor
 - `test_backend.py`
-- `src/services/api.ts` (solo si necesita cambiar la comunicación)
 
-#### Día 1 — Diagnóstico y reparación del backend
+**Prioridades actuales (P0):**
 
-| Hora | Tarea                                | Archivos                                  | Verificación                            |
-| ---- | ------------------------------------ | ----------------------------------------- | --------------------------------------- |
-| 1h   | Verificar que ngspice esté instalado | —                                         | `ngspice --version` funciona            |
-| 1h   | Probar endpoint POST /api/simulate   | `backend/main.py`                         | curl retorna 200 con JSON               |
-| 2h   | Corregir ground validator BFS        | `backend/validators/circuit_validator.py` | Detecta tierra conectada indirectamente |
-| 1h   | Agregar tipos: diodo, transistor     | `backend/simulation/engine.py`            | Acepta type='diode', 'transistor'       |
+| ID | Tarea |
+|----|-------|
+| L-01 | Tomar ownership de `src/engine/` — revisar y extender |
+| L-02 | Paridad validación Python ↔ TypeScript |
+| L-03 | Alinear `ComponentType` backend con frontend |
+| L-04 | Unificar resolución de nodos en backend |
+| L-05 | Tests regresión ampliados |
 
-#### Día 2 — Mejoras de simulación
+**Verificación diaria:**
 
-| Tarea                             | Archivos                       | Detalle                              |
-| --------------------------------- | ------------------------------ | ------------------------------------ |
-| Simulación automática al conectar | `backend/main.py`              | Endpoint detecta cambios y re-simula |
-| Test circuito 9V + R + LED        | `test_backend.py`              | Corriente esperada ~9mA              |
-| Validar nodeVoltages arrays       | `backend/simulation/engine.py` | Arrays por nodo con datos correctos  |
-| Corregir branchCurrents           | `backend/simulation/engine.py` | Current por componente correcto      |
-
-#### Día 3 — Robustez y rendimiento
-
-| Tarea                         | Archivos                             | Detalle                          |
-| ----------------------------- | ------------------------------------ | -------------------------------- |
-| Pruebas de estrés (10+ comps) | Crear `backend/tests/stress_test.py` | Circuitos grandes                |
-| Medir tiempos de simulación   | `backend/main.py`                    | Logging de duración              |
-| Cache de resultados           | `backend/main.py`                    | No re-simular si no cambió       |
-| Manejo de errores robusto     | `backend/main.py`                    | Try/except en toda la simulación |
-
-#### Día 4 — Cierre
-
-| Tarea                  | Archivos                  | Detalle                        |
-| ---------------------- | ------------------------- | ------------------------------ |
-| Pruebas de regresión   | `test_backend.py` + tests | Todo sigue funcionando         |
-| Merge a `release/v1.0` | —                         | PR aprobado por Josue + Miguel |
+```bash
+pnpm exec tsx src/engine/demo/smokeTest.ts
+cd backend && python test_backend.py
+```
 
 ---
 
-### 5.2 MIGUEL — Editor + Componentes + Store
+### 5.2 MIGUEL — Editor + Store
 
-**Rama:** `feature/miguel-editor`
+**Rama:** `feature/miguel-editor`  
+**Guía detallada:** [TAREAS-MIGUEL.md](TAREAS-MIGUEL.md)
+
 **Archivos que le corresponden:**
 
 - `src/features/editor/CircuitEditor.tsx`
 - `src/features/editor/ComponentNode.tsx`
 - `src/store/circuitStore.ts`
-- `src/hooks/useSimulation.ts`
 - `src/hooks/useCircuit.ts`
-- `src/types/index.ts`
-- `src/core/constants.ts`
-- `src/utils/componentHandles.ts`
-- `src/App.tsx` (solo función loadDemo y shortcuts)
+- `src/utils/circuit.ts`, `src/utils/componentHandles.ts`
 
-#### Día 1 — Diagnóstico y corrección del editor
+**NO tocar:** `src/engine/**` (simulación = Luisa)
 
-| Hora | Tarea                              | Archivos                  | Verificación                  |
-| ---- | ---------------------------------- | ------------------------- | ----------------------------- |
-| 1h   | Probar drag de componentes         | `CircuitEditor.tsx`       | Arrastrar se mueve libremente |
-| 1h   | Verificar onNodesChange sin filtro | `CircuitEditor.tsx:84-96` | Sin `dragging === false`      |
-| 1h   | Verificar handles y conexiones     | `ComponentNode.tsx`       | Handles aparecen en hover     |
-| 1h   | Probar batería +/− coloreados      | `ComponentNode.tsx`       | Verde (−) izq, rojo (+) der   |
-| 1h   | nodeDragThreshold: 0               | `CircuitEditor.tsx:208`   | Drag inicia inmediato         |
+**Prioridades actuales (P0):**
 
-#### Día 2 — Corrección de funcionalidades
-
-| Tarea                            | Archivos              | Detalle                 |
-| -------------------------------- | --------------------- | ----------------------- |
-| Selección múltiple (Shift+click) | `CircuitEditor.tsx`   | Shift selecciona varios |
-| Undo/redo (Ctrl+Z)               | `circuitStore.ts`     | Deshacer/rehacer        |
-| Rotación y duplicado             | `PropertiesPanel.tsx` | Botones funcionales     |
-| Multi-selección + Delete         | `App.tsx:100-113`     | Eliminar varios comps   |
-
-#### Día 3 — Validación completa
-
-| Tarea                      | Archivos                  | Detalle                                           |
-| -------------------------- | ------------------------- | ------------------------------------------------- |
-| LED on/off con simulación  | `ComponentNode.tsx:47`    | `isLit` con `simulationRunning && current > 1e-6` |
-| Cables animados bezier     | `CircuitEditor.tsx:76-81` | `animated: true`                                  |
-| Probar Select, Wire, Probe | `circuitStore.ts`         | 3 herramientas funcionales                        |
-| Circuito demo completo     | `App.tsx:27-67`           | Todo funciona junto                               |
-
-#### Día 4 — Cierre
-
-| Tarea                        | Archivos | Detalle                  |
-| ---------------------------- | -------- | ------------------------ |
-| Build final                  | —        | `pnpm build` sin errores |
-| Integración frontend+backend | —        | Probar juntos            |
-| Merge a `release/v1.0`       | —        | PR aprobado              |
+| ID | Tarea |
+|----|-------|
+| M-02 | Dividir `circuitStore.ts` en slices |
+| M-03 | Reducir re-renders en `ComponentNode` durante simulación |
+| M-04 | Conexión de cables robusta |
+| M-05 | Atajos teclado (R,C,L,V,I,S,G,W, Delete, Ctrl+Z/Y) |
 
 ---
 
 ### 5.3 JOSUE — UI/UX + Coordinación
 
-**Rama:** `feature/josue-ui`
+**Rama:** `feature/josue-ui`  
+**Guía detallada:** [TAREAS-JOSUE.md](TAREAS-JOSUE.md)
 **Archivos que le corresponden:**
 
 - `src/index.css` + `tailwind.config.js` — Estilos globales
@@ -362,16 +325,13 @@ proyectoElectro+/
 
 ## 6. Checklist Completo
 
-### Backend (Luisa)
+### Backend + motor TS (Luisa)
 
-- [ ] A1 — POST /api/simulate retorna nodeVoltages y branchCurrents correctos
-- [ ] A2 — Ground validator BFS detecta tierra directa e indirecta
-- [ ] A3 — Circuito 9V+R+LED simula ~9mA
-- [ ] A4 — Errores descriptivos sin crash del servidor
-- [ ] A5 — Simulación de 10+ componentes en <2s
-- [ ] A6 — Netlist SPICE bien formada
-- [ ] A7 — Backend arranca con `python main.py`
-- [ ] A8 — Tipos diodo y transistor implementados en engine.py
+- [ ] L-01 — Ownership de `src/engine/` verificado
+- [ ] L-02 — Paridad validación Python ↔ TS
+- [ ] L-03 — Tipos backend alineados con frontend
+- [ ] L-04 — Resolución de nodos unificada en backend
+- [ ] L-05 — `pnpm exec tsx src/engine/demo/smokeTest.ts` + `test_backend.py` OK
 
 ### Editor (Miguel)
 
@@ -408,7 +368,7 @@ proyectoElectro+/
 
 Ejecutar en orden ANTES del merge a `main`:
 
-1. Abrir `http://localhost:5173`
+1. Abrir `http://localhost:5174`
 2. Hacer clic en **"Cargar circuito demo"**
 3. Arrastrar cada tipo de componente (deben moverse suavemente)
 4. Pasar mouse sobre los terminales de un componente (deben aparecer puntos)
@@ -474,8 +434,11 @@ git push origin feature/josue-ui
 - **Batería:** Terminal rojo (+) es source handle (posición derecha), terminal verde (−) es target handle (posición izquierda).
 - **Cables:** Tipo `bezier` con `MarkerType.ArrowClosed` y `animated: true`.
 - **Tema claro:** Tokens en `tailwind.config.js` (`surface`, `primary`, `gold`, `ink`) y guía en `docs/TEMA_UI.md`. Sin modo oscuro.
-- **Build actual:** 308 módulos, 0 errores TypeScript, 0 errores Vite.
+- **Simulación local:** `useSimulation` usa `src/engine/` vía `localSimulation.ts` (~60 FPS, sin HTTP por tick).
+- **Backend opcional:** API Python sigue disponible para validación/export SPICE.
+- **Build actual:** 274 módulos, bundle principal ~237 KB (+ Plotly lazy).
+- **Gestor de paquetes:** solo `pnpm` — ver README.
 
 ---
 
-_3 Integrantes: Luisa (Backend), Miguel (Editor), Josue (UI/UX + Coordinación)_
+_3 Integrantes: Luisa (Simulación), Miguel (Editor), Josue (UI/UX + Coordinación)_
