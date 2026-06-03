@@ -8,7 +8,6 @@ import ReactFlow, {
   type Edge,
   type Connection,
   type NodeChange,
-  type EdgeChange,
   useReactFlow,
   ReactFlowProvider,
   SelectionMode,
@@ -39,28 +38,25 @@ function CanvasInner({ width, height }: Props) {
   const removeComponent = useCircuitStore((s) => s.removeComponent);
   const setActiveTool = useCircuitStore((s) => s.setActiveTool);
   const addProbe = useCircuitStore((s) => s.addProbe);
-  const connectTerminals = useCircuitStore((s) => s.connectTerminals);
-  const startConnection = useCircuitStore((s) => s.startConnection);
-  const completeConnection = useCircuitStore((s) => s.completeConnection);
-  const connectingFrom = useCircuitStore((s) => s.connectingFrom);
 
-  const nodes: Node<ComponentNodeData>[] = useMemo(() =>
-    Object.values(components).map((c) => ({
-      id: c.id,
-      type: 'component',
-      position: c.position,
-      data: {
-        label: c.label,
-        type: c.type,
-        params: c.params,
-        rotation: c.rotation,
+  const nodes: Node<ComponentNodeData>[] = useMemo(
+    () =>
+      Object.values(components).map((c) => ({
+        id: c.id,
+        type: 'component',
+        position: c.position,
+        data: {
+          label: c.label,
+          type: c.type,
+          params: c.params,
+          rotation: c.rotation,
+          selected: c.id === selectedId,
+        },
         selected: c.id === selectedId,
-      },
-      selected: c.id === selectedId,
-      deletable: true,
-      draggable: true,
-      selectable: true,
-    })),
+        deletable: true,
+        draggable: true,
+        selectable: true,
+      })),
     [components, selectedId],
   );
 
@@ -75,69 +71,80 @@ function CanvasInner({ width, height }: Props) {
       targetHandle: `term${termIndex(w.toTerminalId)}`,
       type: 'bezier',
       animated: true,
-      style: { stroke: '#64748b', strokeWidth: 2.5 },
+      style: { stroke: '#6B7280', strokeWidth: 2.5 },
       active: false,
-        markerEnd: { type: MarkerType.ArrowClosed, color: '#64748b' },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#6B7280' },
     }));
-  }, [wires, components, terminals]);
+  }, [wires, terminals]);
 
-  const onNodesChange = useCallback((changes: NodeChange[]) => {
-    for (const ch of changes) {
-      if (ch.type === 'position' && ch.position) {
-        moveComponent(ch.id, ch.position as Point);
+  const onNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      for (const ch of changes) {
+        if (ch.type === 'position' && ch.position) {
+          moveComponent(ch.id, ch.position as Point);
+        }
+        if (ch.type === 'remove') {
+          removeComponent(ch.id);
+        }
+        if (ch.type === 'select') {
+          if (ch.selected) selectComponent(ch.id);
+        }
       }
-      if (ch.type === 'remove') {
-        removeComponent(ch.id);
-      }
-      if (ch.type === 'select') {
-        if (ch.selected) selectComponent(ch.id);
-      }
-    }
-  }, [moveComponent, removeComponent, selectComponent]);
+    },
+    [moveComponent, removeComponent, selectComponent],
+  );
 
-  const onEdgesChange = useCallback((_changes: EdgeChange[]) => {}, []);
+  const onEdgesChange = useCallback(() => {}, []);
 
   const onConnect = useCallback((conn: Connection) => {
     if (!conn.source || !conn.target || !conn.sourceHandle || !conn.targetHandle) return;
-    
+
     const state = useCircuitStore.getState();
     const srcComp = state.circuit.components[conn.source];
     const tgtComp = state.circuit.components[conn.target];
-    
+
     if (!srcComp || !tgtComp) return;
-    
+
     // Get handle IDs from connection
     const srcHandleId = conn.sourceHandle;
     const tgtHandleId = conn.targetHandle;
-    
+
     // Find terminal IDs that match the handles
-    const srcTerminal = srcComp.terminalIds.find(tid => {
+    const srcTerminal = srcComp.terminalIds.find((tid) => {
       const term = state.circuit.terminals[tid];
       const handleIndex = term?.index ?? 0;
       return srcHandleId === `term${handleIndex}`;
     });
-    
-    const tgtTerminal = tgtComp.terminalIds.find(tid => {
+
+    const tgtTerminal = tgtComp.terminalIds.find((tid) => {
       const term = state.circuit.terminals[tid];
       const handleIndex = term?.index ?? 0;
       return tgtHandleId === `term${handleIndex}`;
     });
-    
+
     if (srcTerminal && tgtTerminal) {
       state.connectTerminals(srcTerminal, tgtTerminal);
-      
+
       // Auto-add probes to interesting components for visualization
       const componentsToProbe = ['led', 'capacitor', 'inductor', 'resistor'];
-      if (componentsToProbe.includes(srcComp.type) && !state.probes.some(p => p.componentId === srcComp.id && p.type === 'current')) {
+      if (
+        componentsToProbe.includes(srcComp.type) &&
+        !state.probes.some((p) => p.componentId === srcComp.id && p.type === 'current')
+      ) {
         state.addProbe('current', srcComp.id);
       }
-      if (componentsToProbe.includes(tgtComp.type) && !state.probes.some(p => p.componentId === tgtComp.id && p.type === 'current')) {
+      if (
+        componentsToProbe.includes(tgtComp.type) &&
+        !state.probes.some((p) => p.componentId === tgtComp.id && p.type === 'current')
+      ) {
         state.addProbe('current', tgtComp.id);
       }
-      
+
       // Auto-start simulation after connection
       if (!state.simulationRunning) {
-        setTimeout(() => { state.toggleSimulation(); }, 300);
+        setTimeout(() => {
+          state.toggleSimulation();
+        }, 300);
       }
     }
   }, []);
@@ -147,14 +154,17 @@ function CanvasInner({ width, height }: Props) {
     e.dataTransfer.dropEffect = 'copy';
   }, []);
 
-  const onDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const type = e.dataTransfer.getData('componentType') as ComponentType;
-    if (!type) return;
-    const bounds = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY });
-    addComponent(type, { x: bounds.x, y: bounds.y });
-    setActiveTool('select');
-  }, [rf, addComponent, setActiveTool]);
+  const onDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      const type = e.dataTransfer.getData('componentType') as ComponentType;
+      if (!type) return;
+      const bounds = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY });
+      addComponent(type, { x: bounds.x, y: bounds.y });
+      setActiveTool('select');
+    },
+    [rf, addComponent, setActiveTool],
+  );
 
   const handlePaneClick = useCallback(() => {
     if (activeTool !== 'select' && activeTool !== 'wire' && activeTool !== 'probe') {
@@ -162,30 +172,35 @@ function CanvasInner({ width, height }: Props) {
     }
   }, [activeTool, setActiveTool]);
 
-  const handleNodeClick = useCallback((_e: React.MouseEvent, node: Node) => {
-    if (activeTool === 'probe') {
-      addProbe('voltage', node.id, 0);
-      return;
-    }
-    if (activeTool === 'wire') {
-      const state = useCircuitStore.getState();
-      const comp = state.circuit.components[node.id];
-      if (!comp) return;
-      const terminalId = state.connectingFrom === null
-        ? comp.terminalIds[1]
-        : comp.terminalIds[0];
-      if (state.connectingFrom) {
-        state.completeConnection(terminalId);
-      } else {
-        state.startConnection(terminalId);
+  const handleNodeClick = useCallback(
+    (_e: React.MouseEvent, node: Node) => {
+      if (activeTool === 'probe') {
+        addProbe('voltage', node.id, 0);
+        return;
       }
-      return;
-    }
-    selectComponent(node.id);
-  }, [activeTool, addProbe, selectComponent, setActiveTool]);
+      if (activeTool === 'wire') {
+        const state = useCircuitStore.getState();
+        const comp = state.circuit.components[node.id];
+        if (!comp) return;
+        const terminalId =
+          state.connectingFrom === null ? comp.terminalIds[1] : comp.terminalIds[0];
+        if (state.connectingFrom) {
+          state.completeConnection(terminalId);
+        } else {
+          state.startConnection(terminalId);
+        }
+        return;
+      }
+      selectComponent(node.id);
+    },
+    [activeTool, addProbe, selectComponent],
+  );
 
   return (
-    <div className="w-full h-full" style={{ width: Math.max(width, 200), height: Math.max(height, 200) }}>
+    <div
+      className="w-full h-full"
+      style={{ width: Math.max(width, 200), height: Math.max(height, 200) }}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -213,16 +228,19 @@ function CanvasInner({ width, height }: Props) {
         defaultEdgeOptions={{
           type: 'bezier',
           animated: true,
-          style: { stroke: '#64748b', strokeWidth: 2.5 },
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#64748b' },
+          style: { stroke: '#6B7280', strokeWidth: 2.5 },
+          markerEnd: { type: MarkerType.ArrowClosed, color: '#6B7280' },
         }}
       >
-        <Background color="#334155" gap={GRID_SIZE} size={1} />
-        <Controls showInteractive={false} className="!bg-surface-800 !border-surface-700 !rounded-lg !shadow-sm !text-slate-400" />
+        <Background color="#E8E0D0" gap={GRID_SIZE} size={1} />
+        <Controls
+          showInteractive={false}
+          className="!bg-surface-800 !border-surface-700 !rounded-lg !shadow-sm !text-surface-500"
+        />
         <MiniMap
-          nodeStrokeColor="#3b82f6"
-          nodeColor="#28283d"
-          maskColor="rgba(15,16,25,0.8)"
+          nodeStrokeColor="#1F4D3A"
+          nodeColor="#9EBFB0"
+          maskColor="rgba(248,245,239,0.6)"
           className="!bg-surface-900 !border !border-surface-700 !rounded-lg !shadow-sm"
         />
       </ReactFlow>

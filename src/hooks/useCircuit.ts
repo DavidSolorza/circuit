@@ -34,6 +34,9 @@ export function useCircuit() {
     duplicateComponent: duplicate,
     selectComponent: select,
     updateParam,
-    undo, redo, undoCount, redoCount,
+    undo,
+    redo,
+    undoCount,
+    redoCount,
   };
 }

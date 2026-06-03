@@ -1,8 +1,17 @@
-import type { ComponentType, Point } from '../types';
+import type { ComponentType } from '../types';
+import type React from 'react';
 
 export interface HandleConfig {
   id: string;
-  position: 'left' | 'right' | 'top' | 'bottom' | 'topleft' | 'topright' | 'bottomleft' | 'bottomright';
+  position:
+    | 'left'
+    | 'right'
+    | 'top'
+    | 'bottom'
+    | 'topleft'
+    | 'topright'
+    | 'bottomleft'
+    | 'bottomright';
   label?: string;
   isPositive?: boolean; // For battery/sources
 }
@@ -49,9 +58,7 @@ export const componentHandleConfigs: Record<ComponentType, HandleConfig[]> = {
     { id: 'term0', position: 'left', label: '1' },
     { id: 'term1', position: 'right', label: '2' },
   ],
-  ground: [
-    { id: 'term0', position: 'top', label: 'GND' },
-  ],
+  ground: [{ id: 'term0', position: 'top', label: 'GND' }],
   voltmeter: [
     { id: 'term0', position: 'left', label: '-' },
     { id: 'term1', position: 'right', label: '+' },
@@ -67,7 +74,10 @@ export function getHandleConfig(componentType: ComponentType): HandleConfig[] {
 }
 
 // Get CSS position for handle based on its configuration
-export function getHandlePositionCSS(handleConfig: HandleConfig, nodeSize: { width: number; height: number }): React.CSSProperties {
+export function getHandlePositionCSS(
+  handleConfig: HandleConfig,
+  _nodeSize: { width: number; height: number },
+): React.CSSProperties {
   const baseStyle: React.CSSProperties = {
     position: 'absolute',
     width: '20px',

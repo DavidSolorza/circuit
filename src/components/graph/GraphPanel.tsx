@@ -1,7 +1,8 @@
-import { useMemo, memo } from 'react';
-import Plot from 'react-plotly.js';
+import { lazy, Suspense, useMemo, memo } from 'react';
 import { useGraph } from '../../hooks/useGraph';
 import { useCircuitStore } from '../../store/circuitStore';
+
+const Plot = lazy(() => import('react-plotly.js'));
 
 function GraphPanelInner() {
   const { traces, clearData } = useGraph();
@@ -24,10 +25,13 @@ function GraphPanelInner() {
   return (
     <div className="h-full flex flex-col bg-surface-900">
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-surface-700 shrink-0">
-        <span className="text-[10px] text-slate-500 uppercase tracking-wider">Osciloscopio</span>
+        <span className="panel-label">Osciloscopio</span>
         <div className="flex items-center gap-2">
-          <span className="text-[9px] text-slate-600">{traces.length} señal(es)</span>
-          <button onClick={clearData} className="text-[9px] text-slate-500 hover:text-slate-300 transition-colors px-1.5 py-0.5 rounded bg-surface-800 border border-surface-700">
+          <span className="text-[10px] text-ink-faint font-mono">{traces.length} señal(es)</span>
+          <button
+            onClick={clearData}
+            className="text-[10px] text-ink-faint hover:text-ink transition-colors px-2 py-1 rounded-md bg-surface-800 border border-surface-700 hover:border-primary-500/30"
+          >
             Limpiar
           </button>
         </div>
@@ -35,44 +39,65 @@ function GraphPanelInner() {
 
       <div className="flex-1 min-h-0">
         {plotTraces.length > 0 ? (
-          <Plot
-            data={plotTraces}
-            layout={{
-              autosize: true,
-              margin: { l: 40, r: 10, t: 20, b: 30 },
-              paper_bgcolor: 'rgba(26,27,46,0)',
-              plot_bgcolor: 'rgba(26,27,46,0)',
-              font: { color: '#94a3b8', size: 10 },
-              xaxis: {
-                gridcolor: '#334155',
-                zerolinecolor: '#475569',
-                title: { text: 'Tiempo (s)', font: { size: 9, color: '#94a3b8' } },
-                color: '#64748b',
-              },
-              yaxis: {
-                gridcolor: '#334155',
-                zerolinecolor: '#475569',
-                title: { text: 'Valor', font: { size: 9, color: '#94a3b8' } },
-                color: '#64748b',
-              },
-              legend: {
-                font: { size: 8, color: '#94a3b8' },
-                bgcolor: 'rgba(26,27,46,0.8)',
-                borderColor: '#334155',
-              },
-              dragmode: 'zoom',
-              hovermode: 'closest',
-            }}
-            config={{
-              displayModeBar: false,
-              responsive: true,
-            }}
-            useResizeHandler
-            style={{ width: '100%', height: '100%' }}
-          />
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-full text-xs text-ink-faint">
+                Cargando osciloscopio…
+              </div>
+            }
+          >
+            <Plot
+              data={plotTraces}
+              layout={{
+                autosize: true,
+                margin: { l: 40, r: 10, t: 20, b: 30 },
+                paper_bgcolor: 'rgba(255,252,247,0)',
+                plot_bgcolor: 'rgba(255,252,247,0)',
+                font: { color: '#6B7280', size: 10 },
+                xaxis: {
+                  gridcolor: '#E8E0D0',
+                  zerolinecolor: '#D0C8B5',
+                  title: { text: 'Tiempo (s)', font: { size: 9, color: '#6B7280' } },
+                  color: '#6B7280',
+                },
+                yaxis: {
+                  gridcolor: '#E8E0D0',
+                  zerolinecolor: '#D0C8B5',
+                  title: { text: 'Valor', font: { size: 9, color: '#6B7280' } },
+                  color: '#6B7280',
+                },
+                legend: {
+                  font: { size: 8, color: '#6B7280' },
+                  bgcolor: 'rgba(255,252,247,0.8)',
+                  bordercolor: '#E8E0D0',
+                },
+                dragmode: 'zoom',
+                hovermode: 'closest',
+              }}
+              config={{
+                displayModeBar: false,
+                responsive: true,
+              }}
+              useResizeHandler
+              style={{ width: '100%', height: '100%' }}
+            />
+          </Suspense>
         ) : (
-          <div className="flex items-center justify-center h-full text-xs text-slate-600">
-            {probes.length === 0 ? 'Añade sondas a los componentes para ver señales' : 'Esperando datos...'}
+          <div className="flex flex-col items-center justify-center h-full text-xs text-ink-muted gap-1">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#8A877E"
+              strokeWidth="1.5"
+              className="mb-1 opacity-60"
+            >
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+            {probes.length === 0
+              ? 'Añade sondas a los componentes para ver señales'
+              : 'Esperando datos de simulación...'}
           </div>
         )}
       </div>
@@ -85,14 +110,17 @@ function GraphPanelInner() {
               className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] cursor-pointer transition-all"
               style={{
                 backgroundColor: p.visible ? `${p.color}20` : 'transparent',
-                color: p.visible ? p.color : '#64748b',
-                border: `1px solid ${p.visible ? p.color : '#334155'}`,
+                color: p.visible ? p.color : '#6B7280',
+                border: `1px solid ${p.visible ? p.color : '#E8E0D0'}`,
               }}
               onClick={() => toggleProbe(p.id)}
             >
               <span>{p.label}</span>
               <button
-                onClick={(e) => { e.stopPropagation(); removeProbe(p.id); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeProbe(p.id);
+                }}
                 className="ml-0.5 opacity-50 hover:opacity-100"
               >
                 ×

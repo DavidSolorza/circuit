@@ -1,120 +1,93 @@
-# Luisa — Backend + Simulación SPICE
+﻿# Luisa — Simulación de circuitos (backend + motor TS)
 
 **Rama:** `feature/luisa-backend`
+
+> **Tareas detalladas:** [TAREAS-LUISA.md](TAREAS-LUISA.md) · [TAREAS-POR-RAMA.md](TAREAS-POR-RAMA.md)
 
 ---
 
 ## ¿Qué hago yo?
 
-Tu eres la encargada de todo lo que pasa del lado del servidor. El frontend (React) se comunica con tu backend para simular circuitos. Sin tu backend, la simulación no funciona.
+Eres la responsable de que los circuitos se simulen **correctamente**: matemática MNA, validación, elementos eléctricos y paridad entre Python y el motor TypeScript.
+
+La UI ya simula en el cliente (`src/engine/`), pero tú mantienes la **verdad eléctrica** del proyecto.
 
 ## Tecnologías que usas
 
-- **Python 3.11+**
-- **FastAPI** — Framework web (servidor REST)
-- **Numpy** — Para el motor MNA (Modified Nodal Analysis)
-- **PySpice / Ngspice** — Alternativa de simulación SPICE
-- **Uvicorn** — Servidor ASGI para correr FastAPI
+- **Python 3.11+** · FastAPI · NumPy · Uvicorn
+- **TypeScript** · Motor MNA en `src/engine/` (Union-Find, Backward Euler, Gaussian elimination)
 
 ## Archivos que te corresponden
 
 ```
 backend/
-├── main.py                       # Servidor FastAPI (punto de entrada)
-├── api/routes.py                 # Endpoints REST
-├── models/
-│   ├── circuit.py                # Modelos de datos Python
-│   └── simulation.py             # Modelos de simulación
-├── simulation/
-│   └── engine.py                 # Motor MNA con numpy
-├── spice/
-│   └── builder.py                # Genera netlist SPICE
-├── validators/
-│   └── circuit_validator.py      # Valida circuitos (BFS, cortos, flotantes)
-└── requirements.txt              # Dependencias Python
+├── main.py
+├── simulation/engine.py
+├── validators/circuit_validator.py
+├── spice/builder.py
+└── models/
 
-test_backend.py                   # Script de prueba del backend
-src/services/api.ts               # Conexión frontend → backend (solo si cambia API)
+src/engine/                     # Motor TS — ownership Luisa
+├── elements/                   # stamp(), validate(), nuevos componentes
+├── solvers/                    # TransientMNASolver, MatrixBuilder
+├── validation/CircuitValidator.ts
+└── demo/smokeTest.ts
+
+src/services/localSimulation.ts # Puente UI ↔ motor (solo si cambia contrato)
+test_backend.py
 ```
+
+## NO tocar
+
+- `src/features/editor/**` → Miguel
+- `src/components/**` → Josue
+- `src/store/**` → Miguel
 
 ## Cómo empezar
 
 ```bash
-# 1. Ir a la carpeta backend
-cd backend
+git checkout feature/luisa-backend
+git pull origin feature/luisa-backend
+pnpm install
 
-# 2. Crear entorno virtual (solo primera vez)
+# Motor TS
+pnpm exec tsx src/engine/demo/smokeTest.ts
+
+# Backend
+cd backend
 python -m venv venv
 venv\Scripts\activate
-
-# 3. Instalar dependencias
 pip install -r requirements.txt
-
-# 4. Iniciar servidor
-python main.py
-# El servidor arranca en http://localhost:8000
-
-# 5. Probar desde otra terminal
-python test_backend.py
+python main.py          # http://localhost:8000
+python ../test_backend.py
 ```
 
-## Endpoints que debes mantener
+## Prioridades (P0)
+
+| ID | Tarea |
+|----|-------|
+| L-01 | Tomar ownership de `src/engine/` — revisar y extender |
+| L-02 | Paridad validación Python ↔ TS |
+| L-03 | Alinear `ComponentType` backend con frontend |
+| L-04 | Unificar resolución de nodos en backend |
+| L-05 | Tests regresión ampliados |
+
+## Endpoints backend (mantener)
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| POST | `/api/simulate` | Recibe un circuito JSON, ejecuta MNA/SPICE, devuelve voltajes y corrientes |
-| POST | `/api/validate` | Valida que el circuito sea correcto (tierra, sin cortos) |
-| GET | `/api/status` | Health check del servidor |
+| POST | `/api/simulate` | Simulación MNA (referencia / export) |
+| POST | `/api/validate` | Validación de circuito |
+| GET | `/api/health` | Health check |
 
-## Lo que debes hacer (Día 1-4)
+## Reglas
 
-### Día 1
-1. Verificar que ngspice está instalado: `ngspice --version`
-2. Probar endpoint POST /api/simulate con curl o test_backend.py
-3. Corregir ground validator BFS para detectar tierra aunque esté conectada por múltiples nodos
-4. Agregar tipos diodo y transistor al engine MNA
+1. Trabaja SOLO en `feature/luisa-backend`
+2. NUNCA push directo a `main`
+3. PR a `release/v1.0` con aprobación de los 3
+4. Sincroniza con `feature/josue-ui` cuando Josue suba cambios compartidos
 
-### Día 2
-1. Automatizar simulación al detectar cambios en el circuito
-2. Crear test con circuito 9V + R + LED (corriente esperada ~9mA)
-3. Validar que nodeVoltages devuelva arrays correctos
-4. Validar que branchCurrents devuelva corriente por componente
+## Dependencias con el equipo
 
-### Día 3
-1. Pruebas de estrés con 10+ componentes
-2. Medir y optimizar tiempos de simulación
-3. Implementar caché de resultados (no re-simular si el circuito no cambió)
-4. Manejo de errores robusto (try/except en toda la simulación)
-
-### Día 4
-1. Pruebas de regresión (todo lo que funcionaba sigue funcionando)
-2. Merge a release/v1.0 mediante Pull Request
-3. Josue y Miguel revisan tu PR antes del merge
-
-## Cómo probar tu código
-
-```bash
-# Test básico
-python test_backend.py
-
-# Con curl
-curl -X POST http://localhost:8000/api/simulate -H "Content-Type: application/json" -d @test_circuit.json
-
-# Ver que el servidor responde
-curl http://localhost:8000/api/status
-```
-
-## Reglas importantes
-
-1. Trabaja SOLO en tu rama `feature/luisa-backend`
-2. NUNCA hagas push a `main`
-3. Commits en español y descriptivos
-4. Cuando termines una funcionalidad → crea Pull Request a `release/v1.0`
-5. No se mergea nada sin que los 3 digan OK
-
-## Dependencias con los otros
-
-- **Miguel** (editor): necesita que tu endpoint `/api/simulate` funcione bien para que el LED encienda y las gráficas muestren datos
-- **Josue** (UI): necesita tus respuestas para mostrar mediciones en el multímetro y gráficas
-
-Si algo de tu backend cambia (nuevo endpoint, cambio en el formato de respuesta), avísales a ellos para que actualicen `src/services/api.ts`.
+- **Miguel** — editor; no modifica `src/engine/`
+- **Josue** — paneles UI; muestra resultados del motor que tú mantienes
