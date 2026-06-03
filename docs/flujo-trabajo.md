@@ -17,11 +17,13 @@ fix/critical-bugs    ← Hotfixes coordinados por Josue
 
 | Rama | Responsable | Dominio |
 |------|-------------|---------|
-| `feature/luisa-backend` | Luisa | API, MNA, validación, SPICE |
-| `feature/miguel-editor` | Miguel | React Flow, store, conexiones |
-| `feature/josue-ui` | Josue | UI, paneles, docs, calidad |
+| `feature/luisa-backend` | Luisa | **Simulación** — `src/engine/`, backend MNA, validación |
+| `feature/miguel-editor` | Miguel | **Editor** — React Flow, store, cables |
+| `feature/josue-ui` | Josue | **UI**, paneles, docs, coordinación |
 | `release/v1.0` | Equipo | Integración final |
 | `main` | Equipo | Estable |
+
+> Tareas detalladas: [TAREAS-POR-RAMA.md](TAREAS-POR-RAMA.md)
 
 > **Regla de oro:** ningún merge a `main` sin aprobación **unánime** de Luisa, Miguel y Josue.
 
