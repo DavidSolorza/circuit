@@ -3,6 +3,7 @@ import { symbolComponents } from '../symbols';
 import type { ComponentType, ToolType } from '../../types';
 import { useCircuitStore } from '../../store/circuitStore';
 import { COMPONENT_CATEGORIES, COMPONENT_TEMPLATES } from '../../core/constants';
+import { getComponentTooltip, TOOL_DESCRIPTIONS } from '../../core/tooltips';
 import type React from 'react';
 
 const nonComponentTools: Array<{ type: ToolType; label: string; icon: string }> = [
@@ -72,7 +73,7 @@ export function Toolbar() {
                 ? 'bg-primary-600/15 text-primary-600 ring-1 ring-primary-500/25 shadow-sm'
                 : 'text-ink-faint hover:text-ink hover:bg-surface-800'
             }`}
-            title={t.label}
+            title={TOOL_DESCRIPTIONS[t.type]}
           >
             <svg
               width="10"
@@ -111,7 +112,7 @@ export function Toolbar() {
                         ? 'bg-gold-50 ring-1 ring-gold-500/30 shadow-sm'
                         : 'hover:bg-surface-800'
                     }`}
-                    title={`Añadir ${type}`}
+                    title={getComponentTooltip(type)}
                   >
                     {Sym && (
                       <div className="shrink-0 w-10 h-6 flex items-center justify-center">
@@ -137,6 +138,11 @@ export function Toolbar() {
             const s = useCircuitStore.getState();
             s.toggleSimulation();
           }}
+          title={
+            simulationRunning
+              ? 'Detener simulación transitoria'
+              : 'Iniciar simulación (requiere tierra y circuito válido)'
+          }
           className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-bold tracking-wide transition-all shadow-sm ${
             simulationRunning
               ? 'bg-sim-running/15 text-sim-running border border-sim-running/30 hover:bg-sim-running/20'

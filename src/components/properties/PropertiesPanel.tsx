@@ -2,6 +2,8 @@ import { useCircuitStore } from '../../store/circuitStore';
 import { COMPONENT_TEMPLATES } from '../../core/constants';
 import { useMultimeter } from '../../hooks/useMultimeter';
 import { fmtV, fmtI } from '../../utils/formatElectrical';
+import { getComponentModelStatus, UNSUPPORTED_TYPES } from '../../utils/circuitModelInfo';
+import { ParamNumberField } from './ParamNumberField';
 
 export function PropertiesPanel() {
   const selectedId = useCircuitStore((s) => s.selectedComponentId);
@@ -41,9 +43,32 @@ export function PropertiesPanel() {
   const template = COMPONENT_TEMPLATES[comp.type];
   const readings = readComponent(comp);
   const simOk = simulationRunning && simResults?.status.success;
+  const modelStatus = getComponentModelStatus(comp);
+  const unsupportedInCircuit = Object.values(components).filter((c) =>
+    UNSUPPORTED_TYPES.has(c.type),
+  );
 
   return (
     <div className="p-4 space-y-3">
+      {unsupportedInCircuit.length > 0 && (
+        <div className="rounded-lg border border-gold-200 bg-gold-50 px-2.5 py-2 text-[10px] text-gold-800">
+          {unsupportedInCircuit.length} componente(s) no modelado(s) en el circuito — excluidos al
+          simular.
+        </div>
+      )}
+      {!modelStatus.supported && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-2 text-[10px] text-red-700">
+          <div className="font-semibold">No modelado</div>
+          <div className="mt-0.5 opacity-90">{modelStatus.message}</div>
+        </div>
+      )}
+      {modelStatus.approximated && modelStatus.message && (
+        <div className="rounded-lg border border-gold-200 bg-gold-50 px-2.5 py-2 text-[10px] text-gold-800">
+          <div className="font-semibold">Modelo aproximado</div>
+          <div className="mt-0.5 opacity-90">{modelStatus.message}</div>
+        </div>
+      )}
+
       <div className="space-y-1">
         <div className="text-sm font-semibold text-ink uppercase tracking-wide">
           {template?.label ?? comp.type}
@@ -58,33 +83,16 @@ export function PropertiesPanel() {
       {template?.paramDefs && template.paramDefs.length > 0 && (
         <div className="panel-section space-y-2.5">
           <div className="panel-label">Parámetros</div>
-          {template.paramDefs.map((def) => (
-            <div key={def.key}>
-              <label className="text-[10px] text-ink-faint">
-                {def.label} ({def.unit})
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="range"
-                  min={def.min}
-                  max={def.max}
-                  step={def.step}
-                  value={comp.params[def.key] ?? def.min}
-                  onChange={(e) => updateParam(comp.id, def.key, parseFloat(e.target.value))}
-                  className="flex-1 h-1 bg-surface-700 rounded-lg appearance-none cursor-pointer accent-primary-500"
-                />
-                <span className="text-[10px] text-ink-muted font-mono w-16 text-right tabular-nums">
-                  {comp.params[def.key]?.toFixed(
-                    def.step < 1
-                      ? def.key === 'capacitance' || def.key === 'inductance'
-                        ? 8
-                        : 1
-                      : 0,
-                  )}
-                </span>
-              </div>
-            </div>
-          ))}
+          {template.paramDefs
+            .filter((def) => def.key !== 'isClosed')
+            .map((def) => (
+              <ParamNumberField
+                key={def.key}
+                def={def}
+                value={comp.params[def.key] ?? def.min}
+                onCommit={(v) => updateParam(comp.id, def.key, v)}
+              />
+            ))}
           {comp.type === 'switch' && (
             <button
               onClick={() => updateParam(comp.id, 'isClosed', comp.params.isClosed ? 0 : 1)}

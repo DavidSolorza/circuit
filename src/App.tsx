@@ -5,11 +5,13 @@ import { MultimeterDisplay } from './components/multimeter/MultimeterDisplay';
 import { GraphPanel } from './components/graph/GraphPanel';
 import { SimulationStatus } from './components/status/SimulationStatus';
 import { CalculatorPage } from './components/calculator/CalculatorPage';
+import { ToastContainer } from './shared/ui';
 import { useSimulation } from './hooks/useSimulation';
 import { useCircuit } from './hooks/useCircuit';
 import { useCircuitPersistence } from './hooks/useCircuitPersistence';
 import { useCircuitStore } from './store/circuitStore';
 import { GRID_SIZE } from './core/constants';
+import { TOOL_DESCRIPTIONS } from './core/tooltips';
 
 const CircuitEditor = React.lazy(() => import('./features/editor/CircuitEditor'));
 
@@ -83,25 +85,7 @@ function loadDemo() {
   }, 300);
 }
 
-const toolHints: Record<string, string> = {
-  select: 'Click: seleccionar · Arrastrar: mover · Ctrl+Z: deshacer',
-  wire: 'Click terminal azul para iniciar · Click otro para conectar',
-  probe: 'Click componente para añadir sonda de voltaje',
-  resistor: 'Colocar resistencia en la cuadrícula',
-  capacitor: 'Colocar capacitor en la cuadrícula',
-  inductor: 'Colocar inductor en la cuadrícula',
-  voltageSource: 'Colocar batería en la cuadrícula',
-  currentSource: 'Colocar fuente de corriente',
-  led: 'Colocar LED en la cuadrícula',
-  diode: 'Colocar diodo en la cuadrícula',
-  transistor: 'Colocar transistor en la cuadrícula',
-  potentiometer: 'Colocar potenciómetro en la cuadrícula',
-  switch: 'Colocar interruptor',
-  ground: 'Colocar tierra (0V)',
-  voltmeter: 'Colocar voltímetro',
-  ammeter: 'Colocar amperímetro',
-  multimeter: 'Cambiar a vista multímetro',
-};
+const toolHints = TOOL_DESCRIPTIONS;
 
 function AppInner() {
   const { ref: canvasRef, width: canvasWidth, height: canvasHeight } = useContainerSize();
@@ -408,6 +392,8 @@ function AppInner() {
           </div>
         </aside>
       </div>
+
+      <ToastContainer />
 
       <div className="h-7 bg-surface-900 border-t border-surface-700 flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-2 text-[10px] text-ink-faint min-w-0">

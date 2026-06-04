@@ -1,14 +1,34 @@
-import { lazy, Suspense, useMemo, memo } from 'react';
+import { lazy, Suspense, useMemo, memo, useCallback } from 'react';
 import { useGraph } from '../../hooks/useGraph';
 import { useCircuitStore } from '../../store/circuitStore';
+import { exportOscCsv } from '../../shared/lib/exportOscCsv';
+import { toastSuccess, toastWarning } from '../../shared/store/toastStore';
 
 const Plot = lazy(() => import('react-plotly.js'));
 
 function GraphPanelInner() {
   const { traces, clearData } = useGraph();
   const probes = useCircuitStore((s) => s.probes);
+  const oscData = useCircuitStore((s) => s.oscData);
   const toggleProbe = useCircuitStore((s) => s.toggleProbeVisibility);
   const removeProbe = useCircuitStore((s) => s.removeProbe);
+
+  const exportTraces = useMemo(
+    () =>
+      probes
+        .filter((p) => (oscData[p.id]?.length ?? 0) > 0)
+        .map((p) => ({ label: p.label, data: oscData[p.id] })),
+    [probes, oscData],
+  );
+
+  const handleExportCsv = useCallback(() => {
+    if (exportTraces.length === 0) {
+      toastWarning('Sin datos', 'Inicia la simulación con sondas activas para exportar.');
+      return;
+    }
+    exportOscCsv(exportTraces, `osciloscopio-${Date.now()}.csv`);
+    toastSuccess('CSV exportado', `${exportTraces.length} señal(es) guardadas`);
+  }, [exportTraces]);
 
   const plotTraces = useMemo(() => {
     return traces.map((t) => ({
@@ -28,6 +48,14 @@ function GraphPanelInner() {
         <span className="panel-label">Osciloscopio</span>
         <div className="flex items-center gap-2">
           <span className="text-[10px] text-ink-faint font-mono">{traces.length} señal(es)</span>
+          <button
+            onClick={handleExportCsv}
+            disabled={exportTraces.length === 0}
+            className="text-[10px] text-ink-faint hover:text-ink transition-colors px-2 py-1 rounded-md bg-surface-800 border border-surface-700 hover:border-primary-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Descargar datos del osciloscopio en CSV"
+          >
+            Export CSV
+          </button>
           <button
             onClick={clearData}
             className="text-[10px] text-ink-faint hover:text-ink transition-colors px-2 py-1 rounded-md bg-surface-800 border border-surface-700 hover:border-primary-500/30"
