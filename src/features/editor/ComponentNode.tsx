@@ -18,6 +18,7 @@ import {
 } from '../../components/symbols';
 import type { ComponentType } from '../../types';
 import { useCircuitStore } from '../../store/circuitStore';
+import { getElectricalNodeForTerminal } from '../../services/localSimulation';
 import { getHandleConfig, getHandlePositionCSS } from '../../utils/componentHandles';
 
 const symbolMap: Record<
@@ -58,7 +59,8 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
   const simulationRunning = useCircuitStore((s) => s.simulationRunning);
   const branchCurrents = useCircuitStore((s) => s.simResults?.branchCurrents);
   const nodeVoltages = useCircuitStore((s) => s.simResults?.nodeVoltages);
-  const terminals = useCircuitStore((s) => s.circuit.terminals);
+  const circuit = useCircuitStore((s) => s.circuit);
+  const terminals = circuit.terminals;
   const simResults = useCircuitStore((s) => s.simResults);
   const current = getLatest(branchCurrents?.[id]);
 
@@ -68,8 +70,14 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
     simResults?.status?.success &&
     Math.abs(current) > 1e-6;
 
+  const showCurrent =
+    data.type === 'ammeter' || data.type === 'resistor' || data.type === 'led' || data.type === 'inductor';
+
   const currentStr =
-    simulationRunning && simResults?.status?.success && Math.abs(current) > 1e-12
+    simulationRunning &&
+    simResults?.status?.success &&
+    showCurrent &&
+    Math.abs(current) > 1e-12
       ? Math.abs(current) >= 1e-3
         ? `${(Math.abs(current) * 1e3).toFixed(1)} mA`
         : `${(Math.abs(current) * 1e6).toFixed(0)} \u00B5A`
@@ -78,13 +86,29 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
   const comp = useCircuitStore((s) => s.circuit.components[id]);
   const t0 = comp ? terminals[comp.terminalIds[0]] : null;
   const t1 = comp ? terminals[comp.terminalIds[1]] : null;
-  const voltage0 = t0 && nodeVoltages ? getLatest(nodeVoltages[String(t0.nodeId)]) : null;
-  const voltage1 = t1 && nodeVoltages ? getLatest(nodeVoltages[String(t1.nodeId)]) : null;
+  const voltage0 =
+    t0 && nodeVoltages
+      ? getLatest(nodeVoltages[String(getElectricalNodeForTerminal(circuit, t0.id))])
+      : null;
+  const voltage1 =
+    t1 && nodeVoltages
+      ? getLatest(nodeVoltages[String(getElectricalNodeForTerminal(circuit, t1.id))])
+      : null;
   const compVoltage =
     simulationRunning && voltage0 !== null && voltage1 !== null ? voltage0 - voltage1 : null;
 
+  const showVoltage =
+    data.type === 'voltmeter' ||
+    data.type === 'led' ||
+    data.type === 'resistor' ||
+    data.type === 'capacitor' ||
+    data.type === 'voltageSource';
+
   const voltageStr =
-    compVoltage !== null && simResults?.status?.success
+    showVoltage &&
+    compVoltage !== null &&
+    simResults?.status?.success &&
+    (data.type !== 'voltmeter' ? Math.abs(compVoltage) > 1e-9 : true)
       ? Math.abs(compVoltage) >= 1
         ? `${compVoltage.toFixed(2)} V`
         : `${(compVoltage * 1e3).toFixed(1)} mV`
@@ -130,10 +154,15 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
         return (
           <Handle
             key={handleCfg.id}
-            type={handleCfg.position === 'left' ? 'target' : 'source'}
+            type="source"
             position={pos}
             id={handleCfg.id}
-            className={isHidden ? '!w-0 !h-0 !opacity-0' : getHandleColor(handleCfg)}
+            isConnectable
+            className={
+              isHidden
+                ? '!w-0 !h-0 !opacity-0'
+                : `${getHandleColor(handleCfg)} circuit-handle !opacity-100`
+            }
             style={isHidden ? {} : getHandlePositionCSS(handleCfg, { width: 112, height: 80 })}
           />
         );

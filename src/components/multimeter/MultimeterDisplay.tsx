@@ -30,6 +30,36 @@ export function MultimeterDisplay() {
   }
 
   const r = readComponent(selectedComp);
+  const isAmmeter = selectedComp.type === 'ammeter';
+  const isVoltmeter = selectedComp.type === 'voltmeter';
+
+  if (!isRunning) {
+    return (
+      <div className="p-4 space-y-3">
+        <div className="panel-label flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-surface-600" />
+          {selectedComp.label}
+        </div>
+        <div className="rounded-lg border border-surface-700 bg-surface-800/80 px-3 py-3 text-center">
+          <p className="text-xs text-ink-muted">Simulación detenida</p>
+          <p className="text-[10px] text-ink-faint mt-1 leading-relaxed">
+            Pulsa <span className="text-gold-600 font-semibold">INICIAR</span> en la barra lateral
+            para ver mediciones en tiempo real.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 opacity-50">
+          <div className="metric-card">
+            <div className="metric-label">Voltaje</div>
+            <div className="metric-value text-base">—</div>
+          </div>
+          <div className="metric-card">
+            <div className="metric-label">Corriente</div>
+            <div className="metric-value text-base">—</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 space-y-3">
@@ -38,19 +68,43 @@ export function MultimeterDisplay() {
           className={`w-2 h-2 rounded-full ${isRunning ? 'bg-green-500 animate-pulse shadow-[0_0_4px_rgba(34,197,94,0.5)]' : 'bg-surface-600'}`}
         />
         {selectedComp.label}
+        {isAmmeter && (
+          <span className="text-[9px] text-primary-600 font-normal normal-case">(serie)</span>
+        )}
+        {isVoltmeter && (
+          <span className="text-[9px] text-primary-600 font-normal normal-case">(paralelo)</span>
+        )}
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="metric-card">
-          <div className="metric-label">Voltaje</div>
-          <div className="metric-value text-base">{fmtV(r.voltage)}</div>
-          <div className="text-[9px] text-ink-faint mt-0.5">CC</div>
+      {isAmmeter ? (
+        <div className="metric-card ring-1 ring-primary-500/20">
+          <div className="metric-label">Corriente medida</div>
+          <div className="metric-value text-lg">{fmtI(r.current)}</div>
+          <div className="text-[9px] text-ink-faint mt-0.5">
+            Caída interna: {fmtV(r.voltage)} (ideal ≈ 0)
+          </div>
         </div>
-        <div className="metric-card">
-          <div className="metric-label">Corriente</div>
-          <div className="metric-value text-base">{fmtI(r.current)}</div>
-          <div className="text-[9px] text-ink-faint mt-0.5">CC</div>
+      ) : isVoltmeter ? (
+        <div className="metric-card ring-1 ring-primary-500/20">
+          <div className="metric-label">Voltaje medido</div>
+          <div className="metric-value text-lg">{fmtV(r.voltage)}</div>
+          <div className="text-[9px] text-ink-faint mt-0.5">
+            Corriente interna: {fmtI(r.current)} (ideal ≈ 0)
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="metric-card">
+            <div className="metric-label">Voltaje</div>
+            <div className="metric-value text-base">{fmtV(r.voltage)}</div>
+            <div className="text-[9px] text-ink-faint mt-0.5">CC</div>
+          </div>
+          <div className="metric-card">
+            <div className="metric-label">Corriente</div>
+            <div className="metric-value text-base">{fmtI(r.current)}</div>
+            <div className="text-[9px] text-ink-faint mt-0.5">CC</div>
+          </div>
+        </div>
+      )}
       {isRunning && (
         <div className="metric-card">
           <div className="metric-label">Potencia</div>

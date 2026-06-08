@@ -125,14 +125,24 @@
     border: 1px solid rgba(31, 77, 58, 0.4) !important;
   }
 
+  .react-flow__edges {
+    z-index: 2 !important;
+  }
+
   .react-flow__edge-path {
-    stroke: #6b7280 !important;
-    stroke-width: 2 !important;
+    stroke: #374151 !important;
+    stroke-width: 3 !important;
+    stroke-linecap: round;
+  }
+
+  .react-flow__edge:hover .react-flow__edge-path {
+    stroke: #1f4d3a !important;
+    stroke-width: 4 !important;
   }
 
   .react-flow__edge.selected .react-flow__edge-path {
-    stroke: #1f4d3a !important;
-    stroke-width: 2.5 !important;
+    stroke: #c9a86a !important;
+    stroke-width: 4 !important;
   }
 
   .react-flow__handle {
@@ -140,7 +150,11 @@
     transition: opacity 0.15s;
   }
 
-  .react-flow__node:hover .react-flow__handle {
+  .react-flow__handle.circuit-handle {
+    opacity: 1 !important;
+  }
+
+  .react-flow__node:hover .react-flow__handle:not(.circuit-handle) {
     opacity: 1;
   }
 }

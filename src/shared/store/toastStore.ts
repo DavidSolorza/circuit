@@ -42,3 +42,7 @@ export function toastWarning(title: string, message?: string): void {
 export function toastSuccess(title: string, message?: string): void {
   useToastStore.getState().push({ kind: 'success', title, message });
 }
+
+export function toastInfo(title: string, message?: string): void {
+  useToastStore.getState().push({ kind: 'info', title, message });
+}

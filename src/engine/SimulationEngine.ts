@@ -1,7 +1,12 @@
 import type { CircuitState, SimResults } from '../types';
-import type { EngineCircuit, EngineSimResults, SimulationConfig, ElementState } from './types';
+import type {
+  EngineCircuit,
+  EngineSimResults,
+  SimulationConfig,
+  ElementState,
+  ResolvedTopology,
+} from './types';
 import { CircuitGraph } from './core/CircuitGraph';
-import { NodeResolver } from './core/NodeResolver';
 import { ElementRegistry, defaultElementRegistry } from './core/ElementRegistry';
 import { SimulationTree } from './core/SimulationTree';
 import { EventBus } from './events/EventBus';
@@ -39,12 +44,11 @@ export interface UnsupportedComponentInfo {
 export class SimulationEngine {
   private circuit: EngineCircuit = { components: {}, terminals: {}, wires: {} };
   private graph = new CircuitGraph();
-  private nodeResolver = new NodeResolver();
   private registry: ElementRegistry;
   private solver: TransientMNASolver;
   private events: EventBus;
   private tree: SimulationTree;
-  private topologyCache: ReturnType<NodeResolver['resolve']> | null = null;
+  private topologyCache: ResolvedTopology | null = null;
   private transientState: ElementState = { vc: new Map(), il: new Map() };
   private simTime = 0;
   private circuitFingerprint = '';
@@ -217,10 +221,17 @@ export class SimulationEngine {
     return { results, step };
   }
 
-  getTopology() {
+  getTopology(): ResolvedTopology {
     if (!this.topologyCache || this.graph.isDirty()) {
-      this.graph.buildFromCircuit(this.circuit);
-      this.topologyCache = this.nodeResolver.resolve(this.circuit);
+      const snapshot = this.graph.buildFromCircuit(this.circuit);
+      this.topologyCache = {
+        nodeMap: snapshot.nodeMap,
+        terminalNode: snapshot.terminalNode,
+        nonGroundNodes: snapshot.nonGroundNodes,
+        nodeIndex: snapshot.nodeIndex,
+        connectedComponents: snapshot.numericComponents,
+        adjacencyList: snapshot.numericAdjacency,
+      };
     }
     return this.topologyCache;
   }
@@ -354,7 +365,6 @@ export function simulateCircuit(circuit: CircuitState, config?: Partial<Simulati
 
 /** Resolve all terminal → electrical node mappings for UI probes */
 export function resolveTerminalNodes(state: CircuitState): Map<string, number> {
-  const { circuit } = buildEngineCircuit(state);
-  const resolver = new NodeResolver();
-  return resolver.resolve(circuit).terminalNode;
+  simulationEngine.syncFromCircuitState(state);
+  return simulationEngine.getTopology().terminalNode;
 }

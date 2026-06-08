@@ -8,12 +8,12 @@ export function useGraph() {
 
   const traces = useMemo(() => {
     return probes
-      .filter((p) => p.visible && oscData[p.id])
+      .filter((p) => p.visible && (oscData[p.id]?.length ?? 0) > 0)
       .map((p) => ({
         id: p.id,
         label: p.label,
         color: p.color,
-        data: oscData[p.id],
+        data: oscData[p.id]!,
         visible: p.visible,
       }));
   }, [probes, oscData]);

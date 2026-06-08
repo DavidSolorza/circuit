@@ -1,4 +1,5 @@
 import { useCircuitStore } from '../../store/circuitStore';
+import { toastInfo } from '../../shared/store/toastStore';
 import { COMPONENT_TEMPLATES } from '../../core/constants';
 import { useMultimeter } from '../../hooks/useMultimeter';
 import { fmtV, fmtI } from '../../utils/formatElectrical';
@@ -7,16 +8,61 @@ import { ParamNumberField } from './ParamNumberField';
 
 export function PropertiesPanel() {
   const selectedId = useCircuitStore((s) => s.selectedComponentId);
+  const selectedWireId = useCircuitStore((s) => s.selectedWireId);
+  const wires = useCircuitStore((s) => s.circuit.wires);
+  const terminals = useCircuitStore((s) => s.circuit.terminals);
   const components = useCircuitStore((s) => s.circuit.components);
   const comp = selectedId ? components[selectedId] : null;
+  const wire = selectedWireId ? wires[selectedWireId] : null;
   const updateParam = useCircuitStore((s) => s.updateComponentParam);
   const rotate = useCircuitStore((s) => s.rotateComponent);
   const duplicate = useCircuitStore((s) => s.duplicateComponent);
   const remove = useCircuitStore((s) => s.removeComponent);
+  const removeWire = useCircuitStore((s) => s.removeWire);
   const addProbe = useCircuitStore((s) => s.addProbe);
   const simulationRunning = useCircuitStore((s) => s.simulationRunning);
   const simResults = useCircuitStore((s) => s.simResults);
   const { readComponent } = useMultimeter();
+
+  if (!comp && wire) {
+    const fromTerm = terminals[wire.fromTerminalId];
+    const toTerm = terminals[wire.toTerminalId];
+    const fromComp = fromTerm ? components[fromTerm.componentId] : null;
+    const toComp = toTerm ? components[toTerm.componentId] : null;
+
+    return (
+      <div className="p-4 space-y-3">
+        <div className="panel-label">Cable seleccionado</div>
+        <div className="panel-section space-y-2 text-[11px] text-ink-muted">
+          <div>
+            <span className="text-ink-faint">Desde:</span>{' '}
+            <span className="font-medium text-ink">
+              {fromComp?.label ?? '?'} (T{(fromTerm?.index ?? 0) + 1})
+            </span>
+          </div>
+          <div>
+            <span className="text-ink-faint">Hasta:</span>{' '}
+            <span className="font-medium text-ink">
+              {toComp?.label ?? '?'} (T{(toTerm?.index ?? 0) + 1})
+            </span>
+          </div>
+        </div>
+        <p className="text-[10px] text-ink-faint leading-relaxed">
+          Arrastra un <span className="text-primary-600 font-medium">extremo</span> del cable hacia
+          otro punto de conexión para reconectar.
+        </p>
+        <button
+          onClick={() => {
+            removeWire(wire.id);
+            toastInfo('Cable eliminado');
+          }}
+          className="w-full py-2 rounded-lg text-[11px] bg-red-50 text-red-600 hover:bg-red-100 transition-colors border border-red-200 font-medium"
+        >
+          Eliminar cable
+        </button>
+      </div>
+    );
+  }
 
   if (!comp) {
     return (
@@ -34,8 +80,10 @@ export function PropertiesPanel() {
             <path d="M9 9h6v6H9z" />
           </svg>
         </div>
-        <p className="text-xs text-ink-muted">Ningún componente seleccionado</p>
-        <p className="text-[10px] text-ink-faint mt-1">Haz clic en un componente del canvas</p>
+        <p className="text-xs text-ink-muted">Nada seleccionado</p>
+        <p className="text-[10px] text-ink-faint mt-1">
+          Clic en componente o cable · Supr para eliminar
+        </p>
       </div>
     );
   }
@@ -73,11 +121,19 @@ export function PropertiesPanel() {
         <div className="text-sm font-semibold text-ink uppercase tracking-wide">
           {template?.label ?? comp.type}
         </div>
-        <div className="text-[10px] text-ink-faint font-mono">ID: {comp.id.slice(0, 12)}</div>
         <div className="text-[10px] text-ink-faint font-mono tabular-nums">
-          Pos: ({Math.round(comp.position.x)}, {Math.round(comp.position.y)}) · Rot: {comp.rotation}
-          °
+          Pos ({Math.round(comp.position.x)}, {Math.round(comp.position.y)}) · {comp.rotation}°
         </div>
+        {comp.type === 'ammeter' && (
+          <p className="text-[10px] text-primary-600/90 mt-1">
+            En serie — mide la corriente que pasa por el circuito.
+          </p>
+        )}
+        {comp.type === 'voltmeter' && (
+          <p className="text-[10px] text-primary-600/90 mt-1">
+            En paralelo — mide la diferencia de potencial entre sus terminales.
+          </p>
+        )}
       </div>
 
       {template?.paramDefs && template.paramDefs.length > 0 && (
@@ -141,7 +197,7 @@ export function PropertiesPanel() {
 
       <div className="h-px bg-surface-700" />
 
-      <div className="grid grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5">
         <button
           onClick={() => rotate(comp.id)}
           className="px-2 py-1.5 rounded-md text-[10px] bg-surface-800 text-ink-muted hover:text-ink hover:bg-surface-700 transition-colors border border-surface-700"
@@ -159,9 +215,16 @@ export function PropertiesPanel() {
         <button
           onClick={() => addProbe('voltage', comp.id, 0)}
           className="px-2 py-1.5 rounded-md text-[10px] bg-gold-50 text-gold-700 hover:bg-gold-100 transition-colors border border-gold-200 font-medium"
-          title="Añadir sonda"
+          title="Sonda de voltaje al osciloscopio"
         >
-          Sonda
+          +V osc
+        </button>
+        <button
+          onClick={() => addProbe('current', comp.id)}
+          className="px-2 py-1.5 rounded-md text-[10px] bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors border border-primary-200 font-medium"
+          title="Sonda de corriente al osciloscopio"
+        >
+          +I osc
         </button>
       </div>
 

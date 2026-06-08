@@ -89,6 +89,7 @@ export type ToolType = ComponentType | 'select' | 'wire' | 'probe' | 'multimeter
 export interface AppState {
   circuit: CircuitState;
   selectedComponentId: string | null;
+  selectedWireId: string | null;
   activeTool: ToolType;
   simulationRunning: boolean;
   simResults: SimResults | null;

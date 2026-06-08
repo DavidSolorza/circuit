@@ -2,9 +2,10 @@ import type { ComponentType, ToolType } from '../types';
 import { COMPONENT_TEMPLATES } from './constants';
 
 export const TOOL_DESCRIPTIONS: Record<ToolType, string> = {
-  select: 'Seleccionar y mover componentes · Delete para eliminar',
-  wire: 'Conectar terminales: clic en punto azul → clic en otro terminal',
-  probe: 'Añadir sonda de voltaje al componente seleccionado',
+  select:
+    'Seleccionar componentes o cables · Supr elimina · Arrastra un extremo del cable para reconectar',
+  wire: 'Cable: arrastra desde un punto de conexión (círculo) hasta otro componente',
+  probe: 'Clic en componente → sonda de voltaje al osciloscopio',
   multimeter: 'Ver mediciones en el panel multímetro',
   resistor: 'Resistencia óhmica · Parámetro R en propiedades',
   capacitor: 'Capacitor · Simulación transitoria (Backward Euler)',

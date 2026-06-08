@@ -3,11 +3,12 @@ import ReactFlow, {
   Background,
   Controls,
   MiniMap,
-  MarkerType,
+  ConnectionMode,
   type Node,
   type Edge,
   type Connection,
   type NodeChange,
+  type EdgeChange,
   useReactFlow,
   ReactFlowProvider,
   SelectionMode,
@@ -15,6 +16,9 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import ComponentNode, { type ComponentNodeData } from './ComponentNode';
 import { useCircuitStore } from '../../store/circuitStore';
+import { toastInfo, toastSuccess, toastWarning } from '../../shared/store/toastStore';
+import { wireConnectMessage } from '../../utils/wireConnect';
+import { wireToReactFlowEdge } from '../../utils/wireToEdge';
 import type { ComponentType, Point } from '../../types';
 import { GRID_SIZE } from '../../core/constants';
 
@@ -31,6 +35,7 @@ function CanvasInner({ width, height }: Props) {
   const wires = useCircuitStore((s) => s.circuit.wires);
   const terminals = useCircuitStore((s) => s.circuit.terminals);
   const selectedId = useCircuitStore((s) => s.selectedComponentId);
+  const selectedWireId = useCircuitStore((s) => s.selectedWireId);
   const activeTool = useCircuitStore((s) => s.activeTool);
   const addComponent = useCircuitStore((s) => s.addComponent);
   const moveComponent = useCircuitStore((s) => s.moveComponent);
@@ -60,22 +65,13 @@ function CanvasInner({ width, height }: Props) {
     [components, selectedId],
   );
 
-  const edges: Edge[] = useMemo(() => {
-    const termToComp = (tid: string) => terminals[tid]?.componentId ?? '';
-    const termIndex = (tid: string) => terminals[tid]?.index ?? 0;
-    return Object.values(wires).map((w) => ({
-      id: w.id,
-      source: termToComp(w.fromTerminalId),
-      target: termToComp(w.toTerminalId),
-      sourceHandle: `term${termIndex(w.fromTerminalId)}`,
-      targetHandle: `term${termIndex(w.toTerminalId)}`,
-      type: 'bezier',
-      animated: true,
-      style: { stroke: '#6B7280', strokeWidth: 2.5 },
-      active: false,
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#6B7280' },
-    }));
-  }, [wires, terminals]);
+  const edges: Edge[] = useMemo(
+    () =>
+      Object.values(wires)
+        .map((w) => wireToReactFlowEdge(w, terminals, components, w.id === selectedWireId))
+        .filter((e): e is Edge => e !== null),
+    [wires, terminals, components, selectedWireId],
+  );
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -94,60 +90,109 @@ function CanvasInner({ width, height }: Props) {
     [moveComponent, removeComponent, selectComponent],
   );
 
-  const onEdgesChange = useCallback(() => {}, []);
+  const removeWire = useCircuitStore((s) => s.removeWire);
+  const reconnectWire = useCircuitStore((s) => s.reconnectWire);
+  const selectWire = useCircuitStore((s) => s.selectWire);
 
-  const onConnect = useCallback((conn: Connection) => {
-    if (!conn.source || !conn.target || !conn.sourceHandle || !conn.targetHandle) return;
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      for (const ch of changes) {
+        if (ch.type === 'remove') {
+          removeWire(ch.id);
+          toastInfo('Cable eliminado');
+        }
+      }
+    },
+    [removeWire],
+  );
 
-    const state = useCircuitStore.getState();
-    const srcComp = state.circuit.components[conn.source];
-    const tgtComp = state.circuit.components[conn.target];
+  const resolveTerminalFromHandle = useCallback(
+    (componentId: string, handleId: string): string | null => {
+      const comp = useCircuitStore.getState().circuit.components[componentId];
+      if (!comp) return null;
+      return (
+        comp.terminalIds.find((tid) => {
+          const term = useCircuitStore.getState().circuit.terminals[tid];
+          return handleId === `term${term?.index ?? 0}`;
+        }) ?? null
+      );
+    },
+    [],
+  );
 
-    if (!srcComp || !tgtComp) return;
+  const onEdgeClick = useCallback((_e: React.MouseEvent, edge: Edge) => {
+    selectWire(edge.id);
+  }, [selectWire]);
 
-    // Get handle IDs from connection
-    const srcHandleId = conn.sourceHandle;
-    const tgtHandleId = conn.targetHandle;
-
-    // Find terminal IDs that match the handles
-    const srcTerminal = srcComp.terminalIds.find((tid) => {
-      const term = state.circuit.terminals[tid];
-      const handleIndex = term?.index ?? 0;
-      return srcHandleId === `term${handleIndex}`;
-    });
-
-    const tgtTerminal = tgtComp.terminalIds.find((tid) => {
-      const term = state.circuit.terminals[tid];
-      const handleIndex = term?.index ?? 0;
-      return tgtHandleId === `term${handleIndex}`;
-    });
-
-    if (srcTerminal && tgtTerminal) {
-      state.connectTerminals(srcTerminal, tgtTerminal);
-
-      // Auto-add probes to interesting components for visualization
-      const componentsToProbe = ['led', 'capacitor', 'inductor', 'resistor'];
+  const onReconnect = useCallback(
+    (oldEdge: Edge, newConnection: Connection) => {
       if (
-        componentsToProbe.includes(srcComp.type) &&
-        !state.probes.some((p) => p.componentId === srcComp.id && p.type === 'current')
+        !newConnection.source ||
+        !newConnection.target ||
+        !newConnection.sourceHandle ||
+        !newConnection.targetHandle
       ) {
-        state.addProbe('current', srcComp.id);
-      }
-      if (
-        componentsToProbe.includes(tgtComp.type) &&
-        !state.probes.some((p) => p.componentId === tgtComp.id && p.type === 'current')
-      ) {
-        state.addProbe('current', tgtComp.id);
+        toastWarning('Reconexión cancelada', 'Suelta el cable sobre un punto de conexión válido.');
+        return;
       }
 
-      // Auto-start simulation after connection
-      if (!state.simulationRunning) {
-        setTimeout(() => {
-          state.toggleSimulation();
-        }, 300);
+      const fromTerminal = resolveTerminalFromHandle(
+        newConnection.source,
+        newConnection.sourceHandle,
+      );
+      const toTerminal = resolveTerminalFromHandle(newConnection.target, newConnection.targetHandle);
+
+      if (!fromTerminal || !toTerminal) {
+        toastWarning('No se pudo reconectar', 'El extremo debe ir a un punto de conexión.');
+        return;
       }
-    }
-  }, []);
+
+      const result = reconnectWire(oldEdge.id, fromTerminal, toTerminal);
+      if (!result.ok) {
+        toastWarning('No se pudo reconectar', wireConnectMessage(result.reason));
+        return;
+      }
+
+      selectWire(oldEdge.id);
+      toastSuccess('Cable reconectado', 'El extremo se movió al nuevo componente.');
+    },
+    [reconnectWire, selectWire, resolveTerminalFromHandle],
+  );
+
+  const onConnect = useCallback(
+    (conn: Connection) => {
+      if (!conn.source || !conn.target || !conn.sourceHandle || !conn.targetHandle) {
+        toastWarning(
+          'Conexión incompleta',
+          'Arrastra desde un punto de conexión (círculo azul/rojo) hasta otro componente.',
+        );
+        return;
+      }
+
+      const srcTerminal = resolveTerminalFromHandle(conn.source, conn.sourceHandle);
+      const tgtTerminal = resolveTerminalFromHandle(conn.target, conn.targetHandle);
+
+      if (!srcTerminal || !tgtTerminal) {
+        toastWarning(
+          'No se pudo conectar',
+          'Suelta el cable sobre el punto de conexión de otro componente.',
+        );
+        return;
+      }
+
+      const result = useCircuitStore.getState().connectTerminals(srcTerminal, tgtTerminal);
+      if (!result.ok) {
+        const wireCount = Object.keys(useCircuitStore.getState().circuit.wires).length;
+        const extra =
+          result.reason === 'duplicate' ? ` (${wireCount} cable${wireCount === 1 ? '' : 's'} en el circuito)` : '';
+        toastWarning('No se pudo conectar', wireConnectMessage(result.reason) + extra);
+        return;
+      }
+
+      toastSuccess('Cable conectado', 'Presiona INICIAR cuando el circuito esté listo (con tierra).');
+    },
+    [resolveTerminalFromHandle],
+  );
 
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -167,6 +212,12 @@ function CanvasInner({ width, height }: Props) {
   );
 
   const handlePaneClick = useCallback(() => {
+    const state = useCircuitStore.getState();
+    if (state.connectingFrom) {
+      state.cancelConnection();
+      toastInfo('Conexión cancelada');
+    }
+    state.selectWire(null);
     if (activeTool !== 'select' && activeTool !== 'wire' && activeTool !== 'probe') {
       setActiveTool('select');
     }
@@ -179,16 +230,10 @@ function CanvasInner({ width, height }: Props) {
         return;
       }
       if (activeTool === 'wire') {
-        const state = useCircuitStore.getState();
-        const comp = state.circuit.components[node.id];
-        if (!comp) return;
-        const terminalId =
-          state.connectingFrom === null ? comp.terminalIds[1] : comp.terminalIds[0];
-        if (state.connectingFrom) {
-          state.completeConnection(terminalId);
-        } else {
-          state.startConnection(terminalId);
-        }
+        toastInfo(
+          'Herramienta Cable',
+          'Arrastra desde los círculos de conexión de un componente hasta otro. No hagas clic en el cuerpo del símbolo.',
+        );
         return;
       }
       selectComponent(node.id);
@@ -206,12 +251,18 @@ function CanvasInner({ width, height }: Props) {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onEdgeClick={onEdgeClick}
+        onReconnect={onReconnect}
+        reconnectRadius={24}
         onConnect={onConnect}
         onDrop={onDrop}
         onDragOver={onDragOver}
         onNodeClick={handleNodeClick}
         onPaneClick={handlePaneClick}
         nodeTypes={nodeTypes}
+        connectionMode={ConnectionMode.Loose}
+        elevateEdgesOnSelect
+        edgesFocusable
         deleteKeyCode="Delete"
         multiSelectionKeyCode="Shift"
         snapToGrid
@@ -226,10 +277,11 @@ function CanvasInner({ width, height }: Props) {
         minZoom={0.1}
         maxZoom={3}
         defaultEdgeOptions={{
-          type: 'bezier',
-          animated: true,
-          style: { stroke: '#6B7280', strokeWidth: 2.5 },
-          markerEnd: { type: MarkerType.ArrowClosed, color: '#6B7280' },
+          type: 'smoothstep',
+          style: { stroke: '#374151', strokeWidth: 3 },
+          interactionWidth: 24,
+          deletable: true,
+          reconnectable: true,
         }}
       >
         <Background color="#E8E0D0" gap={GRID_SIZE} size={1} />

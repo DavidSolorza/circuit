@@ -1,15 +1,45 @@
 import { useLayoutEffect, useRef } from 'react';
 import { useCircuitStore } from '../store/circuitStore';
+import type { CircuitState, MeasurementProbe, SimResults } from '../types';
 import {
-  getElectricalNodeForTerminal,
   resetLocalSimulation,
   runLocalSimulationStep,
   validateLocalCircuit,
 } from '../services/localSimulation';
 import { toastError, toastWarning } from '../shared/store/toastStore';
+import { readProbeSample } from '../utils/probeSample';
 import { DT } from '../core/constants';
 
 const runtimeWarningsShown = new Set<string>();
+const MAX_OSC_POINTS = 3000;
+
+function appendProbeSamples(
+  probes: MeasurementProbe[],
+  oscData: Record<string, Array<{ t: number; v: number }>>,
+  circuit: CircuitState,
+  res: SimResults,
+  simTime: number,
+): Record<string, Array<{ t: number; v: number }>> {
+  const newOscData = { ...oscData };
+  const t = simTime + DT;
+
+  for (const probe of probes) {
+    const bucket = newOscData[probe.id];
+    if (!bucket) continue;
+    const value = readProbeSample(circuit, res, probe);
+    if (value === null) continue;
+
+    const nd = [...bucket];
+    if (simTime === 0 && nd.length === 0) {
+      nd.push({ t: 0, v: value });
+    }
+    nd.push({ t, v: value });
+    if (nd.length > MAX_OSC_POINTS) nd.splice(0, nd.length - MAX_OSC_POINTS);
+    newOscData[probe.id] = nd;
+  }
+
+  return newOscData;
+}
 
 function applySimulationResults(): void {
   const state = useCircuitStore.getState();
@@ -20,29 +50,22 @@ function applySimulationResults(): void {
   const current = useCircuitStore.getState();
   if (!current.simulationRunning) return;
 
-  current.setSimResults(res);
-
   if (res.status.success) {
-    current.setSimError(null);
     const t = current.simTime + DT;
+    const newOscData = appendProbeSamples(
+      current.probes,
+      current.oscData,
+      circuit,
+      res,
+      current.simTime,
+    );
 
-    for (const probe of current.probes) {
-      const comp = circuit.components[probe.componentId];
-      if (!comp) continue;
-
-      const value =
-        probe.type === 'voltage'
-          ? (() => {
-              const termId = comp.terminalIds[probe.terminalIndex ?? 0];
-              const nodeId = getElectricalNodeForTerminal(circuit, termId);
-              return res.nodeVoltages[String(nodeId)]?.[0] ?? 0;
-            })()
-          : (res.branchCurrents[comp.id]?.[0] ?? 0);
-
-      current.appendOscData(probe.id, t, value);
-    }
-
-    current.setSimTime(t);
+    useCircuitStore.setState({
+      simResults: res,
+      simError: null,
+      simTime: t,
+      oscData: newOscData,
+    });
 
     for (const w of res.validation.warnings) {
       if (!runtimeWarningsShown.has(w)) {
@@ -52,9 +75,12 @@ function applySimulationResults(): void {
     }
   } else {
     const msg = res.status.error || res.validation.errors[0] || 'Simulación fallida';
-    current.setSimError(msg);
+    useCircuitStore.setState({
+      simError: msg,
+      simResults: null,
+      simulationRunning: false,
+    });
     toastError('Error de simulación', msg);
-    useCircuitStore.setState({ simResults: null, simulationRunning: false });
   }
 }
 

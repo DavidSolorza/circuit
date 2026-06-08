@@ -21,6 +21,7 @@
 - [x] Tema claro + documentación + ESLint/Prettier
 - [x] Plotly lazy-load · `fmtV/fmtI` compartidos
 - [x] pnpm como gestor oficial (`packageManager`, `pnpm-lock.yaml`)
+- [x] Demo V→A→R→LED + GND + VM · toasts de conexión · osciloscopio operativo
 
 ---
 
@@ -112,6 +113,15 @@ pnpm dev
 | J-06 | Tooltips toolbar | ✅ | `Toolbar.tsx`, `core/tooltips.ts` |
 | J-07 | FSD fase 1 (`shared/`, `widgets/`) | ✅ | `src/shared/`, `src/widgets/` |
 | J-08 | Dividir `CalculatorPage` por tabs | ✅ | `calculator/tabs/` |
+
+### Prioridad P2 — Pulido integración (Jun 2026)
+
+| ID | Tarea | Estado | Archivos |
+|----|-------|--------|----------|
+| J-09 | Circuito demo ordenado (espaciado, amperímetro/voltímetro, sondas) | ✅ | `App.tsx` |
+| J-10 | Cables visibles + mensajes al conectar (toasts) | ✅ | `CircuitEditor.tsx`, `wireConnect.ts`, `index.css` |
+| J-11 | Osciloscopio Plotly estable + exportar CSV en español | ✅ | `PlotlyChart.tsx`, `GraphPanel.tsx` |
+| J-12 | Multímetro contextual (amperímetro/voltímetro, estado detenido) | ✅ | `MultimeterDisplay.tsx`, `PropertiesPanel.tsx` |
 
 ### Comandos diarios
 

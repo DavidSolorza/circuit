@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import type {
   AppState,
-  Terminal,
   MeasurementProbe,
   SimResults,
   ComponentType,
@@ -10,6 +9,8 @@ import type {
   ToolType,
 } from '../types';
 import { genId, makeComponent, makeTerminal, initCircuitState, snapToGrid } from '../utils/circuit';
+import type { WireConnectResult } from '../utils/wireConnect';
+import { stampOscTransition } from '../utils/probeSample';
 
 interface CircuitStore extends AppState {
   addComponent: (type: ComponentType, position: Point) => void;
@@ -19,10 +20,13 @@ interface CircuitStore extends AppState {
   rotateComponent: (id: string) => void;
   duplicateComponent: (id: string) => void;
   selectComponent: (id: string | null) => void;
+  selectWire: (id: string | null) => void;
   setActiveTool: (tool: ToolType) => void;
-  connectTerminals: (fromTerminalId: string, toTerminalId: string) => void;
+  connectTerminals: (fromTerminalId: string, toTerminalId: string) => WireConnectResult;
+  reconnectWire: (wireId: string, fromTerminalId: string, toTerminalId: string) => WireConnectResult;
+  removeWire: (wireId: string) => void;
   startConnection: (terminalId: string) => void;
-  completeConnection: (terminalId: string) => void;
+  completeConnection: (terminalId: string) => WireConnectResult;
   cancelConnection: () => void;
   toggleSimulation: () => void;
   setSimResults: (results: SimResults) => void;
@@ -43,9 +47,93 @@ function deepCloneCircuit(c: CircuitState): CircuitState {
   return JSON.parse(JSON.stringify(c));
 }
 
+function validateWireEndpoints(
+  state: CircuitStore,
+  fromTerminalId: string,
+  toTerminalId: string,
+  excludeWireId?: string,
+): WireConnectResult {
+  const fTerm = state.circuit.terminals[fromTerminalId];
+  const tTerm = state.circuit.terminals[toTerminalId];
+  if (!fTerm || !tTerm) return { ok: false, reason: 'missing-terminal' };
+  if (fromTerminalId === toTerminalId) return { ok: false, reason: 'same-terminal' };
+  if (fTerm.componentId === tTerm.componentId) return { ok: false, reason: 'same-component' };
+
+  const alreadyWired = Object.values(state.circuit.wires).some(
+    (w) =>
+      w.id !== excludeWireId &&
+      ((w.fromTerminalId === fromTerminalId && w.toTerminalId === toTerminalId) ||
+        (w.fromTerminalId === toTerminalId && w.toTerminalId === fromTerminalId)),
+  );
+  if (alreadyWired) return { ok: false, reason: 'duplicate' };
+  return { ok: true };
+}
+
+function applyWireTopologyChange(
+  state: CircuitStore,
+  set: (partial: Partial<CircuitStore>) => void,
+  wires: CircuitState['wires'],
+  extra: Partial<CircuitStore> = {},
+): void {
+  set({
+    circuit: { ...state.circuit, wires },
+    connectingFrom: null,
+    simResults: null,
+    simError: null,
+    simulationRunning: false,
+    simTime: 0,
+    ...extra,
+  });
+}
+
+/** Add a wire between two terminals. Node equivalence is resolved by the engine via wires only. */
+function addWireBetweenTerminals(
+  state: CircuitStore,
+  set: (partial: Partial<CircuitStore>) => void,
+  fromTerminalId: string,
+  toTerminalId: string,
+): WireConnectResult {
+  const valid = validateWireEndpoints(state, fromTerminalId, toTerminalId);
+  if (!valid.ok) return valid;
+
+  state.pushUndo();
+  const wireId = genId('wire');
+  applyWireTopologyChange(state, set, {
+    ...state.circuit.wires,
+    [wireId]: { id: wireId, fromTerminalId, toTerminalId },
+  });
+  return { ok: true };
+}
+
+function reconnectWireEndpoints(
+  state: CircuitStore,
+  set: (partial: Partial<CircuitStore>) => void,
+  wireId: string,
+  fromTerminalId: string,
+  toTerminalId: string,
+): WireConnectResult {
+  const wire = state.circuit.wires[wireId];
+  if (!wire) return { ok: false, reason: 'missing-terminal' };
+
+  const valid = validateWireEndpoints(state, fromTerminalId, toTerminalId, wireId);
+  if (!valid.ok) return valid;
+
+  if (wire.fromTerminalId === fromTerminalId && wire.toTerminalId === toTerminalId) {
+    return { ok: true };
+  }
+
+  state.pushUndo();
+  applyWireTopologyChange(state, set, {
+    ...state.circuit.wires,
+    [wireId]: { id: wireId, fromTerminalId, toTerminalId },
+  });
+  return { ok: true };
+}
+
 export const useCircuitStore = create<CircuitStore>((set, get) => ({
   circuit: initCircuitState(),
   selectedComponentId: null,
+  selectedWireId: null,
   activeTool: 'select',
   simulationRunning: false,
   simResults: null,
@@ -118,6 +206,10 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
         nextNodeId: next,
       },
       selectedComponentId: c.id,
+      simulationRunning: false,
+      simResults: null,
+      simError: null,
+      simTime: 0,
     });
   },
 
@@ -160,6 +252,19 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
     const comp = state.circuit.components[id];
     if (!comp) return;
     state.pushUndo();
+
+    const running = state.simulationRunning;
+    const oscData =
+      running && state.simResults?.status.success
+        ? stampOscTransition(
+            state.circuit,
+            state.probes,
+            state.oscData,
+            state.simResults,
+            state.simTime,
+          )
+        : state.oscData;
+
     set({
       circuit: {
         ...state.circuit,
@@ -169,8 +274,9 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
         },
       },
       simResults: null,
-      simTime: 0,
+      simTime: running ? state.simTime : 0,
       simError: null,
+      oscData,
     });
   },
 
@@ -237,29 +343,31 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
     });
   },
 
-  selectComponent: (id) => set({ selectedComponentId: id }),
+  selectComponent: (id) => set({ selectedComponentId: id, selectedWireId: null }),
+  selectWire: (id) => set({ selectedWireId: id, selectedComponentId: null }),
   setActiveTool: (tool) => set({ activeTool: tool, connectingFrom: null }),
 
   connectTerminals: (fromTerminalId, toTerminalId) => {
+    return addWireBetweenTerminals(get(), set, fromTerminalId, toTerminalId);
+  },
+
+  reconnectWire: (wireId, fromTerminalId, toTerminalId) => {
+    return reconnectWireEndpoints(get(), set, wireId, fromTerminalId, toTerminalId);
+  },
+
+  removeWire: (wireId) => {
     const state = get();
-    const fTerm = state.circuit.terminals[fromTerminalId];
-    const tTerm = state.circuit.terminals[toTerminalId];
-    if (!fTerm || !tTerm || fTerm.nodeId === tTerm.nodeId) return;
+    if (!state.circuit.wires[wireId]) return;
     state.pushUndo();
-    const mergeTo = Math.min(fTerm.nodeId, tTerm.nodeId);
-    const mergeFrom = Math.max(fTerm.nodeId, tTerm.nodeId);
-    const newTerminals: Record<string, Terminal> = {};
-    for (const [tid, term] of Object.entries(state.circuit.terminals)) {
-      newTerminals[tid] = term.nodeId === mergeFrom ? { ...term, nodeId: mergeTo } : term;
-    }
-    const wireId = genId('wire');
+    const newWires = { ...state.circuit.wires };
+    delete newWires[wireId];
     set({
-      circuit: {
-        ...state.circuit,
-        terminals: newTerminals,
-        wires: { ...state.circuit.wires, [wireId]: { id: wireId, fromTerminalId, toTerminalId } },
-      },
-      connectingFrom: null,
+      circuit: { ...state.circuit, wires: newWires },
+      selectedWireId: state.selectedWireId === wireId ? null : state.selectedWireId,
+      simulationRunning: false,
+      simResults: null,
+      simError: null,
+      simTime: 0,
     });
   },
 
@@ -273,33 +381,9 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
     const from = state.connectingFrom;
     if (!from || from === terminalId) {
       set({ connectingFrom: null });
-      return;
+      return { ok: false as const, reason: 'same-terminal' as const };
     }
-    const fTerm = state.circuit.terminals[from];
-    const tTerm = state.circuit.terminals[terminalId];
-    if (!fTerm || !tTerm || fTerm.nodeId === tTerm.nodeId) {
-      set({ connectingFrom: null });
-      return;
-    }
-    state.pushUndo();
-    const mergeTo = Math.min(fTerm.nodeId, tTerm.nodeId);
-    const mergeFrom = Math.max(fTerm.nodeId, tTerm.nodeId);
-    const newTerminals: Record<string, Terminal> = {};
-    for (const [tid, term] of Object.entries(state.circuit.terminals)) {
-      newTerminals[tid] = term.nodeId === mergeFrom ? { ...term, nodeId: mergeTo } : term;
-    }
-    const wireId = genId('wire');
-    set({
-      circuit: {
-        ...state.circuit,
-        terminals: newTerminals,
-        wires: {
-          ...state.circuit.wires,
-          [wireId]: { id: wireId, fromTerminalId: from, toTerminalId: terminalId },
-        },
-      },
-      connectingFrom: null,
-    });
+    return addWireBetweenTerminals(state, set, from, terminalId);
   },
 
   cancelConnection: () => set({ connectingFrom: null }),

@@ -186,6 +186,12 @@ export class SwitchElement extends BaseElement {
     }
   }
 
+  protected calculateCurrentFromVoltage(voltage: number, _ctx: StampContext, component: EngineComponent): number {
+    const closed = (component.params.isClosed ?? 0) >= 0.5;
+    const R = closed ? 1e-6 : 1e12;
+    return voltage / R;
+  }
+
   validate(component: EngineComponent): string[] {
     const s = component.params.isClosed;
     if (s !== undefined && s !== 0 && s !== 1) {
@@ -207,14 +213,20 @@ export class GroundElement extends BaseElement {
   }
 }
 
+const VOLTMETER_R = 1e12;
+const AMMETER_R = 1e-6;
+
 export class VoltmeterElement extends BaseElement {
   readonly type = 'voltmeter';
 
   stamp(ctx: StampContext, component: EngineComponent): void {
     const nodes = this.getNodes(ctx, component);
     if (!nodes) return;
-    // Ideal voltmeter ≈ very high resistance
-    this.stampConductance(ctx, nodes[0], nodes[1], 1 / 1e12);
+    this.stampConductance(ctx, nodes[0], nodes[1], 1 / VOLTMETER_R);
+  }
+
+  protected calculateCurrentFromVoltage(voltage: number): number {
+    return voltage / VOLTMETER_R;
   }
 
   validate(_component: EngineComponent): string[] {
@@ -228,8 +240,11 @@ export class AmmeterElement extends BaseElement {
   stamp(ctx: StampContext, component: EngineComponent): void {
     const nodes = this.getNodes(ctx, component);
     if (!nodes) return;
-    // Ideal ammeter ≈ very low resistance
-    this.stampConductance(ctx, nodes[0], nodes[1], 1 / 1e-6);
+    this.stampConductance(ctx, nodes[0], nodes[1], 1 / AMMETER_R);
+  }
+
+  protected calculateCurrentFromVoltage(voltage: number): number {
+    return voltage / AMMETER_R;
   }
 
   validate(_component: EngineComponent): string[] {

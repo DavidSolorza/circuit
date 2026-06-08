@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { symbolComponents } from '../symbols';
 import type { ComponentType, ToolType } from '../../types';
 import { useCircuitStore } from '../../store/circuitStore';
-import { COMPONENT_CATEGORIES, COMPONENT_TEMPLATES } from '../../core/constants';
+import { COMPONENT_CATEGORIES, COMPONENT_TEMPLATES, GRID_SIZE } from '../../core/constants';
 import { getComponentTooltip, TOOL_DESCRIPTIONS } from '../../core/tooltips';
 import type React from 'react';
 
@@ -36,7 +36,13 @@ export function Toolbar() {
 
   const handleAddComponent = useCallback(
     (type: ComponentType) => {
-      addComponent(type, { x: 300, y: 200 });
+      const count = Object.keys(useCircuitStore.getState().circuit.components).length;
+      const col = count % 3;
+      const row = Math.floor(count / 3);
+      addComponent(type, {
+        x: 180 + col * GRID_SIZE * 8,
+        y: 180 + row * GRID_SIZE * 6,
+      });
       setActiveTool('select');
     },
     [addComponent, setActiveTool],
@@ -196,8 +202,11 @@ export function Toolbar() {
           </button>
         </div>
 
-        <div className="text-[9px] text-ink-faint text-center font-mono tabular-nums">
-          {compCount} cmp · {wireCount} cables
+        <div className="text-[9px] text-ink-faint text-center leading-snug">
+          <div className="font-mono tabular-nums">
+            {compCount} comp · {wireCount} cables
+          </div>
+          <div className="text-[8px] mt-0.5 opacity-80">Requiere tierra para simular</div>
         </div>
       </div>
     </div>

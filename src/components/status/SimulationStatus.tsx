@@ -69,8 +69,8 @@ export function SimulationStatus() {
       )}
 
       {(status === 'running' || status === 'stopped') && simResults?.status.success && (
-        <span className="text-surface-500 font-mono hidden lg:inline">
-          N{nodeCount} · R{branchCount} · C{compCount} · W{wireCount}
+        <span className="text-ink-faint font-mono hidden lg:inline tabular-nums">
+          {nodeCount} nodos · {branchCount} ramas · {compCount} comp · {wireCount} cables
         </span>
       )}
 

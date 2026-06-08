@@ -12,6 +12,8 @@ import { useCircuitPersistence } from './hooks/useCircuitPersistence';
 import { useCircuitStore } from './store/circuitStore';
 import { GRID_SIZE } from './core/constants';
 import { TOOL_DESCRIPTIONS } from './core/tooltips';
+import { initCircuitState } from './utils/circuit';
+import { toastInfo } from './shared/store/toastStore';
 
 const CircuitEditor = React.lazy(() => import('./features/editor/CircuitEditor'));
 
@@ -34,55 +36,67 @@ function loadDemo() {
     x: Math.round(p.x / GRID_SIZE) * GRID_SIZE,
     y: Math.round(p.y / GRID_SIZE) * GRID_SIZE,
   });
-  const gap = GRID_SIZE * 6;
-  const startX = 300,
-    startY = 280;
+  const colGap = GRID_SIZE * 8;
+  const rowGap = GRID_SIZE * 6;
+  const originX = 150;
+  const rowMain = 210;
+  const rowReturn = rowMain + rowGap;
 
-  gs().addComponent('voltageSource', snap({ x: startX, y: startY }));
-  gs().addComponent('resistor', snap({ x: startX + gap, y: startY }));
-  gs().addComponent('led', snap({ x: startX + gap, y: startY + gap }));
-  gs().addComponent('capacitor', snap({ x: startX, y: startY + gap * 2 }));
-  gs().addComponent('inductor', snap({ x: startX + gap, y: startY + gap * 2 }));
-  gs().addComponent('ground', snap({ x: startX, y: startY + gap }));
+  // Reiniciar canvas para que el demo siempre sea completo y visible
+  useCircuitStore.setState({
+    circuit: initCircuitState(),
+    selectedComponentId: null,
+    selectedWireId: null,
+    simulationRunning: false,
+    simResults: null,
+    simError: null,
+    probes: [],
+    oscData: {},
+    connectingFrom: null,
+    simTime: 0,
+    undoStack: [],
+    redoStack: [],
+  });
 
-  let s = gs();
+  // Esquema ordenado:
+  //   [Bat]──[Amm]──[R]──[LED]
+  //     |              |    |
+  //     └──────[GND]───┘  [VM] (voltímetro en paralelo con LED)
+  const x = (col: number) => originX + col * colGap;
+
+  gs().addComponent('voltageSource', snap({ x: x(0), y: rowMain }));
+  gs().addComponent('ammeter', snap({ x: x(1), y: rowMain }));
+  gs().addComponent('resistor', snap({ x: x(2), y: rowMain }));
+  gs().addComponent('led', snap({ x: x(3), y: rowMain }));
+  gs().addComponent('ground', snap({ x: x(2), y: rowReturn }));
+  gs().addComponent('voltmeter', snap({ x: x(4), y: rowMain + rowGap / 2 }));
+
+  const s = gs();
   const bat = Object.values(s.circuit.components).find((c) => c.type === 'voltageSource')!;
+  const amm = Object.values(s.circuit.components).find((c) => c.type === 'ammeter')!;
   const res = Object.values(s.circuit.components).find((c) => c.type === 'resistor')!;
   const led = Object.values(s.circuit.components).find((c) => c.type === 'led')!;
-  const cap = Object.values(s.circuit.components).find((c) => c.type === 'capacitor')!;
-  const ind = Object.values(s.circuit.components).find((c) => c.type === 'inductor')!;
+  const vm = Object.values(s.circuit.components).find((c) => c.type === 'voltmeter')!;
   const gnd = Object.values(s.circuit.components).find((c) => c.type === 'ground')!;
 
-  s.setActiveTool('wire');
-  const wire = (tA: string, tB: string) => {
-    const st = gs();
-    if (
-      st.circuit.terminals[tA] &&
-      st.circuit.terminals[tB] &&
-      st.circuit.terminals[tA].nodeId !== st.circuit.terminals[tB].nodeId
-    ) {
-      st.startConnection(tA);
-      st.completeConnection(tB);
-    }
-  };
-  wire(bat.terminalIds[1], res.terminalIds[0]);
-  wire(res.terminalIds[1], led.terminalIds[0]);
-  wire(led.terminalIds[1], gnd.terminalIds[0]);
-  wire(bat.terminalIds[0], gnd.terminalIds[0]);
-  wire(res.terminalIds[1], cap.terminalIds[0]);
-  wire(cap.terminalIds[1], ind.terminalIds[0]);
-  wire(ind.terminalIds[1], gnd.terminalIds[0]);
+  // Rama serie (horizontal)
+  s.connectTerminals(bat.terminalIds[1], amm.terminalIds[0]);
+  s.connectTerminals(amm.terminalIds[1], res.terminalIds[0]);
+  s.connectTerminals(res.terminalIds[1], led.terminalIds[0]);
+  // Retorno a tierra (vertical + horizontal, sin cruces)
+  s.connectTerminals(led.terminalIds[1], gnd.terminalIds[0]);
+  s.connectTerminals(gnd.terminalIds[0], bat.terminalIds[0]);
+  // Voltímetro en paralelo con el LED (a la derecha)
+  s.connectTerminals(led.terminalIds[0], vm.terminalIds[0]);
+  s.connectTerminals(led.terminalIds[1], vm.terminalIds[1]);
 
-  s = gs();
-  s.setActiveTool('select');
-  s.selectComponent(led.id);
-  s.addProbe('voltage', led.id, 0);
+  s.addProbe('current', amm.id);
   s.addProbe('current', led.id);
-  s.addProbe('voltage', cap.id, 0);
-  s.addProbe('current', cap.id);
-  setTimeout(() => {
-    gs().toggleSimulation();
-  }, 300);
+  s.addProbe('voltage', led.id, 0);
+  s.addProbe('voltage', vm.id, 0);
+
+  s.setActiveTool('select');
+  s.selectComponent(amm.id);
 }
 
 const toolHints = TOOL_DESCRIPTIONS;
@@ -98,7 +112,8 @@ function AppInner() {
   const { exportCircuit, importCircuit, clearCircuit } = useCircuitPersistence();
   const activeTool = useCircuitStore((s) => s.activeTool);
   const simErrorMsg = useCircuitStore((s) => s.simError);
-  const simResults = useCircuitStore((s) => s.simResults);
+  const probeCount = useCircuitStore((s) => s.probes.length);
+  const selectedWireId = useCircuitStore((s) => s.selectedWireId);
   const hasCircuit = compCount > 0;
 
   useEffect(() => {
@@ -108,6 +123,11 @@ function AppInner() {
         !(e.target instanceof HTMLInputElement)
       ) {
         const s = useCircuitStore.getState();
+        if (s.selectedWireId) {
+          s.removeWire(s.selectedWireId);
+          toastInfo('Cable eliminado');
+          return;
+        }
         if (s.selectedComponentId) s.removeComponent(s.selectedComponentId);
       }
       if (e.key === 'z' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
@@ -267,21 +287,25 @@ function AppInner() {
               Arrastra componentes desde la barra lateral o haz clic para colocarlos en la
               cuadrícula.
             </p>
-            <ul className="text-[11px] text-ink-faint mt-3 space-y-1 text-left mx-auto max-w-[240px]">
+            <ul className="text-[11px] text-ink-faint mt-3 space-y-1.5 text-left mx-auto max-w-[280px]">
               <li className="flex items-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-primary-500 shrink-0" />
-                Usa <span className="text-primary-600 font-medium">Cable</span> para conectar
-                terminales
+                Arrastra entre los <span className="text-primary-600 font-medium">círculos</span>{' '}
+                para cablear
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-gold-500 shrink-0" />
-                Presiona <span className="text-gold-600 font-medium">INICIAR</span> para simular
+                <span className="text-gold-600 font-medium">INICIAR</span> simula · osciloscopio
+                abajo
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-surface-600 shrink-0" />
-                Añade <span className="font-medium">Tierra</span> para cerrar el circuito
+                Siempre incluye <span className="font-medium">Tierra (GND)</span>
               </li>
             </ul>
+            <p className="text-[10px] text-primary-600/80 mt-3 px-2 py-1.5 rounded-md bg-primary-50 border border-primary-200/60">
+              El demo incluye amperímetro, voltímetro y 4 sondas en el osciloscopio.
+            </p>
             <button
               onClick={() => useCircuitStore.getState().setActiveTool('resistor')}
               className="mt-5 btn-primary w-full"
@@ -322,14 +346,6 @@ function AppInner() {
               </div>
             )}
 
-            {simulationRunning && simResults?.status.success && (
-              <div className="absolute top-2 right-2 bg-surface-900/95 backdrop-blur-sm rounded-lg border border-surface-700 px-2.5 py-1.5 text-[10px] shadow-lg pointer-events-none animate-fade-in">
-                <div className="text-surface-500 leading-relaxed">
-                  {Object.keys(simResults.nodeVoltages).length - 1} nodos ·{' '}
-                  {Object.keys(simResults.branchCurrents).length} ramas
-                </div>
-              </div>
-            )}
           </div>
 
           <div
@@ -398,12 +414,17 @@ function AppInner() {
       <div className="h-7 bg-surface-900 border-t border-surface-700 flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-2 text-[10px] text-ink-faint min-w-0">
           <span className="text-primary-600 font-medium shrink-0">
-            {toolHints[activeTool] ?? ''}
+            {selectedWireId
+              ? 'Cable seleccionado — Supr elimina · arrastra un extremo para mover'
+              : (toolHints[activeTool] ?? '')}
           </span>
         </div>
-        <div className="flex items-center gap-4 text-ink-faint shrink-0 ml-4 text-[10px] font-mono tabular-nums">
-          <span>{compCount} cmp</span>
+        <div className="flex items-center gap-3 text-ink-faint shrink-0 ml-4 text-[10px] font-mono tabular-nums">
+          <span>{compCount} componentes</span>
+          <span className="text-surface-600">·</span>
           <span>{wireCount} cables</span>
+          <span className="text-surface-600">·</span>
+          <span>{probeCount} sondas</span>
         </div>
       </div>
     </div>
