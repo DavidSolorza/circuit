@@ -4,7 +4,8 @@ import { fmtV, fmtI, fmtP } from '../../utils/formatElectrical';
 
 export function MultimeterDisplay() {
   const { selectedComp } = useCircuit();
-  const { readComponent, isRunning } = useMultimeter();
+  const { readComponent, isRunning, results } = useMultimeter();
+  const hasReadings = results?.status.success ?? false;
 
   if (!selectedComp) {
     return (
@@ -29,44 +30,63 @@ export function MultimeterDisplay() {
     );
   }
 
-  const r = readComponent(selectedComp);
   const isAmmeter = selectedComp.type === 'ammeter';
   const isVoltmeter = selectedComp.type === 'voltmeter';
 
   if (!isRunning) {
+    const r = hasReadings ? readComponent(selectedComp) : null;
     return (
       <div className="p-4 space-y-3">
         <div className="panel-label flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-surface-600" />
           {selectedComp.label}
+          {hasReadings && (
+            <span className="text-[9px] text-ink-faint font-normal normal-case">(última medición)</span>
+          )}
         </div>
-        <div className="rounded-lg border border-surface-700 bg-surface-800/80 px-3 py-3 text-center">
-          <p className="text-xs text-ink-muted">Simulación detenida</p>
-          <p className="text-[10px] text-ink-faint mt-1 leading-relaxed">
-            Pulsa <span className="text-gold-600 font-semibold">INICIAR</span> en la barra lateral
-            para ver mediciones en tiempo real.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-2 opacity-50">
-          <div className="metric-card">
-            <div className="metric-label">Voltaje</div>
-            <div className="metric-value text-base">—</div>
+        {!hasReadings ? (
+          <div className="rounded-lg border border-surface-700 bg-surface-800/80 px-3 py-3 text-center">
+            <p className="text-xs text-ink-muted">Simulación detenida</p>
+            <p className="text-[10px] text-ink-faint mt-1 leading-relaxed">
+              Pulsa <span className="text-gold-600 font-semibold">INICIAR</span> en la barra lateral
+              para ver mediciones en tiempo real.
+            </p>
           </div>
-          <div className="metric-card">
-            <div className="metric-label">Corriente</div>
-            <div className="metric-value text-base">—</div>
+        ) : isAmmeter ? (
+          <div className="metric-card opacity-90">
+            <div className="metric-label">Corriente medida</div>
+            <div className="metric-value text-lg">{fmtI(r!.current)}</div>
           </div>
-        </div>
+        ) : isVoltmeter ? (
+          <div className="metric-card opacity-90">
+            <div className="metric-label">Voltaje medido</div>
+            <div className="metric-value text-lg">{fmtV(r!.voltage)}</div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2 opacity-90">
+            <div className="metric-card">
+              <div className="metric-label">Voltaje</div>
+              <div className="metric-value text-base">{fmtV(r!.voltage)}</div>
+            </div>
+            <div className="metric-card">
+              <div className="metric-label">Corriente</div>
+              <div className="metric-value text-base">{fmtI(r!.current)}</div>
+            </div>
+          </div>
+        )}
+        <p className="text-[10px] text-ink-faint text-center">
+          Pulsa <span className="text-gold-600 font-semibold">INICIAR</span> para actualizar en vivo.
+        </p>
       </div>
     );
   }
 
+  const r = readComponent(selectedComp);
+
   return (
     <div className="p-4 space-y-3">
       <div className="panel-label flex items-center gap-2">
-        <span
-          className={`w-2 h-2 rounded-full ${isRunning ? 'bg-green-500 animate-pulse shadow-[0_0_4px_rgba(34,197,94,0.5)]' : 'bg-surface-600'}`}
-        />
+        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_4px_rgba(34,197,94,0.5)]" />
         {selectedComp.label}
         {isAmmeter && (
           <span className="text-[9px] text-primary-600 font-normal normal-case">(serie)</span>

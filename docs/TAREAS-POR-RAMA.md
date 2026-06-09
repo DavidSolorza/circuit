@@ -123,6 +123,16 @@ pnpm dev
 | J-11 | Osciloscopio Plotly estable + exportar CSV en español | ✅ | `PlotlyChart.tsx`, `GraphPanel.tsx` |
 | J-12 | Multímetro contextual (amperímetro/voltímetro, estado detenido) | ✅ | `MultimeterDisplay.tsx`, `PropertiesPanel.tsx` |
 
+### Prioridad P2 — Pulido UI (Jun 2026, ronda 2)
+
+| ID | Tarea | Estado | Archivos |
+|----|-------|--------|----------|
+| J-13 | Mediciones congeladas al pausar simulación | ✅ | `MultimeterDisplay.tsx`, `PropertiesPanel.tsx` |
+| J-14 | Ayuda de atajos (`?`) + botón Demo en header/toolbar | ✅ | `ShortcutsHelp.tsx`, `App.tsx`, `Toolbar.tsx` |
+| J-15 | Arreglar “Colocar primer componente” (colocaba sin añadir) | ✅ | `placeFirstComponent.ts`, `App.tsx` |
+| J-16 | Osciloscopio: eje Y con unidades V/A según sondas | ✅ | `GraphPanel.tsx` |
+| J-17 | Demo completo (13 componentes) + pestaña Guía explicativa | ✅ | `loadDemo.ts`, `DemoGuidePanel.tsx` |
+
 ### Comandos diarios
 
 ```bash

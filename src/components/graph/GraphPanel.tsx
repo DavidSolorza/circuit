@@ -54,6 +54,16 @@ function GraphPanelInner() {
     [plotTraces, simTime],
   );
 
+  const yAxisTitle = useMemo(() => {
+    const visible = probes.filter((p) => p.visible && (oscData[p.id]?.length ?? 0) > 0);
+    const hasI = visible.some((p) => p.type === 'current');
+    const hasV = visible.some((p) => p.type === 'voltage');
+    if (hasI && hasV) return 'Valor (V / A)';
+    if (hasI) return 'Corriente (A)';
+    if (hasV) return 'Voltaje (V)';
+    return 'Valor';
+  }, [probes, oscData]);
+
   const plotLayout = useMemo(() => {
     const followLive = simulationRunning && simTime > OSC_WINDOW_SEC;
     return {
@@ -75,7 +85,7 @@ function GraphPanelInner() {
       yaxis: {
         gridcolor: '#E8E0D0',
         zerolinecolor: '#D0C8B5',
-        title: { text: 'Valor', font: { size: 9, color: '#6B7280' } },
+        title: { text: yAxisTitle, font: { size: 9, color: '#6B7280' } },
         color: '#6B7280',
         autorange: true,
         rangemode: 'tozero' as const,
@@ -88,7 +98,7 @@ function GraphPanelInner() {
       dragmode: 'zoom' as const,
       hovermode: 'closest' as const,
     };
-  }, [plotRevision, simulationRunning, simTime]);
+  }, [plotRevision, simulationRunning, simTime, yAxisTitle]);
 
   return (
     <div className="h-full flex flex-col bg-surface-900">

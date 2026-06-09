@@ -4,6 +4,7 @@ import type { ComponentType, ToolType } from '../../types';
 import { useCircuitStore } from '../../store/circuitStore';
 import { COMPONENT_CATEGORIES, COMPONENT_TEMPLATES, GRID_SIZE } from '../../core/constants';
 import { getComponentTooltip, TOOL_DESCRIPTIONS } from '../../core/tooltips';
+import { loadDemo } from '../../utils/loadDemo';
 import type React from 'react';
 
 const nonComponentTools: Array<{ type: ToolType; label: string; icon: string }> = [
@@ -139,6 +140,15 @@ export function Toolbar() {
       </div>
 
       <div className="border-t border-surface-700 px-2 py-2 space-y-2 bg-surface-950/30">
+        <button
+          type="button"
+          onClick={() => loadDemo()}
+          className="w-full py-1.5 rounded-md text-[10px] text-ink-faint hover:text-ink hover:bg-surface-800 border border-surface-700 transition-all"
+          title="Circuito demo: batería, amperímetro, LED y osciloscopio"
+        >
+          Cargar demo
+        </button>
+
         <button
           onClick={() => {
             const s = useCircuitStore.getState();

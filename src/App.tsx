@@ -10,10 +10,12 @@ import { useSimulation } from './hooks/useSimulation';
 import { useCircuit } from './hooks/useCircuit';
 import { useCircuitPersistence } from './hooks/useCircuitPersistence';
 import { useCircuitStore } from './store/circuitStore';
-import { GRID_SIZE } from './core/constants';
 import { TOOL_DESCRIPTIONS } from './core/tooltips';
-import { initCircuitState } from './utils/circuit';
+import { loadDemo } from './utils/loadDemo';
+import { placeFirstComponent } from './utils/placeFirstComponent';
 import { toastInfo } from './shared/store/toastStore';
+import { ShortcutsHelp } from './components/help/ShortcutsHelp';
+import { DemoGuidePanel } from './components/guide/DemoGuidePanel';
 
 const CircuitEditor = React.lazy(() => import('./features/editor/CircuitEditor'));
 
@@ -30,83 +32,15 @@ function useContainerSize() {
   return { ref, ...size };
 }
 
-function loadDemo() {
-  const gs = () => useCircuitStore.getState();
-  const snap = (p: { x: number; y: number }) => ({
-    x: Math.round(p.x / GRID_SIZE) * GRID_SIZE,
-    y: Math.round(p.y / GRID_SIZE) * GRID_SIZE,
-  });
-  const colGap = GRID_SIZE * 8;
-  const rowGap = GRID_SIZE * 6;
-  const originX = 150;
-  const rowMain = 210;
-  const rowReturn = rowMain + rowGap;
-
-  // Reiniciar canvas para que el demo siempre sea completo y visible
-  useCircuitStore.setState({
-    circuit: initCircuitState(),
-    selectedComponentId: null,
-    selectedWireId: null,
-    simulationRunning: false,
-    simResults: null,
-    simError: null,
-    probes: [],
-    oscData: {},
-    connectingFrom: null,
-    simTime: 0,
-    undoStack: [],
-    redoStack: [],
-  });
-
-  // Esquema ordenado:
-  //   [Bat]──[Amm]──[R]──[LED]
-  //     |              |    |
-  //     └──────[GND]───┘  [VM] (voltímetro en paralelo con LED)
-  const x = (col: number) => originX + col * colGap;
-
-  gs().addComponent('voltageSource', snap({ x: x(0), y: rowMain }));
-  gs().addComponent('ammeter', snap({ x: x(1), y: rowMain }));
-  gs().addComponent('resistor', snap({ x: x(2), y: rowMain }));
-  gs().addComponent('led', snap({ x: x(3), y: rowMain }));
-  gs().addComponent('ground', snap({ x: x(2), y: rowReturn }));
-  gs().addComponent('voltmeter', snap({ x: x(4), y: rowMain + rowGap / 2 }));
-
-  const s = gs();
-  const bat = Object.values(s.circuit.components).find((c) => c.type === 'voltageSource')!;
-  const amm = Object.values(s.circuit.components).find((c) => c.type === 'ammeter')!;
-  const res = Object.values(s.circuit.components).find((c) => c.type === 'resistor')!;
-  const led = Object.values(s.circuit.components).find((c) => c.type === 'led')!;
-  const vm = Object.values(s.circuit.components).find((c) => c.type === 'voltmeter')!;
-  const gnd = Object.values(s.circuit.components).find((c) => c.type === 'ground')!;
-
-  // Rama serie (horizontal)
-  s.connectTerminals(bat.terminalIds[1], amm.terminalIds[0]);
-  s.connectTerminals(amm.terminalIds[1], res.terminalIds[0]);
-  s.connectTerminals(res.terminalIds[1], led.terminalIds[0]);
-  // Retorno a tierra (vertical + horizontal, sin cruces)
-  s.connectTerminals(led.terminalIds[1], gnd.terminalIds[0]);
-  s.connectTerminals(gnd.terminalIds[0], bat.terminalIds[0]);
-  // Voltímetro en paralelo con el LED (a la derecha)
-  s.connectTerminals(led.terminalIds[0], vm.terminalIds[0]);
-  s.connectTerminals(led.terminalIds[1], vm.terminalIds[1]);
-
-  s.addProbe('current', amm.id);
-  s.addProbe('current', led.id);
-  s.addProbe('voltage', led.id, 0);
-  s.addProbe('voltage', vm.id, 0);
-
-  s.setActiveTool('select');
-  s.selectComponent(amm.id);
-}
-
 const toolHints = TOOL_DESCRIPTIONS;
 
 function AppInner() {
   const { ref: canvasRef, width: canvasWidth, height: canvasHeight } = useContainerSize();
   const [graphOpen, setGraphOpen] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [sidebarTab, setSidebarTab] = useState<'properties' | 'multimeter'>('multimeter');
+  const [sidebarTab, setSidebarTab] = useState<'properties' | 'multimeter' | 'guide'>('guide');
   const [calculatorOpen, setCalculatorOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const { count: compCount, wireCount } = useCircuit();
   const { simulationRunning } = useSimulation();
   const { exportCircuit, importCircuit, clearCircuit } = useCircuitPersistence();
@@ -114,7 +48,15 @@ function AppInner() {
   const simErrorMsg = useCircuitStore((s) => s.simError);
   const probeCount = useCircuitStore((s) => s.probes.length);
   const selectedWireId = useCircuitStore((s) => s.selectedWireId);
+  const simTime = useCircuitStore((s) => s.simTime);
   const hasCircuit = compCount > 0;
+
+  const handleLoadDemo = useCallback(() => {
+    loadDemo(() => {
+      setSidebarOpen(true);
+      setSidebarTab('guide');
+    });
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -136,6 +78,8 @@ function AppInner() {
       } else if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         useCircuitStore.getState().undo();
+      } else if (e.key === '?' && !(e.target instanceof HTMLInputElement)) {
+        setHelpOpen((v) => !v);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -228,6 +172,20 @@ function AppInner() {
 
         <div className="ml-auto flex items-center gap-2">
           <button
+            onClick={handleLoadDemo}
+            className="btn-ghost hidden sm:flex items-center gap-1.5 text-[10px]"
+            title="Circuito demo completo con guía de componentes"
+          >
+            Demo
+          </button>
+          <button
+            onClick={() => setHelpOpen(true)}
+            className="btn-icon"
+            title="Atajos de teclado (?)"
+          >
+            ?
+          </button>
+          <button
             onClick={() => setCalculatorOpen(true)}
             className="btn-ghost flex items-center gap-1.5"
           >
@@ -260,6 +218,7 @@ function AppInner() {
       </header>
 
       {calculatorOpen && <CalculatorPage onClose={() => setCalculatorOpen(false)} />}
+      {helpOpen && <ShortcutsHelp onClose={() => setHelpOpen(false)} />}
 
       {!hasCircuit && (
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
@@ -302,17 +261,20 @@ function AppInner() {
                 <span className="w-1 h-1 rounded-full bg-surface-600 shrink-0" />
                 Siempre incluye <span className="font-medium">Tierra (GND)</span>
               </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1 h-1 rounded-full bg-primary-400 shrink-0" />
+                Clic en cable → <span className="font-medium">Supr</span> elimina · arrastra extremo
+                para mover
+              </li>
             </ul>
             <p className="text-[10px] text-primary-600/80 mt-3 px-2 py-1.5 rounded-md bg-primary-50 border border-primary-200/60">
-              El demo incluye amperímetro, voltímetro y 4 sondas en el osciloscopio.
+              El demo incluye los 13 componentes, 6 sondas y una guía explicativa en el panel
+              derecho.
             </p>
-            <button
-              onClick={() => useCircuitStore.getState().setActiveTool('resistor')}
-              className="mt-5 btn-primary w-full"
-            >
+            <button onClick={() => placeFirstComponent('resistor')} className="mt-5 btn-primary w-full">
               Colocar primer componente
             </button>
-            <button onClick={loadDemo} className="mt-2 btn-gold w-full">
+            <button onClick={handleLoadDemo} className="mt-2 btn-gold w-full">
               Cargar circuito demo
             </button>
           </div>
@@ -387,24 +349,32 @@ function AppInner() {
         </button>
 
         <aside
-          className={`${sidebarOpen ? 'w-64' : 'w-0'} bg-surface-900 border-l border-surface-700 shrink-0 flex flex-col transition-all duration-200 overflow-hidden shadow-panel`}
+          className={`${sidebarOpen ? 'w-72' : 'w-0'} bg-surface-900 border-l border-surface-700 shrink-0 flex flex-col transition-all duration-200 overflow-hidden shadow-panel`}
         >
           <div className="flex border-b border-surface-700 min-w-0">
             <button
+              onClick={() => setSidebarTab('guide')}
+              className={`sidebar-tab flex-1 ${sidebarTab === 'guide' ? 'sidebar-tab-active' : 'sidebar-tab-inactive'}`}
+            >
+              Guía
+            </button>
+            <button
               onClick={() => setSidebarTab('multimeter')}
-              className={`sidebar-tab ${sidebarTab === 'multimeter' ? 'sidebar-tab-active' : 'sidebar-tab-inactive'}`}
+              className={`sidebar-tab flex-1 ${sidebarTab === 'multimeter' ? 'sidebar-tab-active' : 'sidebar-tab-inactive'}`}
             >
               Multímetro
             </button>
             <button
               onClick={() => setSidebarTab('properties')}
-              className={`sidebar-tab ${sidebarTab === 'properties' ? 'sidebar-tab-active' : 'sidebar-tab-inactive'}`}
+              className={`sidebar-tab flex-1 ${sidebarTab === 'properties' ? 'sidebar-tab-active' : 'sidebar-tab-inactive'}`}
             >
-              Propiedades
+              Props
             </button>
           </div>
           <div className="flex-1 overflow-y-auto">
-            {sidebarTab === 'multimeter' ? <MultimeterDisplay /> : <PropertiesPanel />}
+            {sidebarTab === 'guide' && <DemoGuidePanel />}
+            {sidebarTab === 'multimeter' && <MultimeterDisplay />}
+            {sidebarTab === 'properties' && <PropertiesPanel />}
           </div>
         </aside>
       </div>
@@ -420,6 +390,12 @@ function AppInner() {
           </span>
         </div>
         <div className="flex items-center gap-3 text-ink-faint shrink-0 ml-4 text-[10px] font-mono tabular-nums">
+          {simulationRunning && (
+            <>
+              <span className="text-green-600">{simTime.toFixed(2)} s</span>
+              <span className="text-surface-600">·</span>
+            </>
+          )}
           <span>{compCount} componentes</span>
           <span className="text-surface-600">·</span>
           <span>{wireCount} cables</span>

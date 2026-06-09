@@ -58,8 +58,12 @@ export function SimulationStatus() {
         </span>
       </div>
 
-      {status === 'running' && (
-        <span className="text-green-600 font-mono font-medium">{simTime.toFixed(2)}s</span>
+      {(status === 'running' || (status === 'stopped' && simResults?.status.success && simTime > 0)) && (
+        <span
+          className={`font-mono font-medium ${status === 'running' ? 'text-green-600' : 'text-ink-faint'}`}
+        >
+          {simTime.toFixed(2)}s
+        </span>
       )}
 
       {status === 'error' && simError && (

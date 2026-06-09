@@ -90,7 +90,8 @@ export function PropertiesPanel() {
 
   const template = COMPONENT_TEMPLATES[comp.type];
   const readings = readComponent(comp);
-  const simOk = simulationRunning && simResults?.status.success;
+  const hasSimResults = simResults?.status.success ?? false;
+  const simLive = simulationRunning && hasSimResults;
   const modelStatus = getComponentModelStatus(comp);
   const unsupportedInCircuit = Object.values(components).filter((c) =>
     UNSUPPORTED_TYPES.has(c.type),
@@ -164,11 +165,16 @@ export function PropertiesPanel() {
         </div>
       )}
 
-      {simOk && (
+      {hasSimResults && (
         <div className="panel-section space-y-2">
           <div className="panel-label flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span
+              className={`w-2 h-2 rounded-full ${simLive ? 'bg-green-500 animate-pulse' : 'bg-surface-500'}`}
+            />
             Mediciones
+            {!simLive && (
+              <span className="text-[9px] text-ink-faint font-normal normal-case">(pausado)</span>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-surface-950/40 rounded-md p-2 border border-surface-700/50">
