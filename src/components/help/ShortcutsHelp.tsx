@@ -7,6 +7,7 @@ const SHORTCUTS = [
   { keys: 'Ctrl + Z', action: 'Deshacer' },
   { keys: 'Ctrl + Shift + Z', action: 'Rehacer' },
   { keys: '?', action: 'Abre esta ventana' },
+  { keys: 'C', action: 'Calculadora de fórmulas' },
 ] as const;
 
 export function ShortcutsHelp({ onClose }: Props) {

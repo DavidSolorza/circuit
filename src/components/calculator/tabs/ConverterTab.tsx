@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FormulaHint } from '../FormulaHint';
 import { fmt } from '../format';
 
 export function ConverterTab() {
@@ -50,6 +51,13 @@ export function ConverterTab() {
           <span className="font-mono font-bold text-gold-500">{fmt(1 / fHz, 's')}</span>
         </div>
       </div>
+      <FormulaHint
+        lines={[
+          { eq: '1 mA = 10⁻³ A', note: 'corriente' },
+          { eq: '1 kΩ = 10³ Ω', note: 'resistencia' },
+          { eq: 'T = 1 / f', note: 'periodo a 60 Hz → 16,7 ms' },
+        ]}
+      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FormulaHint } from '../FormulaHint';
 import { fmt } from '../format';
 
 export function ResistorTab() {
@@ -103,6 +104,13 @@ export function ResistorTab() {
           </div>
         )}
       </div>
+      <FormulaHint
+        lines={[
+          { eq: 'R_t(serie) = R₁ + R₂', note: 'misma corriente' },
+          { eq: '1/R_t = 1/R₁ + 1/R₂', note: 'paralelo' },
+          { eq: 'V_R1 = V_in · R₁/(R₁+R₂)', note: 'divisor en serie' },
+        ]}
+      />
     </div>
   );
 }

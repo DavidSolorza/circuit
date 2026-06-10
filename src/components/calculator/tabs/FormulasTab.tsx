@@ -1,120 +1,99 @@
-const formulas = [
-  {
-    name: 'Ley de Ohm',
-    eq: 'V = I · R',
-    desc: 'Voltaje = Corriente × Resistencia',
-    vars: 'V [V], I [A], R [Ω]',
-  },
-  {
-    name: 'Potencia',
-    eq: 'P = V · I = I² · R = V² / R',
-    desc: 'Potencia eléctrica disipada',
-    vars: 'P [W], V [V], I [A], R [Ω]',
-  },
-  {
-    name: 'LVK',
-    eq: 'Σ V_malla = 0',
-    desc: 'Suma de voltajes en malla cerrada = 0',
-    vars: 'Caídas de voltaje [V]',
-  },
-  {
-    name: 'LCK',
-    eq: 'Σ I_nodo = 0',
-    desc: 'Suma de corrientes entrantes = salientes',
-    vars: 'Corrientes de rama [A]',
-  },
-  {
-    name: 'Constante RC',
-    eq: 'τ = R · C',
-    desc: 'Tiempo carga capacitor al 63.2%',
-    vars: 'τ [s], R [Ω], C [F]',
-  },
-  {
-    name: 'Constante RL',
-    eq: 'τ = L / R',
-    desc: 'Tiempo corriente inductor al 63.2%',
-    vars: 'τ [s], L [H], R [Ω]',
-  },
-  {
-    name: 'Reactancia Capacitiva',
-    eq: 'Xc = 1 / (2π · f · C)',
-    desc: 'Resistencia AC de un capacitor',
-    vars: 'Xc [Ω], f [Hz], C [F]',
-  },
-  {
-    name: 'Reactancia Inductiva',
-    eq: 'Xl = 2π · f · L',
-    desc: 'Resistencia AC de un inductor',
-    vars: 'Xl [Ω], f [Hz], L [H]',
-  },
-  {
-    name: 'Resonancia',
-    eq: 'f₀ = 1 / (2π · √(L · C))',
-    desc: 'Frecuencia de resonancia LC',
-    vars: 'f₀ [Hz], L [H], C [F]',
-  },
-  {
-    name: 'Puente Divisor',
-    eq: 'Vout = Vin · R₂ / (R₁ + R₂)',
-    desc: 'Voltaje en divisor resistivo',
-    vars: 'Vout [V], R₁ [Ω], R₂ [Ω]',
-  },
-  {
-    name: 'Energía Capacitor',
-    eq: 'E = ½ · C · V²',
-    desc: 'Energía almacenada en capacitor',
-    vars: 'E [J], C [F], V [V]',
-  },
-  {
-    name: 'Energía Inductor',
-    eq: 'E = ½ · L · I²',
-    desc: 'Energía almacenada en inductor',
-    vars: 'E [J], L [H], I [A]',
-  },
-  {
-    name: 'Serie R',
-    eq: 'Rt = R₁ + R₂ + ... + Rn',
-    desc: 'Resistencia total en serie',
-    vars: 'Rt [Ω], R₁..Rn [Ω]',
-  },
-  {
-    name: 'Paralelo R',
-    eq: '1/Rt = 1/R₁ + 1/R₂ + ...',
-    desc: 'Resistencia total en paralelo',
-    vars: 'Rt [Ω], R₁..Rn [Ω]',
-  },
-  {
-    name: 'Serie C',
-    eq: '1/Ct = 1/C₁ + 1/C₂ + ...',
-    desc: 'Capacitancia total en serie',
-    vars: 'Ct [F], C₁..Cn [F]',
-  },
-  {
-    name: 'Paralelo C',
-    eq: 'Ct = C₁ + C₂ + ... + Cn',
-    desc: 'Capacitancia total en paralelo',
-    vars: 'Ct [F], C₁..Cn [F]',
-  },
-];
+import { useMemo, useState } from 'react';
+import { FORMULA_CATEGORIES, FORMULA_LIBRARY, type FormulaCategory } from '../formulas';
 
 export function FormulasTab() {
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState<FormulaCategory | 'all'>('all');
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return FORMULA_LIBRARY.filter((f) => {
+      if (category !== 'all' && f.category !== category) return false;
+      if (!q) return true;
+      return (
+        f.name.toLowerCase().includes(q) ||
+        f.eq.toLowerCase().includes(q) ||
+        f.desc.toLowerCase().includes(q) ||
+        (f.usedIn?.toLowerCase().includes(q) ?? false)
+      );
+    });
+  }, [query, category]);
+
+  const categories = Object.entries(FORMULA_CATEGORIES) as [FormulaCategory, string][];
+
   return (
     <div className="space-y-3">
-      <div className="text-xs font-semibold text-primary-500 uppercase tracking-wider">
-        Librería de Fórmulas
+      <div>
+        <div className="text-xs font-semibold text-primary-500 uppercase tracking-wider">
+          Librería de fórmulas
+        </div>
+        <p className="text-[10px] text-ink-faint mt-1">
+          Referencia para la calculadora y para lo que hace el simulador en cada componente.
+        </p>
       </div>
-      <div className="space-y-1 max-h-72 overflow-y-auto">
-        {formulas.map((f, i) => (
-          <div
-            key={i}
-            className="bg-surface-800 border border-surface-700 rounded-lg p-2 hover:border-primary-300 transition-colors"
+
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Buscar fórmula o componente…"
+        className="w-full px-3 py-2 text-xs bg-surface-800 border border-surface-700 rounded-lg text-ink placeholder:text-ink-faint focus:border-primary-500 outline-none"
+      />
+
+      <div className="flex flex-wrap gap-1">
+        <button
+          type="button"
+          onClick={() => setCategory('all')}
+          className={`px-2 py-1 rounded text-[9px] font-medium border transition-colors ${
+            category === 'all'
+              ? 'bg-primary-50 text-primary-700 border-primary-300'
+              : 'bg-surface-800 text-ink-faint border-surface-700'
+          }`}
+        >
+          Todas
+        </button>
+        {categories.map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setCategory(id)}
+            className={`px-2 py-1 rounded text-[9px] font-medium border transition-colors ${
+              category === id
+                ? 'bg-primary-50 text-primary-700 border-primary-300'
+                : 'bg-surface-800 text-ink-faint border-surface-700'
+            }`}
           >
-            <div className="text-[10px] font-semibold text-ink">{f.name}</div>
-            <div className="text-[11px] font-mono text-primary-500 font-bold mt-0.5">{f.eq}</div>
-            <div className="text-[9px] text-surface-500 mt-0.5">{f.desc}</div>
-            <div className="text-[9px] text-surface-500 font-mono mt-0.5">{f.vars}</div>
-          </div>
+            {label}
+          </button>
         ))}
+      </div>
+
+      <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
+        {filtered.length === 0 ? (
+          <p className="text-xs text-ink-faint text-center py-6">Nada con ese filtro.</p>
+        ) : (
+          filtered.map((f) => (
+            <div
+              key={`${f.name}-${f.eq}`}
+              className="bg-surface-800 border border-surface-700 rounded-lg p-2.5 hover:border-primary-300/60 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="text-[10px] font-semibold text-ink">{f.name}</div>
+                <span className="text-[8px] px-1.5 py-0.5 rounded bg-surface-900 text-ink-faint border border-surface-700 shrink-0">
+                  {FORMULA_CATEGORIES[f.category]}
+                </span>
+              </div>
+              <div className="text-[11px] font-mono text-primary-600 font-bold mt-1">{f.eq}</div>
+              <div className="text-[9px] text-ink-muted mt-1">{f.desc}</div>
+              <div className="text-[9px] text-ink-faint font-mono mt-0.5">{f.vars}</div>
+              {f.usedIn && (
+                <div className="text-[9px] text-gold-700 mt-1.5 pt-1.5 border-t border-surface-700/80">
+                  <span className="font-medium">En el simulador:</span> {f.usedIn}
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

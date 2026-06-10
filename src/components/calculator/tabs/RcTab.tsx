@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FormulaHint } from '../FormulaHint';
 import { fmt } from '../format';
 
 export function RcTab() {
@@ -58,6 +59,14 @@ export function RcTab() {
           <span className="font-mono font-bold text-primary-500">{phi.toFixed(1)}°</span>
         </div>
       </div>
+      <FormulaHint
+        lines={[
+          { eq: 'τ = R · C', note: 'constante de tiempo' },
+          { eq: 'f_c = 1 / (2πRC)', note: 'frecuencia de corte' },
+          { eq: '|Z| = √(R² + X_C²)', note: 'impedancia serie RC' },
+          { eq: 'φ = −arctan(X_C / R)', note: 'desfase' },
+        ]}
+      />
     </div>
   );
 }

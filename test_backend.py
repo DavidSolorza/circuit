@@ -10,11 +10,13 @@ This creates a complete test circuit with:
 - Ground
 """
 
-import requests
 import json
+import os
 from typing import Dict, Any
 
-API_BASE = "http://localhost:8000"
+import requests
+
+API_BASE = os.environ.get("API_BASE", "http://localhost:8000")
 
 def create_test_circuit() -> Dict[str, Any]:
     """Create a test circuit request."""
@@ -74,10 +76,10 @@ def test_health_check():
     try:
         response = requests.get(f"{API_BASE}/api/health", timeout=5)
         if response.status_code == 200:
-            print("✓ Backend is running")
+            print("[OK] Backend is running")
             return True
     except Exception as e:
-        print(f"✗ Backend health check failed: {e}")
+        print(f"[FAIL] Backend health check failed: {e}")
         return False
 
 def test_simulation():
@@ -93,7 +95,7 @@ def test_simulation():
         )
         
         if response.status_code != 200:
-            print(f"✗ Simulation failed with status {response.status_code}")
+            print(f"[FAIL] Simulation failed with status {response.status_code}")
             print(f"Response: {response.text}")
             return False
         
@@ -101,15 +103,15 @@ def test_simulation():
         
         # Check result structure
         if not result.get("status", {}).get("success"):
-            print(f"✗ Simulation returned error: {result.get('status', {}).get('error')}")
+            print(f"[FAIL] Simulation returned error: {result.get('status', {}).get('error')}")
             return False
         
         # Verify data
         if not result.get("time"):
-            print("✗ No time data in response")
+            print("[FAIL] No time data in response")
             return False
         
-        print(f"✓ Simulation completed successfully")
+        print("[OK] Simulation completed successfully")
         print(f"  - Time steps: {len(result.get('time', []))}")
         print(f"  - Nodes with voltage data: {len(result.get('nodeVoltages', {}))}")
         print(f"  - Components with current data: {len(result.get('branchCurrents', {}))}")
@@ -124,12 +126,12 @@ def test_simulation():
             max_current = max(abs(i) for i in led_current)
             print(f"  - LED current (max): {max_current:.6e} A")
             if max_current > 1e-6:
-                print(f"    → LED should be illuminated")
+                print("    LED should be illuminated")
         
         return True
         
     except Exception as e:
-        print(f"✗ Simulation test failed: {e}")
+        print(f"[FAIL] Simulation test failed: {e}")
         return False
 
 def test_validation():
@@ -145,37 +147,37 @@ def test_validation():
         )
         
         if response.status_code != 200:
-            print(f"✗ Validation failed with status {response.status_code}")
+            print(f"[FAIL] Validation failed with status {response.status_code}")
             return False
         
         result = response.json()
         
         if result.get("valid"):
-            print("✓ Circuit is valid")
+            print("[OK] Circuit is valid")
             if result.get("warnings"):
                 print(f"  Warnings: {result['warnings']}")
         else:
-            print(f"✗ Circuit validation failed")
+            print("[FAIL] Circuit validation failed")
             print(f"  Errors: {result.get('errors', [])}")
             return False
         
         return True
         
     except Exception as e:
-        print(f"✗ Validation test failed: {e}")
+        print(f"[FAIL] Validation test failed: {e}")
         return False
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("LabCircuitos Backend Test Suite")
+    print("Electro+ Lab — Backend Test Suite")
     print("=" * 60)
     
     all_pass = True
     
     # Run tests
     if not test_health_check():
-        print("\n⚠️  Backend is not running. Make sure to start it with:")
-        print("   cd backend && python main.py")
+        print("\n[WARN] Backend is not running. Start it with:")
+        print("   python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000")
         exit(1)
     
     all_pass &= test_validation()
@@ -184,9 +186,9 @@ if __name__ == "__main__":
     # Summary
     print("\n" + "=" * 60)
     if all_pass:
-        print("✓ All tests passed!")
+        print("[OK] All tests passed!")
         print("=" * 60)
     else:
-        print("✗ Some tests failed")
+        print("[FAIL] Some tests failed")
         print("=" * 60)
         exit(1)

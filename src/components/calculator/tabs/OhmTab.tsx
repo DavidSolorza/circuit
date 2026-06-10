@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FormulaHint } from '../FormulaHint';
 import { fmt } from '../format';
 
 function num(raw: string, fallback = 0): number {
@@ -62,6 +63,13 @@ export function OhmTab() {
           <span className="font-mono font-bold text-gold-500">{fmt(calcP, 'W')}</span>
         </div>
       </div>
+      <FormulaHint
+        lines={[
+          { eq: 'V = I · R', note: 'ley de Ohm' },
+          { eq: 'I = V / R', note: 'corriente en una rama' },
+          { eq: 'P = V · I', note: 'potencia en el multímetro' },
+        ]}
+      />
     </div>
   );
 }

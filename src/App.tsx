@@ -17,6 +17,8 @@ import { placeFirstComponent } from './utils/placeFirstComponent';
 import { toastInfo } from './shared/store/toastStore';
 import { ShortcutsHelp } from './components/help/ShortcutsHelp';
 import { DemoGuidePanel } from './components/guide/DemoGuidePanel';
+import { AppLogo } from './components/brand/AppLogo';
+import { APP_NAME, APP_TAGLINE } from './core/brand';
 
 const CircuitEditor = React.lazy(() => import('./features/editor/CircuitEditor'));
 
@@ -83,6 +85,13 @@ function AppInner() {
         useCircuitStore.getState().undo();
       } else if (e.key === '?' && !(e.target instanceof HTMLInputElement)) {
         setHelpOpen((v) => !v);
+      } else if (
+        (e.key === 'c' || e.key === 'C') &&
+        !(e.target instanceof HTMLInputElement) &&
+        !e.ctrlKey &&
+        !e.metaKey
+      ) {
+        setCalculatorOpen((v) => !v);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -93,13 +102,13 @@ function AppInner() {
     <div className="w-screen h-screen flex flex-col overflow-hidden bg-surface-950 text-ink">
       <header className="h-11 bg-surface-900 border-b border-surface-700 flex items-center px-4 shrink-0 gap-3 shadow-panel">
         <div className="flex items-center gap-2.5 shrink-0">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-[10px] font-bold text-gold-100 shadow-panel">
-            ~
+          <div className="w-8 h-8 rounded-lg bg-surface-800 border border-surface-700 flex items-center justify-center shadow-panel text-gold-400">
+            <AppLogo size={26} />
           </div>
           <div>
-            <h1 className="text-sm font-bold tracking-wide text-ink leading-none">LabCircuitos</h1>
+            <h1 className="text-sm font-bold tracking-wide text-ink leading-none">{APP_NAME}</h1>
             <p className="text-[9px] text-ink-faint leading-none mt-0.5 hidden sm:block">
-              Prácticas de circuitos
+              {APP_TAGLINE}
             </p>
           </div>
         </div>
@@ -215,7 +224,7 @@ function AppInner() {
             Calculadora
           </button>
           <span className="text-[9px] text-ink-faint hidden md:inline px-1.5 py-0.5 rounded bg-surface-800 border border-surface-700">
-            v1.0
+            v1.1
           </span>
         </div>
       </header>
@@ -226,25 +235,10 @@ function AppInner() {
       {!hasCircuit && (
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
           <div className="bg-surface-900/98 backdrop-blur-md rounded-2xl border border-surface-700 px-8 py-7 text-center max-w-md pointer-events-auto shadow-float animate-slide-up">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br from-primary-500/15 to-gold-500/15 border border-primary-500/25 flex items-center justify-center">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#1F4D3A"
-                strokeWidth="1.5"
-              >
-                <line x1="2" y1="12" x2="6" y2="12" />
-                <line x1="6" y1="9" x2="6" y2="15" />
-                <line x1="6" y1="12" x2="10" y2="12" />
-                <polyline points="10,9 14,12 10,15" />
-                <line x1="14" y1="12" x2="18" y2="12" />
-                <line x1="18" y1="9" x2="18" y2="15" />
-                <line x1="18" y1="12" x2="22" y2="12" />
-              </svg>
+            <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br from-primary-500/15 to-gold-500/15 border border-primary-500/25 flex items-center justify-center text-gold-400">
+              <AppLogo size={40} />
             </div>
-            <h3 className="text-base font-semibold text-ink mb-2">LabCircuitos</h3>
+            <h3 className="text-base font-semibold text-ink mb-2">{APP_NAME}</h3>
             <p className="text-xs text-ink-muted leading-relaxed text-left">
               Saca piezas de la paleta (clic o arrastre), únelas por los círculos de conexión y
               añade una <strong className="font-medium text-ink">tierra GND</strong> antes de

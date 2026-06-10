@@ -73,7 +73,7 @@ Abre en el navegador:
 https://TU-API.onrender.com/api/health
 ```
 
-Debe responder: `{"status":"ok","version":"0.1.1"}`
+Debe responder: `{"status":"ok","version":"0.1.2"}`
 
 ---
 

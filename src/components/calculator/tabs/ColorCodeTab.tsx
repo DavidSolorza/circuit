@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FormulaHint } from '../FormulaHint';
 import {
   bandColors,
   bandDigits,
@@ -72,6 +73,13 @@ export function ColorCodeTab() {
           </span>
         </div>
       </div>
+      <FormulaHint
+        lines={[
+          { eq: 'R = (d₁d₂) × mult', note: 'IEC 60062, 4 bandas' },
+          { eq: 'R_min = R × (1 − tol%)', note: 'rango inferior' },
+          { eq: 'R_max = R × (1 + tol%)', note: 'rango superior' },
+        ]}
+      />
     </div>
   );
 }

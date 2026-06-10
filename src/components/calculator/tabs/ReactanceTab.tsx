@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FormulaHint } from '../FormulaHint';
 import { fmt } from '../format';
 
 export function ReactanceTab() {
@@ -52,6 +53,13 @@ export function ReactanceTab() {
           <span className="font-mono text-ink">{fmt(Math.abs(xl - xc), 'Ω', 2)}</span>
         </div>
       </div>
+      <FormulaHint
+        lines={[
+          { eq: 'X_L = 2π · f · L', note: 'bobina en AC' },
+          { eq: 'X_C = 1 / (2π · f · C)', note: 'condensador en AC' },
+          { eq: 'f₀ = 1 / (2π√(LC))', note: 'resonancia' },
+        ]}
+      />
     </div>
   );
 }
