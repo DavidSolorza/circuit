@@ -91,7 +91,8 @@ Copia local: `.env.example` → `.env`
 
 | Problema | Solución |
 |----------|----------|
-| Build falla en Vercel | Revisa que **Node ≥ 18** y que el comando sea `pnpm build`. |
+| Build falla en Vercel | Framework = **Vite** (no FastAPI). `vercel.json` ya fuerza `framework: vite`. Root Directory vacío. |
+| `No FastAPI entrypoint found` | Vercel confundió el repo con Python. Redeploy tras el fix; el backend va solo en **Render**. |
 | `No Output Directory named dist` | En Vercel → Settings → **Output Directory** = `dist`. El `.vercelignore` ya incluye `!dist`. |
 | Pantalla en blanco | Revisa la consola del navegador; `vercel.json` ya incluye rewrite SPA. |
 | API en Render “duerme” (plan free) | La primera petición tarda ~30 s; es normal en el plan gratuito. |

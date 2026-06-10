@@ -1,5 +1,9 @@
 backend/
 test_backend.py
+Procfile
+runtime.txt
+render.yaml
+render-start.sh
 .ai/
 docs/
 acctulizacio.mkd
