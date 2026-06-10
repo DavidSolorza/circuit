@@ -12,6 +12,7 @@ import { useCircuitPersistence } from './hooks/useCircuitPersistence';
 import { useCircuitStore } from './store/circuitStore';
 import { TOOL_DESCRIPTIONS } from './core/tooltips';
 import { loadDemo } from './utils/loadDemo';
+import { registerDemoLoadedHandler } from './utils/demoUi';
 import { placeFirstComponent } from './utils/placeFirstComponent';
 import { toastInfo } from './shared/store/toastStore';
 import { ShortcutsHelp } from './components/help/ShortcutsHelp';
@@ -51,8 +52,10 @@ function AppInner() {
   const simTime = useCircuitStore((s) => s.simTime);
   const hasCircuit = compCount > 0;
 
-  const handleLoadDemo = useCallback(() => {
-    loadDemo(() => {
+  const handleLoadDemo = useCallback(() => loadDemo(), []);
+
+  useEffect(() => {
+    registerDemoLoadedHandler(() => {
       setSidebarOpen(true);
       setSidebarTab('guide');
     });
@@ -88,15 +91,15 @@ function AppInner() {
 
   return (
     <div className="w-screen h-screen flex flex-col overflow-hidden bg-surface-950 text-ink">
-      <header className="h-10 bg-surface-900 border-b border-surface-700 flex items-center px-4 shrink-0 gap-3 shadow-panel">
+      <header className="h-11 bg-surface-900 border-b border-surface-700 flex items-center px-4 shrink-0 gap-3 shadow-panel">
         <div className="flex items-center gap-2.5 shrink-0">
-          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-[9px] font-bold text-gold-100 shadow-sm">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-[10px] font-bold text-gold-100 shadow-panel">
             ~
           </div>
           <div>
-            <h1 className="text-xs font-bold tracking-wide text-ink leading-none">LabCircuitos</h1>
-            <p className="text-[8px] text-ink-faint leading-none mt-0.5 hidden sm:block">
-              Simulador eléctrico
+            <h1 className="text-sm font-bold tracking-wide text-ink leading-none">LabCircuitos</h1>
+            <p className="text-[9px] text-ink-faint leading-none mt-0.5 hidden sm:block">
+              Prácticas de circuitos
             </p>
           </div>
         </div>
@@ -174,9 +177,9 @@ function AppInner() {
           <button
             onClick={handleLoadDemo}
             className="btn-ghost hidden sm:flex items-center gap-1.5 text-[10px]"
-            title="Circuito demo completo con guía de componentes"
+            title="Carga el circuito de ejemplo con guía"
           >
-            Demo
+            Ejemplo
           </button>
           <button
             onClick={() => setHelpOpen(true)}
@@ -241,48 +244,28 @@ function AppInner() {
                 <line x1="18" y1="12" x2="22" y2="12" />
               </svg>
             </div>
-            <h3 className="text-base font-semibold text-ink mb-2">Bienvenido a LabCircuitos</h3>
-            <p className="text-xs text-ink-muted leading-relaxed">
-              Arrastra componentes desde la barra lateral o haz clic para colocarlos en la
-              cuadrícula.
+            <h3 className="text-base font-semibold text-ink mb-2">LabCircuitos</h3>
+            <p className="text-xs text-ink-muted leading-relaxed text-left">
+              Saca piezas de la paleta (clic o arrastre), únelas por los círculos de conexión y
+              añade una <strong className="font-medium text-ink">tierra GND</strong> antes de
+              simular. El osciloscopio queda abajo; mediciones, a la derecha.
             </p>
-            <ul className="text-[11px] text-ink-faint mt-3 space-y-1.5 text-left mx-auto max-w-[280px]">
-              <li className="flex items-center gap-2">
-                <span className="w-1 h-1 rounded-full bg-primary-500 shrink-0" />
-                Arrastra entre los <span className="text-primary-600 font-medium">círculos</span>{' '}
-                para cablear
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1 h-1 rounded-full bg-gold-500 shrink-0" />
-                <span className="text-gold-600 font-medium">INICIAR</span> simula · osciloscopio
-                abajo
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1 h-1 rounded-full bg-surface-600 shrink-0" />
-                Siempre incluye <span className="font-medium">Tierra (GND)</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1 h-1 rounded-full bg-primary-400 shrink-0" />
-                Clic en cable → <span className="font-medium">Supr</span> elimina · arrastra extremo
-                para mover
-              </li>
-            </ul>
-            <p className="text-[10px] text-primary-600/80 mt-3 px-2 py-1.5 rounded-md bg-primary-50 border border-primary-200/60">
-              El demo incluye los 13 componentes, 6 sondas y una guía explicativa en el panel
-              derecho.
+            <p className="text-[11px] text-ink-faint mt-3 text-left">
+              Si prefieres no empezar de cero, carga el ejemplo: trae todos los componentes ya
+              cableados y una guía en la pestaña <strong className="text-ink">Guía</strong>.
             </p>
             <button onClick={() => placeFirstComponent('resistor')} className="mt-5 btn-primary w-full">
               Colocar primer componente
             </button>
             <button onClick={handleLoadDemo} className="mt-2 btn-gold w-full">
-              Cargar circuito demo
+              Ver circuito de ejemplo
             </button>
           </div>
         </div>
       )}
 
       <div className="flex flex-1 min-h-0 relative">
-        <aside className="w-[140px] bg-surface-900 border-r border-surface-700 shrink-0 flex flex-col shadow-panel">
+        <aside className="w-[300px] min-w-[300px] bg-surface-900 border-r border-surface-700 shrink-0 flex flex-col shadow-panel">
           <Toolbar />
         </aside>
 
@@ -311,7 +294,7 @@ function AppInner() {
           </div>
 
           <div
-            className={`border-t border-surface-700 bg-surface-900 transition-all duration-200 ${graphOpen ? 'h-60' : 'h-9'}`}
+            className={`border-t border-surface-700 bg-surface-900 transition-all duration-200 ${graphOpen ? 'h-[280px]' : 'h-9'}`}
           >
             <button
               onClick={() => setGraphOpen(!graphOpen)}
@@ -368,7 +351,7 @@ function AppInner() {
               onClick={() => setSidebarTab('properties')}
               className={`sidebar-tab flex-1 ${sidebarTab === 'properties' ? 'sidebar-tab-active' : 'sidebar-tab-inactive'}`}
             >
-              Props
+              Propiedades
             </button>
           </div>
           <div className="flex-1 overflow-y-auto">

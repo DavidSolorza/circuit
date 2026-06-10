@@ -1,0 +1,93 @@
+# Desplegar LabCircuitos (front + back)
+
+La app **funciona sola en el navegador** (simulación en JavaScript). El backend es opcional (API FastAPI). Esta guía deja ambos online con pocos pasos.
+
+## Resumen
+
+| Parte | Dónde | URL ejemplo |
+|-------|--------|-------------|
+| **Frontend** | Vercel | `https://labcircuitos.vercel.app` |
+| **Backend** | Render (gratis) | `https://labcircuitos-api.onrender.com` |
+
+---
+
+## 1. Subir el código a GitHub
+
+```bash
+git add .
+git commit -m "Preparar despliegue"
+git push origin main
+```
+
+---
+
+## 2. Frontend en Vercel (~3 min)
+
+1. Entra en [vercel.com](https://vercel.com) → **Add New Project**.
+2. Importa el repo de GitHub.
+3. Vercel detecta Vite; el archivo `vercel.json` ya define el build:
+   - **Install:** `pnpm install`
+   - **Build:** `pnpm build`
+   - **Output:** `dist`
+4. **Deploy** (sin tocar nada más).
+
+La simulación, multímetro y osciloscopio funcionan **sin backend**.
+
+### (Opcional) Conectar la API en Vercel
+
+Cuando tengas la URL del backend (paso 3):
+
+1. Vercel → tu proyecto → **Settings** → **Environment Variables**
+2. Añade:
+   - **Name:** `VITE_API_URL`
+   - **Value:** `https://TU-API.onrender.com` (sin `/` al final)
+3. **Redeploy** el proyecto.
+
+> Hoy la UI usa el motor local; `VITE_API_URL` queda listo para cuando conecten la API.
+
+---
+
+## 3. Backend en Render (~5 min)
+
+1. Entra en [render.com](https://render.com) → **New** → **Blueprint**.
+2. Conecta el **mismo repo** de GitHub.
+3. Render lee `render.yaml` y crea el servicio `labcircuitos-api`.
+4. Espera el deploy (primera vez ~5–10 min).
+5. Copia la URL pública, p. ej. `https://labcircuitos-api.onrender.com`.
+
+### Probar el backend
+
+Abre en el navegador:
+
+```
+https://TU-API.onrender.com/api/health
+```
+
+Debe responder: `{"status":"ok","version":"0.1.1"}`
+
+---
+
+## 4. Variables de entorno
+
+| Variable | Dónde | Valor |
+|----------|--------|--------|
+| `VITE_API_URL` | Vercel | URL del backend en Render |
+
+Copia local: `.env.example` → `.env`
+
+---
+
+## 5. Problemas frecuentes
+
+| Problema | Solución |
+|----------|----------|
+| Build falla en Vercel | Revisa que **Node ≥ 18** y que el comando sea `pnpm build`. |
+| Pantalla en blanco | Revisa la consola del navegador; `vercel.json` ya incluye rewrite SPA. |
+| API en Render “duerme” (plan free) | La primera petición tarda ~30 s; es normal en el plan gratuito. |
+| CORS | El backend ya permite `*`; no hace falta configurar más. |
+
+---
+
+## ¿Solo frontend?
+
+Si solo necesitas entregar el simulador: **solo el paso 2 (Vercel)**. No hace falta Render.

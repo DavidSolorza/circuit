@@ -273,7 +273,7 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
           [id]: { ...comp, params: { ...comp.params, [key]: value } },
         },
       },
-      simResults: null,
+      simResults: running ? state.simResults : null,
       simTime: running ? state.simTime : 0,
       simError: null,
       oscData,

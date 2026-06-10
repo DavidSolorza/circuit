@@ -251,3 +251,126 @@ export class AmmeterElement extends BaseElement {
     return [];
   }
 }
+
+/** Variable resistor between two terminals (wiper × Rmax). */
+export class PotentiometerElement extends BaseElement {
+  readonly type = 'potentiometer';
+
+  stamp(ctx: StampContext, component: EngineComponent): void {
+    const nodes = this.getNodes(ctx, component);
+    if (!nodes) return;
+    const R = this.effectiveResistance(component);
+    if (R <= 0) return;
+    this.stampConductance(ctx, nodes[0], nodes[1], 1 / R);
+  }
+
+  protected calculateCurrentFromVoltage(voltage: number, _ctx: StampContext, component: EngineComponent): number {
+    const R = this.effectiveResistance(component);
+    if (R <= 0) return 0;
+    return voltage / R;
+  }
+
+  validate(component: EngineComponent): string[] {
+    const Rmax = component.params.maxResistance ?? 0;
+    if (Rmax <= 0) return [`Potenciómetro '${component.label}': R máxima debe ser > 0.`];
+    const w = component.params.wiper;
+    if (w !== undefined && (w < 0 || w > 1)) {
+      return [`Potenciómetro '${component.label}': cursor entre 0 y 1.`];
+    }
+    return [];
+  }
+
+  private effectiveResistance(component: EngineComponent): number {
+    const Rmax = component.params.maxResistance ?? 10_000;
+    const wiper = Math.min(1, Math.max(0, component.params.wiper ?? 0.5));
+    if (wiper < 0.001) return DIODE_R_OFF;
+    return Rmax * wiper;
+  }
+}
+
+const DIODE_R_ON = 25;
+const DIODE_R_OFF = 1e9;
+const LED_R_ON = 40;
+
+/** Piecewise diode: bloquea inversa, conduce con caída Vf + Ron en directa. */
+abstract class PiecewiseDiodeElement extends BaseElement {
+  protected abstract readonly defaultVf: number;
+  protected get rOn(): number {
+    return DIODE_R_ON;
+  }
+
+  stamp(ctx: StampContext, component: EngineComponent): void {
+    const nodes = this.getNodes(ctx, component);
+    if (!nodes) return;
+    const [cathode, anode] = nodes;
+    const Vf = component.params.forwardVoltage ?? this.defaultVf;
+    const vdPrev = ctx.state.vd.get(component.id) ?? 0;
+    const on = vdPrev >= Vf * 0.65;
+
+    if (on) {
+      const G = 1 / this.rOn;
+      this.stampConductance(ctx, cathode, anode, G);
+      this.stampCurrentSource(ctx, cathode, anode, G * Vf);
+    } else {
+      this.stampConductance(ctx, cathode, anode, 1 / DIODE_R_OFF);
+    }
+  }
+
+  calculateCurrent(
+    ctx: StampContext,
+    component: EngineComponent,
+    nodeVoltages: Map<number, number>,
+  ): number {
+    const nodes = ctx.componentNodes.get(component.id);
+    if (!nodes) return 0;
+    const vc = nodeVoltages.get(nodes[0]) ?? 0;
+    const va = nodeVoltages.get(nodes[1]) ?? 0;
+    const vd = va - vc;
+    const Vf = component.params.forwardVoltage ?? this.defaultVf;
+    if (vd >= Vf) {
+      return -(vd - Vf) / this.rOn;
+    }
+    return (va - vc) / DIODE_R_OFF;
+  }
+
+  validate(component: EngineComponent): string[] {
+    const Vf = component.params.forwardVoltage;
+    if (Vf !== undefined && Vf <= 0) {
+      return [`'${component.label}': V directa debe ser > 0.`];
+    }
+    return [];
+  }
+}
+
+export class DiodeElement extends PiecewiseDiodeElement {
+  readonly type = 'diode';
+  protected readonly defaultVf = 0.7;
+}
+
+export class LedElement extends PiecewiseDiodeElement {
+  readonly type = 'led';
+  protected readonly defaultVf = 2.0;
+  protected override get rOn(): number {
+    return LED_R_ON;
+  }
+}
+
+/** Placeholder: alta impedancia entre terminales (aún no hay modelo BJT). */
+export class TransistorElement extends BaseElement {
+  readonly type = 'transistor';
+  private static readonly R_PLACEHOLDER = 1e9;
+
+  stamp(ctx: StampContext, component: EngineComponent): void {
+    const nodes = this.getNodes(ctx, component);
+    if (!nodes) return;
+    this.stampConductance(ctx, nodes[0], nodes[1], 1 / TransistorElement.R_PLACEHOLDER);
+  }
+
+  protected calculateCurrentFromVoltage(voltage: number): number {
+    return voltage / TransistorElement.R_PLACEHOLDER;
+  }
+
+  validate(_component: EngineComponent): string[] {
+    return [];
+  }
+}

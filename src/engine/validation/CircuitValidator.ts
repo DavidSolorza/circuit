@@ -2,6 +2,7 @@ import type { EngineCircuit, EngineValidationResult } from '../types';
 import { GROUND_NODE_ID } from '../types';
 import { CircuitGraph } from '../core/CircuitGraph';
 import { bfsOnNumbers } from '../graph/Traversal';
+import { defaultElementRegistry } from '../core/ElementRegistry';
 
 /**
  * CircuitValidator — pre-simulation structural and electrical checks.
@@ -94,17 +95,13 @@ export class CircuitValidator {
       warnings.push(`${isolated.length} terminal(es) aislado(s) detectado(s).`);
     }
 
-    // Per-element validation
+    // Per-element validation via registry
     for (const comp of Object.values(comps)) {
-      // Element validation delegated via registry in engine — basic checks here
-      if (comp.type === 'resistor' && (comp.params.resistance ?? 0) <= 0) {
-        errors.push(`Resistencia '${comp.label}' inválida (R <= 0).`);
-      }
-      if (comp.type === 'capacitor' && (comp.params.capacitance ?? 0) <= 0) {
-        errors.push(`Capacitor '${comp.label}' inválido (C <= 0).`);
-      }
-      if (comp.type === 'inductor' && (comp.params.inductance ?? 0) <= 0) {
-        errors.push(`Inductor '${comp.label}' inválido (L <= 0).`);
+      const element = defaultElementRegistry.get(comp.type);
+      if (element) {
+        for (const msg of element.validate(comp)) {
+          errors.push(msg);
+        }
       }
     }
 

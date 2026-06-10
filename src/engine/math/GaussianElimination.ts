@@ -23,7 +23,7 @@ export function gaussianElimination(
       success: false,
       solution: new Float64Array(n),
       singular: true,
-      message: 'Matrix dimensions mismatch',
+      message: 'Dimensiones de matriz incompatibles',
     };
   }
 
@@ -47,7 +47,7 @@ export function gaussianElimination(
         success: false,
         solution: new Float64Array(n),
         singular: true,
-        message: `Singular matrix at column ${col}`,
+        message: `Matriz singular en columna ${col} (circuito inválido o cortocircuito)`,
       };
     }
 

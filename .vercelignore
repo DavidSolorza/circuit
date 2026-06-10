@@ -1,0 +1,7 @@
+backend/
+test_backend.py
+.ai/
+docs/
+acctulizacio.mkd
+*.pyc
+__pycache__/

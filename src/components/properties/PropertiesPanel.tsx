@@ -2,8 +2,9 @@ import { useCircuitStore } from '../../store/circuitStore';
 import { toastInfo } from '../../shared/store/toastStore';
 import { COMPONENT_TEMPLATES } from '../../core/constants';
 import { useMultimeter } from '../../hooks/useMultimeter';
-import { fmtV, fmtI } from '../../utils/formatElectrical';
-import { getComponentModelStatus, UNSUPPORTED_TYPES } from '../../utils/circuitModelInfo';
+import { fmtV, fmtI, fmtP } from '../../utils/formatElectrical';
+import { currentDirectionLabel } from '../../utils/componentReadings';
+import { getComponentModelStatus } from '../../utils/circuitModelInfo';
 import { ParamNumberField } from './ParamNumberField';
 
 export function PropertiesPanel() {
@@ -93,24 +94,9 @@ export function PropertiesPanel() {
   const hasSimResults = simResults?.status.success ?? false;
   const simLive = simulationRunning && hasSimResults;
   const modelStatus = getComponentModelStatus(comp);
-  const unsupportedInCircuit = Object.values(components).filter((c) =>
-    UNSUPPORTED_TYPES.has(c.type),
-  );
 
   return (
     <div className="p-4 space-y-3">
-      {unsupportedInCircuit.length > 0 && (
-        <div className="rounded-lg border border-gold-200 bg-gold-50 px-2.5 py-2 text-[10px] text-gold-800">
-          {unsupportedInCircuit.length} componente(s) no modelado(s) en el circuito — excluidos al
-          simular.
-        </div>
-      )}
-      {!modelStatus.supported && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-2 text-[10px] text-red-700">
-          <div className="font-semibold">No modelado</div>
-          <div className="mt-0.5 opacity-90">{modelStatus.message}</div>
-        </div>
-      )}
       {modelStatus.approximated && modelStatus.message && (
         <div className="rounded-lg border border-gold-200 bg-gold-50 px-2.5 py-2 text-[10px] text-gold-800">
           <div className="font-semibold">Modelo aproximado</div>
@@ -126,14 +112,10 @@ export function PropertiesPanel() {
           Pos ({Math.round(comp.position.x)}, {Math.round(comp.position.y)}) · {comp.rotation}°
         </div>
         {comp.type === 'ammeter' && (
-          <p className="text-[10px] text-primary-600/90 mt-1">
-            En serie — mide la corriente que pasa por el circuito.
-          </p>
+          <p className="text-[10px] text-ink-faint mt-1">Va en serie con la rama que quieres medir.</p>
         )}
         {comp.type === 'voltmeter' && (
-          <p className="text-[10px] text-primary-600/90 mt-1">
-            En paralelo — mide la diferencia de potencial entre sus terminales.
-          </p>
+          <p className="text-[10px] text-ink-faint mt-1">Va en paralelo entre los dos puntos.</p>
         )}
       </div>
 
@@ -176,28 +158,48 @@ export function PropertiesPanel() {
               <span className="text-[9px] text-ink-faint font-normal normal-case">(pausado)</span>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-surface-950/40 rounded-md p-2 border border-surface-700/50">
-              <div className="metric-label">Voltaje</div>
-              <div className="text-xs font-mono text-primary-600 font-semibold tabular-nums">
-                {fmtV(readings.voltage)}
-              </div>
-            </div>
-            <div className="bg-surface-950/40 rounded-md p-2 border border-surface-700/50">
-              <div className="metric-label">Corriente</div>
-              <div className="text-xs font-mono text-primary-600 font-semibold tabular-nums">
+          {comp.type === 'ammeter' ? (
+            <div className="bg-surface-950/40 rounded-md p-2.5 border border-primary-500/20 space-y-1">
+              <div className="metric-label">Corriente en serie</div>
+              <div className="text-sm font-mono text-primary-600 font-bold tabular-nums">
                 {fmtI(readings.current)}
               </div>
-            </div>
-            <div className="bg-surface-950/40 rounded-md p-2 border border-surface-700/50 col-span-2">
-              <div className="metric-label">Potencia</div>
-              <div className="text-xs font-mono text-gold-600 font-semibold tabular-nums">
-                {Math.abs(readings.voltage * readings.current) >= 1
-                  ? `${(readings.voltage * readings.current).toFixed(3)} W`
-                  : `${(readings.voltage * readings.current * 1e3).toFixed(2)} mW`}
+              <div className="text-[9px] text-ink-faint">
+                {currentDirectionLabel(readings.current)} · caída {fmtV(readings.voltage)}
               </div>
             </div>
-          </div>
+          ) : comp.type === 'voltmeter' ? (
+            <div className="bg-surface-950/40 rounded-md p-2.5 border border-primary-500/20 space-y-1">
+              <div className="metric-label">Voltaje medido</div>
+              <div className="text-sm font-mono text-primary-600 font-bold tabular-nums">
+                {fmtV(readings.voltage)}
+              </div>
+              <div className="text-[9px] text-ink-faint">
+                Fuga interna: {fmtI(readings.current)}
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-surface-950/40 rounded-md p-2 border border-surface-700/50">
+                <div className="metric-label">Voltaje</div>
+                <div className="text-xs font-mono text-primary-600 font-semibold tabular-nums">
+                  {fmtV(readings.voltage)}
+                </div>
+              </div>
+              <div className="bg-surface-950/40 rounded-md p-2 border border-surface-700/50">
+                <div className="metric-label">Corriente</div>
+                <div className="text-xs font-mono text-primary-600 font-semibold tabular-nums">
+                  {fmtI(readings.current)}
+                </div>
+              </div>
+              <div className="bg-surface-950/40 rounded-md p-2 border border-surface-700/50 col-span-2">
+                <div className="metric-label">Potencia</div>
+                <div className="text-xs font-mono text-gold-600 font-semibold tabular-nums">
+                  {fmtP(readings.power)}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

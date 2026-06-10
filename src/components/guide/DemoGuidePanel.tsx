@@ -1,79 +1,47 @@
-const SECTIONS = [
+const ITEMS = [
   {
-    title: 'Cómo leer este circuito',
-    body: 'La rama principal va de izquierda a derecha: batería → interruptor → medición → carga → tierra. Pulsa INICIAR con el interruptor encendido. Usa el osciloscopio abajo y el multímetro a la derecha.',
+    title: 'Batería · Interruptor',
+    desc: 'Encienden o cortan la rama. Sin tierra no simula.',
   },
   {
-    title: 'Fuentes y control',
-    items: [
-      { name: 'Batería (9 V)', desc: 'Alimenta todo el circuito. Terminal + hacia la carga, − a tierra.' },
-      { name: 'Interruptor', desc: 'Abre o cierra la corriente. Pruébalo en Propiedades (ENCENDIDO/APAGADO) y mira el osciloscopio.' },
-      { name: 'Fuente de corriente (2 mA)', desc: 'Rama auxiliar en paralelo: inyecta corriente constante hacia tierra desde el nodo del amperímetro.' },
-    ],
+    title: 'R · Diodo · LED · L · C',
+    desc: 'El diodo y el LED bloquean en inversa y conducen con caída de tensión en directa. El inductor y el capacitor se notan al cambiar el interruptor.',
   },
   {
-    title: 'Pasivos',
-    items: [
-      { name: 'Resistencia (470 Ω)', desc: 'Limita la corriente y crea caída de tensión. El potenciómetro está en paralelo solo como referencia visual.' },
-      { name: 'Capacitor', desc: 'En paralelo con el LED. En continua se comporta como circuito abierto; en transitorio almacena carga.' },
-      { name: 'Inductor', desc: 'En serie antes de tierra. Opondrse a cambios bruscos de corriente (efecto visible al conmutar el interruptor).' },
-      { name: 'Potenciómetro', desc: 'Componente de demostración — aún no modelado en el motor (Luisa). No afecta la simulación.' },
-    ],
+    title: 'Amperímetro · Voltímetro',
+    desc: 'El amperímetro va en serie (mide la corriente de la rama). El voltímetro en paralelo con el LED.',
   },
   {
-    title: 'Semiconductores',
-    items: [
-      { name: 'Diodo', desc: 'En serie; modelo simplificado como caída de voltaje fija (~0,7 V).' },
-      { name: 'LED', desc: 'Carga luminosa; modelo aproximado (~2 V directos). El transistor en paralelo es solo referencia visual.' },
-      { name: 'Transistor NPN', desc: 'Colocado para estudio — aún no modelado. Se excluye al simular.' },
-    ],
-  },
-  {
-    title: 'Instrumentos',
-    items: [
-      { name: 'Amperímetro', desc: 'En serie: mide la corriente total de la rama principal.' },
-      { name: 'Voltímetro', desc: 'En paralelo con el LED: mide la tensión en sus bornes.' },
-      { name: 'Osciloscopio', desc: 'Sondas en amperímetro, LED, capacitor e inductor. Exporta CSV desde el panel inferior.' },
-    ],
-  },
-  {
-    title: 'Tierra (GND)',
-    body: 'Referencia 0 V obligatoria. Sin tierra la simulación no arranca.',
+    title: 'Osciloscopio',
+    desc: 'Cuatro sondas: I en amperímetro, V en LED, C e L. Voltaje a la izquierda, corriente a la derecha.',
   },
 ] as const;
 
 export function DemoGuidePanel() {
   return (
-    <div className="p-4 space-y-4 text-[11px] leading-relaxed">
-      <div>
-        <h3 className="text-sm font-semibold text-ink mb-1">Circuito demo completo</h3>
-        <p className="text-ink-muted">
-          Incluye los 13 tipos de componentes del simulador. Los marcados como referencia visual se
-          muestran pero aún no participan en el motor MNA.
+    <div className="p-4 space-y-4 text-[12px] text-ink-muted leading-relaxed">
+      <div className="guide-card">
+        <h3 className="text-sm font-semibold text-ink mb-1.5">El circuito de ejemplo</h3>
+        <p>
+          La corriente sale de la batería, pasa por el interruptor y el amperímetro, recorre la
+          resistencia y el diodo, enciende el LED y baja por el inductor hasta tierra. El capacitor
+          y el voltímetro van en paralelo con el LED.
+        </p>
+        <p className="mt-2">
+          El potenciómetro va en paralelo con la resistencia (R = Rmax × cursor). El transistor es
+          solo referencia visual (alta impedancia). La fuente de corriente está en el canvas sin
+          cablear para que veas el símbolo.
         </p>
       </div>
 
-      {SECTIONS.map((sec) => (
-        <section key={sec.title} className="panel-section space-y-2">
-          <div className="panel-label">{sec.title}</div>
-          {'body' in sec && <p className="text-ink-muted">{sec.body}</p>}
-          {'items' in sec &&
-            sec.items.map((item) => (
-              <div
-                key={item.name}
-                className="rounded-md border border-surface-700 bg-surface-800/50 px-2.5 py-2"
-              >
-                <div className="font-semibold text-ink text-[10px]">{item.name}</div>
-                <div className="text-ink-faint mt-0.5">{item.desc}</div>
-              </div>
-            ))}
-        </section>
-      ))}
-
-      <p className="text-[10px] text-primary-600/90 border border-primary-200/60 bg-primary-50 rounded-md px-2.5 py-2">
-        Consejo: selecciona el interruptor, enciéndelo y observa cómo sube la corriente en el
-        osciloscopio. Luego apágalo y verás el escalón a cero.
-      </p>
+      <div className="space-y-2">
+        {ITEMS.map((item) => (
+          <div key={item.title} className="guide-card">
+            <p className="text-ink text-[11px] font-medium">{item.title}</p>
+            <p className="mt-1 text-[11px]">{item.desc}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

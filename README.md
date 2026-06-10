@@ -79,6 +79,14 @@ cd backend
 python main.py    # → http://localhost:8000
 ```
 
+## Desplegar en internet
+
+Guía paso a paso (Vercel + Render): **[docs/DEPLOY.md](docs/DEPLOY.md)**
+
+- **Frontend** → Vercel (`vercel.json` ya incluido)
+- **Backend** → Render (`render.yaml` ya incluido)
+- La simulación del simulador funciona **sin backend**; la API queda disponible por si la necesitas
+
 ## Componentes disponibles
 
 Resistencia, Capacitor, Inductor, Batería (+/−), Fuente Corriente, LED, Diodo, Transistor NPN, Potenciómetro, Interruptor, Tierra, Voltímetro, Amperímetro.

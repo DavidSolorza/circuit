@@ -1,4 +1,5 @@
 import { useEffect, useState, type KeyboardEvent } from 'react';
+import { toastWarning } from '../../shared/store/toastStore';
 
 export interface ParamDef {
   key: string;
@@ -46,10 +47,14 @@ export function ParamNumberField({ def, value, onCommit }: ParamNumberFieldProps
     const trimmed = raw.trim().replace(',', '.');
     const parsed = parseFloat(trimmed);
     if (!Number.isFinite(parsed)) {
+      toastWarning('Valor inválido', `Usa un número entre ${def.min} y ${def.max}.`);
       setDraft(formatStoredValue(value, def));
       return;
     }
     const next = clamp(parsed, def.min, def.max);
+    if (next !== parsed) {
+      toastWarning('Valor ajustado', `Rango permitido: ${def.min} – ${def.max} ${def.unit}`.trim());
+    }
     onCommit(next);
     setDraft(formatStoredValue(next, def));
   };

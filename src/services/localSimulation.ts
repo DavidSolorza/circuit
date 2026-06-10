@@ -5,9 +5,13 @@ import {
 } from '../engine/SimulationEngine';
 import { DT } from '../core/constants';
 
-export function getElectricalNodeForTerminal(state: CircuitState, terminalId: string): number {
+export function getElectricalNodeForTerminal(
+  state: CircuitState,
+  terminalId: string,
+): number | null {
   simulationEngine.syncFromCircuitState(state);
-  return simulationEngine.getElectricalNode(terminalId) ?? 0;
+  const node = simulationEngine.getElectricalNode(terminalId);
+  return node === undefined ? null : node;
 }
 
 /** Run one realtime simulation step using the local MNA engine */

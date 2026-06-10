@@ -2,6 +2,7 @@ import { GRID_SIZE } from '../core/constants';
 import { useCircuitStore } from '../store/circuitStore';
 import type { ComponentType } from '../types';
 import { initCircuitState } from './circuit';
+import { notifyDemoLoaded } from './demoUi';
 
 type Store = ReturnType<typeof useCircuitStore.getState>;
 
@@ -23,7 +24,7 @@ function byType(s: Store, type: ComponentType) {
  *
  * Rama principal: Bat → SW → A → R → D → LED → L → GND
  * Paralelos: C y VM sobre LED; Pot sobre R; Trans sobre LED (visual).
- * Rama auxiliar: I_src desde nodo del amperímetro a GND.
+ * Fuente de corriente en el canvas (sin cablear) para mostrar el símbolo.
  */
 export function loadDemo(onReady?: () => void): void {
   const colGap = GRID_SIZE * 7;
@@ -76,14 +77,11 @@ export function loadDemo(onReady?: () => void): void {
   const cap = byType(s, 'capacitor');
   const gnd = byType(s, 'ground');
   const vm = byType(s, 'voltmeter');
-  const isrc = byType(s, 'currentSource');
   const pot = byType(s, 'potentiometer');
   const trans = byType(s, 'transistor');
 
   s.updateComponentParam(sw.id, 'isClosed', 1);
   s.updateComponentParam(res.id, 'resistance', 470);
-  s.updateComponentParam(isrc.id, 'current', 0.002);
-
   // Rama serie principal
   s.connectTerminals(bat.terminalIds[1], sw.terminalIds[0]);
   s.connectTerminals(sw.terminalIds[1], amm.terminalIds[0]);
@@ -108,19 +106,14 @@ export function loadDemo(onReady?: () => void): void {
   s.connectTerminals(led.terminalIds[0], trans.terminalIds[0]);
   s.connectTerminals(led.terminalIds[1], trans.terminalIds[1]);
 
-  // Rama auxiliar: fuente de corriente hacia tierra
-  s.connectTerminals(amm.terminalIds[0], isrc.terminalIds[0]);
-  s.connectTerminals(isrc.terminalIds[1], gnd.terminalIds[0]);
-
   // Sondas de osciloscopio
   s.addProbe('current', amm.id);
-  s.addProbe('current', led.id);
   s.addProbe('voltage', led.id, 0);
   s.addProbe('voltage', cap.id, 0);
   s.addProbe('voltage', ind.id, 0);
-  s.addProbe('voltage', vm.id, 0);
 
   s.setActiveTool('select');
   s.selectComponent(sw.id);
+  notifyDemoLoaded();
   onReady?.();
 }

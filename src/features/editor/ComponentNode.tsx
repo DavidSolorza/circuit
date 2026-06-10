@@ -18,8 +18,9 @@ import {
 } from '../../components/symbols';
 import type { ComponentType } from '../../types';
 import { useCircuitStore } from '../../store/circuitStore';
-import { getElectricalNodeForTerminal } from '../../services/localSimulation';
 import { getHandleConfig, getHandlePositionCSS } from '../../utils/componentHandles';
+import { getComponentReadings } from '../../utils/componentReadings';
+import { fmtI, fmtV } from '../../utils/formatElectrical';
 
 const symbolMap: Record<
   string,
@@ -48,54 +49,40 @@ export interface ComponentNodeData {
   selected: boolean;
 }
 
-function getLatest(arr: number[] | undefined): number {
-  return arr && arr.length > 0 ? arr[arr.length - 1] : 0;
-}
-
 function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
   const Sym = symbolMap[data.type];
   const color = getSymbolColor(data.type);
 
   const simulationRunning = useCircuitStore((s) => s.simulationRunning);
-  const branchCurrents = useCircuitStore((s) => s.simResults?.branchCurrents);
-  const nodeVoltages = useCircuitStore((s) => s.simResults?.nodeVoltages);
   const circuit = useCircuitStore((s) => s.circuit);
-  const terminals = circuit.terminals;
   const simResults = useCircuitStore((s) => s.simResults);
-  const current = getLatest(branchCurrents?.[id]);
+  const comp = circuit.components[id];
+  const hasReadings = simResults?.status?.success ?? false;
+  const readings = comp && hasReadings ? getComponentReadings(circuit, simResults, comp) : null;
 
+  const current = readings?.current ?? 0;
+  const compVoltage = readings?.voltage ?? null;
+
+  const ledVf = data.params?.forwardVoltage ?? 2;
   const isLit =
     data.type === 'led' &&
-    simulationRunning &&
-    simResults?.status?.success &&
+    hasReadings &&
+    compVoltage !== null &&
+    -(compVoltage) >= ledVf * 0.8 &&
     Math.abs(current) > 1e-6;
 
   const showCurrent =
-    data.type === 'ammeter' || data.type === 'resistor' || data.type === 'led' || data.type === 'inductor';
+    data.type === 'ammeter' ||
+    data.type === 'resistor' ||
+    data.type === 'led' ||
+    data.type === 'inductor' ||
+    data.type === 'currentSource';
 
   const currentStr =
-    simulationRunning &&
-    simResults?.status?.success &&
-    showCurrent &&
-    Math.abs(current) > 1e-12
-      ? Math.abs(current) >= 1e-3
-        ? `${(Math.abs(current) * 1e3).toFixed(1)} mA`
-        : `${(Math.abs(current) * 1e6).toFixed(0)} \u00B5A`
+    hasReadings &&
+    (data.type === 'ammeter' || (showCurrent && Math.abs(current) > 1e-12))
+      ? fmtI(current)
       : null;
-
-  const comp = useCircuitStore((s) => s.circuit.components[id]);
-  const t0 = comp ? terminals[comp.terminalIds[0]] : null;
-  const t1 = comp ? terminals[comp.terminalIds[1]] : null;
-  const voltage0 =
-    t0 && nodeVoltages
-      ? getLatest(nodeVoltages[String(getElectricalNodeForTerminal(circuit, t0.id))])
-      : null;
-  const voltage1 =
-    t1 && nodeVoltages
-      ? getLatest(nodeVoltages[String(getElectricalNodeForTerminal(circuit, t1.id))])
-      : null;
-  const compVoltage =
-    simulationRunning && voltage0 !== null && voltage1 !== null ? voltage0 - voltage1 : null;
 
   const showVoltage =
     data.type === 'voltmeter' ||
@@ -105,13 +92,13 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
     data.type === 'voltageSource';
 
   const voltageStr =
+    hasReadings &&
     showVoltage &&
     compVoltage !== null &&
-    simResults?.status?.success &&
-    (data.type !== 'voltmeter' ? Math.abs(compVoltage) > 1e-9 : true)
-      ? Math.abs(compVoltage) >= 1
-        ? `${compVoltage.toFixed(2)} V`
-        : `${(compVoltage * 1e3).toFixed(1)} mV`
+    (data.type === 'voltmeter' ||
+      data.type === 'voltageSource' ||
+      Math.abs(compVoltage) > 1e-9)
+      ? fmtV(compVoltage)
       : null;
 
   const hc = selected ? '#C9A86A' : color;
@@ -175,7 +162,9 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
         <div className="absolute inset-0 rounded-lg pointer-events-none shadow-[0_0_16px_8px_rgba(255,220,50,0.25)]" />
       )}
 
-      <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-[7px] text-surface-500 whitespace-nowrap pointer-events-none font-medium"></div>
+      <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-[8px] text-ink-muted whitespace-nowrap pointer-events-none font-medium max-w-[100px] truncate">
+        {data.label}
+      </div>
 
       {voltageStr && (
         <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[7px] font-mono text-primary-500/80 whitespace-nowrap pointer-events-none">
@@ -192,9 +181,9 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
           {currentStr}
         </div>
       )}
-      {!simulationRunning && simResults && data.type !== 'ground' && (
+      {!simulationRunning && !hasReadings && data.type !== 'ground' && (
         <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[7px] text-surface-500 whitespace-nowrap pointer-events-none">
-          Pausado
+          Sin simular
         </div>
       )}
     </div>

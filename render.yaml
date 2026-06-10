@@ -1,0 +1,13 @@
+# Despliegue del backend en Render (gratis): https://render.com
+# Dashboard → New → Blueprint → conecta este repo y Render lee este archivo.
+services:
+  - type: web
+    name: labcircuitos-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements-deploy.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: '3.12.0'

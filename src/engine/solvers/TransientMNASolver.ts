@@ -74,7 +74,17 @@ export class TransientMNASolver {
       };
     }
 
-    validateSolution(A, b.data, result.solution, this.tolerance * 1000);
+    const residualOk = validateSolution(A, b.data, result.solution, this.tolerance * 1000);
+    if (!residualOk) {
+      return {
+        success: false,
+        error: 'Solución numérica inestable (revisa el circuito)',
+        time,
+        nodeVoltages: new Map([[GROUND_NODE_ID, 0]]),
+        branchCurrents: new Map(),
+        power: new Map(),
+      };
+    }
 
     ctx.solution = result.solution;
     const nodeVoltages = new Map<number, number>();
@@ -112,6 +122,11 @@ export class TransientMNASolver {
 
       const nodes = ctx.componentNodes.get(comp.id);
       if (nodes) {
+        if (comp.type === 'led' || comp.type === 'diode') {
+          const va = nodeVoltages.get(nodes[1]) ?? 0;
+          const vc = nodeVoltages.get(nodes[0]) ?? 0;
+          state.vd.set(comp.id, va - vc);
+        }
         const vp = nodeVoltages.get(nodes[0]) ?? 0;
         const vn = nodeVoltages.get(nodes[1]) ?? 0;
         power.set(comp.id, (vp - vn) * current);
@@ -128,7 +143,7 @@ export class TransientMNASolver {
     registry: ElementRegistry = defaultElementRegistry,
     validation: EngineValidationResult,
   ): EngineSimResults {
-    const state: ElementState = { vc: new Map(), il: new Map() };
+    const state: ElementState = { vc: new Map(), il: new Map(), vd: new Map() };
     const dt = config.timestep;
     const nSteps =
       config.analysis === 'transient' ? Math.max(1, Math.floor(config.duration / dt)) : 1;

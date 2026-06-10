@@ -1,5 +1,5 @@
 import type { CircuitState, MeasurementProbe, SimResults } from '../types';
-import { getElectricalNodeForTerminal } from '../services/localSimulation';
+import { getProbeReading } from './componentReadings';
 
 /** Read instantaneous probe value from a simulation snapshot. */
 export function readProbeSample(
@@ -7,25 +7,7 @@ export function readProbeSample(
   res: SimResults,
   probe: MeasurementProbe,
 ): number | null {
-  const comp = circuit.components[probe.componentId];
-  if (!comp) return null;
-
-  if (probe.type === 'current') {
-    return res.branchCurrents[comp.id]?.[0] ?? 0;
-  }
-
-  const n0 = getElectricalNodeForTerminal(circuit, comp.terminalIds[0]);
-  const n1 = getElectricalNodeForTerminal(circuit, comp.terminalIds[1]);
-  const v0 = res.nodeVoltages[String(n0)]?.[0] ?? 0;
-  const v1 = res.nodeVoltages[String(n1)]?.[0] ?? 0;
-
-  if (comp.type === 'voltmeter' || comp.type === 'resistor' || comp.type === 'led') {
-    return v0 - v1;
-  }
-
-  const termId = comp.terminalIds[probe.terminalIndex ?? 0];
-  const nodeId = getElectricalNodeForTerminal(circuit, termId);
-  return res.nodeVoltages[String(nodeId)]?.[0] ?? 0;
+  return getProbeReading(circuit, res, probe);
 }
 
 /** Freeze the last sample at the current sim time before a topology/param change. */

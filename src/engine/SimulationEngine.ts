@@ -23,13 +23,11 @@ const SUPPORTED_TYPES = new Set([
   'ground',
   'voltmeter',
   'ammeter',
+  'potentiometer',
+  'transistor',
+  'led',
+  'diode',
 ]);
-
-/** Map semiconductors not yet modeled to equivalent sources for basic edu circuits */
-const ADAPTER_ALIASES: Record<string, { type: EngineCircuit['components'][string]['type']; paramMap: Record<string, string> }> = {
-  led: { type: 'voltageSource', paramMap: { forwardVoltage: 'voltage' } },
-  diode: { type: 'voltageSource', paramMap: { forwardVoltage: 'voltage' } },
-};
 
 export interface UnsupportedComponentInfo {
   id: string;
@@ -49,7 +47,7 @@ export class SimulationEngine {
   private events: EventBus;
   private tree: SimulationTree;
   private topologyCache: ResolvedTopology | null = null;
-  private transientState: ElementState = { vc: new Map(), il: new Map() };
+  private transientState: ElementState = { vc: new Map(), il: new Map(), vd: new Map() };
   private simTime = 0;
   private circuitFingerprint = '';
   private unsupported: UnsupportedComponentInfo[] = [];
@@ -96,7 +94,7 @@ export class SimulationEngine {
   }
 
   resetTransientState(): void {
-    this.transientState = { vc: new Map(), il: new Map() };
+    this.transientState = { vc: new Map(), il: new Map(), vd: new Map() };
     this.simTime = 0;
   }
 
@@ -145,7 +143,7 @@ export class SimulationEngine {
       return {
         status: {
           success: false,
-          message: 'Validation failed',
+          message: 'Validación fallida',
           error: validation.errors.join('; '),
         },
         time: [],
@@ -205,7 +203,7 @@ export class SimulationEngine {
       return {
         step,
         results: {
-          status: { success: false, message: 'Simulation failed', error: step.error ?? '' },
+          status: { success: false, message: 'Simulación fallida', error: step.error ?? '' },
           time: [this.simTime],
           nodeVoltages: {},
           branchCurrents: {},
@@ -298,22 +296,6 @@ export function buildEngineCircuit(state: CircuitState): {
   const unsupported: UnsupportedComponentInfo[] = [];
 
   for (const [id, comp] of Object.entries(state.components)) {
-    const alias = ADAPTER_ALIASES[comp.type];
-    if (alias) {
-      const params: Record<string, number> = {};
-      for (const [from, to] of Object.entries(alias.paramMap)) {
-        params[to] = comp.params[from] ?? (comp.type === 'led' ? 2 : 0.7);
-      }
-      components[id] = {
-        id: comp.id,
-        type: alias.type,
-        label: comp.label,
-        params,
-        terminalIds: [...comp.terminalIds] as [string, string],
-      };
-      continue;
-    }
-
     if (!SUPPORTED_TYPES.has(comp.type)) {
       unsupported.push({ id, type: comp.type, label: comp.label || id });
       continue;

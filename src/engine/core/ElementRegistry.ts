@@ -5,8 +5,12 @@ import {
   CurrentSourceElement,
   GroundElement,
   InductorElement,
+  DiodeElement,
+  LedElement,
+  PotentiometerElement,
   ResistorElement,
   SwitchElement,
+  TransistorElement,
   VoltageSourceElement,
   VoltmeterElement,
 } from '../elements';
@@ -33,6 +37,10 @@ export class ElementRegistry {
     this.register('ground', new GroundElement());
     this.register('voltmeter', new VoltmeterElement());
     this.register('ammeter', new AmmeterElement());
+    this.register('potentiometer', new PotentiometerElement());
+    this.register('transistor', new TransistorElement());
+    this.register('led', new LedElement());
+    this.register('diode', new DiodeElement());
   }
 
   register(type: EngineElementType, element: BaseElement): void {

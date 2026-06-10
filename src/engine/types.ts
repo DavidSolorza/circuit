@@ -9,7 +9,11 @@ export type EngineElementType =
   | 'switch'
   | 'ground'
   | 'voltmeter'
-  | 'ammeter';
+  | 'ammeter'
+  | 'potentiometer'
+  | 'transistor'
+  | 'led'
+  | 'diode';
 
 export interface EngineTerminal {
   id: string;
@@ -85,6 +89,8 @@ export interface ElementState {
   vc: Map<string, number>;
   /** Inductor branch current (il) */
   il: Map<string, number>;
+  /** Diode/LED anode−cathode voltage from prior step (V(T1)−V(T0)) */
+  vd: Map<string, number>;
 }
 
 export interface SolutionVector {
