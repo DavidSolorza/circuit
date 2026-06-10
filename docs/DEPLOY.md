@@ -55,6 +55,16 @@ Cuando tengas la URL del backend (paso 3):
 4. Espera el deploy (primera vez ~5–10 min).
 5. Copia la URL pública, p. ej. `https://labcircuitos-api.onrender.com`.
 
+### Si creaste el Web Service a mano (sin Blueprint)
+
+| Campo | Valor correcto |
+|-------|----------------|
+| **Root Directory** | *(vacío — raíz del repo, NO `backend`)* |
+| **Build Command** | `pip install --upgrade pip && pip install -r backend/requirements-deploy.txt` |
+| **Start Command** | `python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT` |
+
+> Error **127** = comando no encontrado. Casi siempre es `uvicorn` sin PATH o Root Directory en `backend`.
+
 ### Probar el backend
 
 Abre en el navegador:
@@ -85,6 +95,7 @@ Copia local: `.env.example` → `.env`
 | Pantalla en blanco | Revisa la consola del navegador; `vercel.json` ya incluye rewrite SPA. |
 | API en Render “duerme” (plan free) | La primera petición tarda ~30 s; es normal en el plan gratuito. |
 | CORS | El backend ya permite `*`; no hace falta configurar más. |
+| **Exited with status 127** | Root Directory vacío + Start: `python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT` |
 
 ---
 
