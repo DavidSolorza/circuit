@@ -5,3 +5,7 @@ docs/
 acctulizacio.mkd
 *.pyc
 __pycache__/
+
+# dist/ está en .gitignore pero Vercel debe publicar el build
+!dist
+!dist/**

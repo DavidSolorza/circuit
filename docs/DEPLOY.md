@@ -92,6 +92,7 @@ Copia local: `.env.example` → `.env`
 | Problema | Solución |
 |----------|----------|
 | Build falla en Vercel | Revisa que **Node ≥ 18** y que el comando sea `pnpm build`. |
+| `No Output Directory named dist` | En Vercel → Settings → **Output Directory** = `dist`. El `.vercelignore` ya incluye `!dist`. |
 | Pantalla en blanco | Revisa la consola del navegador; `vercel.json` ya incluye rewrite SPA. |
 | API en Render “duerme” (plan free) | La primera petición tarda ~30 s; es normal en el plan gratuito. |
 | CORS | El backend ya permite `*`; no hace falta configurar más. |
