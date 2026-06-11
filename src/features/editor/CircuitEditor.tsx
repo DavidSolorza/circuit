@@ -289,7 +289,6 @@ function CanvasInner({ width, height }: Props) {
         maxZoom={3}
         defaultEdgeOptions={{
           type: 'step',
-          pathOptions: { borderRadius: 10, offset: 6 },
           style: { stroke: '#4B5563', strokeWidth: 2.5 },
           interactionWidth: 24,
           deletable: true,

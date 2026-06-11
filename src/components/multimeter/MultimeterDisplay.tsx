@@ -39,6 +39,7 @@ export function MultimeterDisplay() {
 
   const isAmmeter = selectedComp.type === 'ammeter';
   const isVoltmeter = selectedComp.type === 'voltmeter';
+  const isLed = selectedComp.type === 'led';
 
   if (!hasReadings) {
     return (
@@ -103,6 +104,19 @@ export function MultimeterDisplay() {
           <div className="metric-value text-xl">{fmtV(r.voltage)}</div>
           <div className="text-[9px] text-ink-faint mt-0.5">
             Corriente de fuga: {fmtTinyI(r.current)}
+          </div>
+        </div>
+      ) : isLed ? (
+        <div className={`metric-card ${live ? 'ring-1 ring-yellow-400/30' : 'opacity-95'}`}>
+          <div className="metric-label">LED — caída directa</div>
+          <div className="metric-value text-xl">{fmtV(-r.voltage)}</div>
+          <div className="text-[9px] text-ink-faint mt-1">
+            Corriente: {fmtI(Math.abs(r.current))} · Potencia: {fmtP(r.power)}
+          </div>
+          <div className="text-[9px] text-ink-faint mt-0.5">
+            {Math.abs(r.current) > 1e-6 && -r.voltage >= (selectedComp.params.forwardVoltage ?? 2) * 0.75
+              ? '● Encendido'
+              : '○ Apagado / bloqueado'}
           </div>
         </div>
       ) : (

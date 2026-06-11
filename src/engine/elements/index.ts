@@ -214,7 +214,8 @@ export class GroundElement extends BaseElement {
 }
 
 const VOLTMETER_R = 1e12;
-const AMMETER_R = 1e-6;
+/** Resistencia interna del amperímetro (muy baja, pero > 0 para estabilidad numérica MNA). */
+const AMMETER_R = 0.1;
 
 export class VoltmeterElement extends BaseElement {
   readonly type = 'voltmeter';
@@ -305,7 +306,7 @@ abstract class PiecewiseDiodeElement extends BaseElement {
     const [cathode, anode] = nodes;
     const Vf = component.params.forwardVoltage ?? this.defaultVf;
     const vdPrev = ctx.state.vd.get(component.id) ?? 0;
-    const on = vdPrev >= Vf * 0.65;
+    const on = vdPrev >= Vf * 0.5;
 
     if (on) {
       const G = 1 / this.rOn;

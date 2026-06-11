@@ -29,12 +29,12 @@ function getLatest(arr: number[] | undefined): number {
   return arr[arr.length - 1]!;
 }
 
-function nodeVoltage(
-  simResults: SimResults,
-  nodeId: number | null,
-): number | null {
+function nodeVoltage(simResults: SimResults, nodeId: number | null): number | null {
   if (nodeId === null) return null;
-  return getLatest(simResults.nodeVoltages[String(nodeId)]);
+  if (nodeId === 0) return 0;
+  const arr = simResults.nodeVoltages[String(nodeId)];
+  if (!arr || arr.length === 0) return null;
+  return getLatest(arr);
 }
 
 export function getComponentReadings(

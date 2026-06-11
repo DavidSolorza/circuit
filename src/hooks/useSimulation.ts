@@ -26,8 +26,8 @@ function appendProbeSamples(
   for (const probe of probes) {
     const bucket = newOscData[probe.id];
     if (!bucket) continue;
-    const value = readProbeSample(circuit, res, probe);
-    if (value === null) continue;
+    const raw = readProbeSample(circuit, res, probe);
+    const value = raw ?? 0;
 
     const nd = [...bucket];
     if (simTime === 0 && nd.length === 0) {

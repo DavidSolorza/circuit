@@ -97,10 +97,15 @@ export function validateSolution(
   const n = A.rows;
   for (let i = 0; i < n; i++) {
     let sum = 0;
+    let rowScale = Math.abs(b[i] ?? 0);
     for (let j = 0; j < n; j++) {
-      sum += A.get(i, j) * (x[j] ?? 0);
+      const aij = A.get(i, j);
+      sum += aij * (x[j] ?? 0);
+      rowScale = Math.max(rowScale, Math.abs(aij));
     }
-    if (Math.abs(sum - (b[i] ?? 0)) > tolerance * Math.max(1, Math.abs(b[i] ?? 0))) {
+    const residual = Math.abs(sum - (b[i] ?? 0));
+    const allowed = tolerance * Math.max(1, rowScale);
+    if (residual > allowed) {
       return false;
     }
   }

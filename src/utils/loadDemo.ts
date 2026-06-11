@@ -3,6 +3,8 @@ import { useCircuitStore } from '../store/circuitStore';
 import type { ComponentType } from '../types';
 import { initCircuitState } from './circuit';
 import { notifyDemoLoaded } from './demoUi';
+import { toastSuccess } from '../shared/store/toastStore';
+import { validateLocalCircuit } from '../services/localSimulation';
 
 type Store = ReturnType<typeof useCircuitStore.getState>;
 
@@ -70,7 +72,6 @@ export function loadDemo(onReady?: () => void): void {
   gs().addComponent('voltmeter', at(3, 0));
   gs().addComponent('potentiometer', at(4, 0));
   gs().addComponent('transistor', at(0, 2));
-  gs().addComponent('currentSource', at(0, 0));
 
   const s = gs();
   const bat = byType(s, 'voltageSource');
@@ -86,8 +87,14 @@ export function loadDemo(onReady?: () => void): void {
   const pot = byType(s, 'potentiometer');
   const trans = byType(s, 'transistor');
 
+  s.updateComponentParam(bat.id, 'voltage', 9);
   s.updateComponentParam(sw.id, 'isClosed', 1);
   s.updateComponentParam(res.id, 'resistance', 470);
+  s.updateComponentParam(led.id, 'forwardVoltage', 2);
+  s.updateComponentParam(cap.id, 'capacitance', 47e-6);
+  s.updateComponentParam(ind.id, 'inductance', 10e-3);
+  s.updateComponentParam(pot.id, 'maxResistance', 10000);
+  s.updateComponentParam(pot.id, 'wiper', 0.5);
   // Rama serie principal
   s.connectTerminals(bat.terminalIds[1], sw.terminalIds[0]);
   s.connectTerminals(sw.terminalIds[1], amm.terminalIds[0]);
@@ -97,7 +104,7 @@ export function loadDemo(onReady?: () => void): void {
   s.connectTerminals(led.terminalIds[1], ind.terminalIds[0]);
   s.connectTerminals(ind.terminalIds[1], gnd.terminalIds[0]);
 
-  // Retorno batería a tierra
+  // Retorno: inductor → GND → polo − de la batería
   s.connectTerminals(gnd.terminalIds[0], bat.terminalIds[0]);
 
   // Paralelo LED: capacitor y voltímetro
@@ -106,9 +113,10 @@ export function loadDemo(onReady?: () => void): void {
   s.connectTerminals(led.terminalIds[0], vm.terminalIds[0]);
   s.connectTerminals(led.terminalIds[1], vm.terminalIds[1]);
 
-  // Referencia visual: potenciómetro // resistencia, transistor // LED
+  // Paralelo: potenciómetro sobre la resistencia
   s.connectTerminals(res.terminalIds[0], pot.terminalIds[0]);
   s.connectTerminals(res.terminalIds[1], pot.terminalIds[1]);
+  // Transistor referencia (alta Z) en paralelo con LED
   s.connectTerminals(led.terminalIds[0], trans.terminalIds[0]);
   s.connectTerminals(led.terminalIds[1], trans.terminalIds[1]);
 
@@ -119,7 +127,15 @@ export function loadDemo(onReady?: () => void): void {
   s.addProbe('voltage', ind.id, 0);
 
   s.setActiveTool('select');
-  s.selectComponent(sw.id);
+  s.selectComponent(bat.id);
+
+  const circuit = useCircuitStore.getState().circuit;
+  const check = validateLocalCircuit(circuit);
+  useCircuitStore.setState({ simError: check.valid ? null : check.errors.join('; ') });
+
   notifyDemoLoaded();
+  if (check.valid) {
+    toastSuccess('Circuito de ejemplo listo', 'Pulsa Iniciar simulación. El LED enciende en ~1 s.');
+  }
   onReady?.();
 }

@@ -1,7 +1,7 @@
 const ITEMS = [
   {
     title: 'Batería · Interruptor',
-    desc: 'Encienden o cortan la rama. Sin tierra no simula.',
+    desc: 'Pulsa Iniciar simulación abajo. El − (azul) va a GND; el + (rojo) al circuito.',
   },
   {
     title: 'R · Diodo · LED · L · C',
@@ -29,8 +29,8 @@ export function DemoGuidePanel() {
         </p>
         <p className="mt-2">
           El potenciómetro va en paralelo con la resistencia (R = Rmax × cursor). El transistor es
-          solo referencia visual (alta impedancia). La fuente de corriente está en el canvas sin
-          cablear para que veas el símbolo.
+          solo referencia visual (alta impedancia). La fuente de corriente está en la paleta si
+          quieres probarla.
         </p>
       </div>
 

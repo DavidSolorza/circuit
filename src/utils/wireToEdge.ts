@@ -34,5 +34,5 @@ export function wireToReactFlowEdge(
       strokeWidth: selected ? 3.5 : 2.5,
     },
     markerEnd: undefined,
-  };
+  } as Edge;
 }

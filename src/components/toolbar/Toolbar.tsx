@@ -6,6 +6,8 @@ import { COMPONENT_CATEGORIES, COMPONENT_TEMPLATES, GRID_SIZE } from '../../core
 import { getComponentTooltip, TOOL_DESCRIPTIONS } from '../../core/tooltips';
 import { getComponentModelStatus } from '../../utils/circuitModelInfo';
 import { loadDemo } from '../../utils/loadDemo';
+import { validateLocalCircuit } from '../../services/localSimulation';
+import { toastError } from '../../shared/store/toastStore';
 import type React from 'react';
 
 const CATEGORY_ACCENT: Record<string, string> = {
@@ -159,7 +161,19 @@ export function Toolbar() {
 
         <button
           type="button"
-          onClick={() => useCircuitStore.getState().toggleSimulation()}
+          onClick={() => {
+            const store = useCircuitStore.getState();
+            if (!store.simulationRunning) {
+              const check = validateLocalCircuit(store.circuit);
+              if (!check.valid) {
+                const msg = check.errors[0] ?? 'Circuito inválido';
+                store.setSimError(check.errors.join('; '));
+                toastError('No se puede simular', msg);
+                return;
+              }
+            }
+            store.toggleSimulation();
+          }}
           className={simulationRunning ? 'btn-sim-stop' : 'btn-sim-start'}
         >
           <span
@@ -177,8 +191,10 @@ export function Toolbar() {
           </button>
         </div>
 
-        <p className="text-[10px] text-ink-faint text-center">
-          {wireCount} cables · pon una tierra (GND) para simular
+        <p className="text-[10px] text-ink-faint text-center leading-snug">
+          {wireCount} cables
+          {compCount > 0 && !simulationRunning && ' · listo para Iniciar'}
+          {compCount > 0 && simulationRunning && ' · simulando…'}
         </p>
       </div>
     </div>

@@ -1,0 +1,422 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{amsmath}
+
+\geometry{margin=2.5cm}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Electro+ Lab}
+\fancyhead[R]{\small Documentación Técnica}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\definecolor{primary}{RGB}{31,77,58}
+\definecolor{gold}{RGB}{201,168,106}
+\definecolor{codebg}{RGB}{245,240,230}
+
+\titleformat{\section}{\Large\bfseries\color{primary}}{}{0em}{}[\vspace{-0.3em}\rule{\textwidth}{0.5pt}]
+\titleformat{\subsection}{\large\bfseries\color{primary!80!black}}{}{0em}{}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{gold},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=primary,
+  urlcolor=primary,
+  citecolor=primary,
+}
+
+\begin{document}
+
+% ── Portada ──────────────────────────────────────────────────────────
+\begin{titlepage}
+  \centering
+  \vspace*{2.5cm}
+  {\Huge\bfseries\color{primary} Electro+ Lab\\[0.4em]}
+  {\Large Simulador de Circuitos Eléctricos Interactivo\\[1.5cm]}
+  {\large\textbf{Documentación Técnica para Evaluación Académica}\\[0.8cm]}
+  {\normalsize Explicación del funcionamiento, arquitectura y construcción del sistema\\[2.5cm]}
+  \begin{tabular}{rl}
+    \textbf{Proyecto:} & LabCircuitos / Electro+ Lab \\
+    \textbf{Tipo:} & Aplicación web educativa \\
+    \textbf{Stack:} & React + TypeScript + Python + FastAPI \\
+    \textbf{Simulación:} & MNA (Modified Nodal Analysis) \\
+    \textbf{Fecha:} & \today \\
+  \end{tabular}
+  \vfill
+  {\small Proyecto académico --- Uso educativo}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ── 1. Introducción ──────────────────────────────────────────────────
+\section{Introducción}
+
+\textbf{Electro+ Lab} es un simulador de circuitos eléctricos que permite diseñar esquemas de forma visual, ejecutar simulaciones en tiempo real y visualizar mediciones mediante un multímetro virtual y un osciloscopio. El sistema está orientado al aprendizaje de conceptos fundamentales de ingeniería eléctrica: ley de Ohm, análisis nodal, comportamiento de semiconductores (LED, diodo), elementos reactivos (capacitor, inductor) e instrumentación de laboratorio.
+
+\subsection{Objetivos del proyecto}
+
+\begin{enumerate}[label=\arabic*.]
+  \item Ofrecer un editor visual intuitivo para montar circuitos sobre una cuadrícula.
+  \item Simular voltajes, corrientes y potencias con un motor numérico MNA en el navegador.
+  \item Mostrar resultados en tiempo real en el canvas, multímetro y osciloscopio.
+  \item Validar la topología del circuito antes de simular (tierra, cortocircuitos, nodos flotantes).
+  \item Desplegar la aplicación en la nube (Vercel + Render) para acceso público.
+\end{enumerate}
+
+\subsection{Tecnologías utilizadas}
+
+\begin{table}[H]
+  \centering
+  \begin{tabularx}{\textwidth}{lX}
+    \toprule
+    \textbf{Capa} & \textbf{Tecnologías} \\
+    \midrule
+    Frontend & React 18, TypeScript, Vite, Tailwind CSS, React Flow, Zustand, Plotly.js \\
+    Motor de simulación & TypeScript puro (\texttt{src/engine/}), eliminación gaussiana, Euler hacia atrás \\
+    Backend (opcional) & Python 3, FastAPI, NumPy, Uvicorn \\
+    Despliegue & Vercel (frontend estático), Render (API) \\
+    Herramientas & pnpm, ESLint, Prettier, Git/GitHub \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Stack tecnológico del proyecto}
+\end{table}
+
+% ── 2. Arquitectura ──────────────────────────────────────────────────
+\section{Arquitectura del sistema}
+
+El sistema sigue una arquitectura cliente-servidor \textbf{desacoplada}. La simulación principal ocurre en el \textbf{cliente} (navegador); el servidor es complementario.
+
+\subsection{Diagrama de capas}
+
+\begin{verbatim}
+┌──────────────────────────────────────────────────────────────┐
+│                    NAVEGADOR (Cliente)                       │
+│  ┌─────────────┐  ┌──────────────┐  ┌───────────────────┐  │
+│  │ Interfaz    │  │ Estado       │  │ Motor MNA         │  │
+│  │ React       │──│ Zustand      │──│ src/engine/       │  │
+│  │ (UI)        │  │ circuitStore │  │ TransientMNASolver│  │
+│  └─────────────┘  └──────────────┘  └───────────────────┘  │
+└──────────────────────────────────────────────────────────────┘
+                         │ (opcional, HTTP)
+                         ▼
+┌──────────────────────────────────────────────────────────────┐
+│              SERVIDOR Render (FastAPI + NumPy)               │
+│  /api/simulate  ·  /api/simulate/validate  ·  /api/health  │
+└──────────────────────────────────────────────────────────────┘
+\end{verbatim}
+
+\subsection{Separación de responsabilidades}
+
+\begin{itemize}
+  \item \textbf{Interfaz (\texttt{src/components/}, \texttt{src/features/}):} renderiza la UI, captura eventos del usuario y muestra mediciones. No contiene lógica de matrices.
+  \item \textbf{Estado (\texttt{src/store/circuitStore.ts}):} almacena el circuito, cables, sondas, resultados y banderas de simulación.
+  \item \textbf{Motor (\texttt{src/engine/}):} construye el grafo eléctrico, arma el sistema MNA y resuelve pasos transitorios. Sin dependencias de React.
+  \item \textbf{Backend (\texttt{backend/}):} API REST para validación server-side, simulación de referencia y exportación SPICE.
+\end{itemize}
+
+% ── 3. Construcción del frontend ─────────────────────────────────────
+\section{Cómo se construye el frontend}
+
+\subsection{Punto de entrada}
+
+\begin{itemize}
+  \item \texttt{index.html} --- plantilla HTML que carga el bundle de Vite.
+  \item \texttt{src/main.tsx} --- monta la aplicación React en el DOM.
+  \item \texttt{src/App.tsx} --- layout principal con toolbar, canvas, paneles y osciloscopio.
+\end{itemize}
+
+\subsection{Editor visual (canvas)}
+
+El editor usa la librería \textbf{React Flow} para representar nodos (componentes) y aristas (cables).
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabularx}{\textwidth}{lX}
+    \toprule
+    \textbf{Archivo} & \textbf{Función} \\
+    \midrule
+    \texttt{CircuitEditor.tsx} & Canvas con zoom, pan y cuadrícula de laboratorio \\
+    \texttt{ComponentNode.tsx} & Nodo visual: símbolo SVG + lecturas V/I en vivo \\
+    \texttt{symbols/index.tsx} & Símbolos eléctricos normalizados (IEC simplificado) \\
+    \texttt{wireToEdge.ts} & Convierte cables del store en aristas de React Flow \\
+    \texttt{componentHandles.ts} & Posición de bornes (+/−) según tipo de componente \\
+    \texttt{constants.ts} & Cuadrícula (30 px), colores, plantillas de parámetros \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Módulos del editor visual}
+\end{table}
+
+\subsection{Flujo de creación de un componente}
+
+\begin{enumerate}[label=\arabic*.]
+  \item El usuario selecciona un tipo en la \textbf{Toolbar} (paleta izquierda).
+  \item \texttt{circuitStore.addComponent()} crea un \texttt{CircuitComponent} con dos terminales y nodos eléctricos.
+  \item React Flow renderiza un \texttt{ComponentNode} en la posición de la cuadrícula.
+  \item El usuario conecta bornes con la herramienta \textbf{Cable}.
+  \item \texttt{connectTerminals()} fusiona nodos eléctricos y registra un \texttt{Wire}.
+\end{enumerate}
+
+\subsection{Paneles de la interfaz}
+
+\begin{table}[H]
+  \centering
+  \begin{tabularx}{\textwidth}{lX}
+    \toprule
+    \textbf{Panel} & \textbf{Archivo principal} \\
+    \midrule
+    Paleta de componentes & \texttt{components/toolbar/Toolbar.tsx} \\
+    Propiedades y sondas & \texttt{components/properties/PropertiesPanel.tsx} \\
+    Multímetro virtual & \texttt{components/multimeter/MultimeterDisplay.tsx} \\
+    Osciloscopio & \texttt{components/graph/GraphPanel.tsx} \\
+    Calculadora eléctrica & \texttt{components/calculator/CalculatorPage.tsx} \\
+    Estado de simulación & \texttt{components/status/SimulationStatus.tsx} \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Paneles de la interfaz de usuario}
+\end{table}
+
+% ── 4. Motor de simulación ───────────────────────────────────────────
+\section{Motor de simulación MNA}
+
+\subsection{Fundamento matemático}
+
+El análisis se basa en el método de \textbf{Análisis Nodal Modificado (MNA)}. Para cada instante de tiempo se construye y resuelve:
+
+\begin{equation}
+  \mathbf{G} \cdot \mathbf{x} = \mathbf{b}
+\end{equation}
+
+donde $\mathbf{G}$ es la matriz de admitancias del circuito, $\mathbf{b}$ el vector de fuentes y $\mathbf{x}$ el vector de incógnitas (voltajes de nodo y corrientes de ramas de fuentes de tensión).
+
+Para el análisis \textbf{transitorio} se emplea integración \textbf{Euler hacia atrás} en capacitores e inductores. Los diodos y LEDs usan un modelo \textit{piecewise} con iteración de Newton (hasta 12 iteraciones por paso).
+
+\subsection{Módulos del motor}
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabularx}{\textwidth}{lX}
+    \toprule
+    \textbf{Módulo} & \textbf{Responsabilidad} \\
+    \midrule
+    \texttt{SimulationEngine.ts} & Orquestador: sincroniza circuito, valida, avanza pasos \\
+    \texttt{CircuitGraph.ts} & Grafo: terminales = vértices, elementos = aristas \\
+    \texttt{ElementRegistry.ts} & Registro de modelos por tipo de componente \\
+    \texttt{elements/index.ts} & \textit{Stamps} MNA (conductancias, fuentes) \\
+    \texttt{MatrixBuilder.ts} & Construye $\mathbf{G}$ y $\mathbf{b}$ \\
+    \texttt{TransientMNASolver.ts} & Resuelve MNA + transitorio \\
+    \texttt{GaussianElimination.ts} & Eliminación gaussiana \\
+    \texttt{CircuitValidator.ts} & Validación pre-simulación \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Módulos del motor TypeScript}
+\end{table}
+
+\subsection{Modelos de componentes}
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Componente} & \textbf{Modelo implementado} \\
+    \midrule
+    Resistencia & $G = 1/R$ \\
+    Capacitor & Modelo companion (Euler) \\
+    Inductor & Modelo companion (Euler) \\
+    Batería & Fuente de tensión + ecuación de rama \\
+    LED / Diodo & Piecewise: $R_{on}$, $R_{off}$, $V_f$ \\
+    Interruptor & $R_{on}$ o $R_{off}$ según estado \\
+    Amperímetro & $R = 0{,}1\,\Omega$ en serie \\
+    Voltímetro & $R = 10\,\text{M}\Omega$ \\
+    Transistor & Alta impedancia (placeholder) \\
+    \bottomrule
+  \end{tabular}
+  \caption{Modelos eléctricos por componente}
+\end{table}
+
+% ── 5. Bucle de simulación ───────────────────────────────────────────
+\section{Bucle de simulación en tiempo real}
+
+Al pulsar \textbf{Iniciar simulación} ocurre la siguiente secuencia:
+
+\begin{enumerate}[label=\arabic*.]
+  \item \texttt{Toolbar} ejecuta \texttt{validateLocalCircuit()} --- si hay errores, muestra toast y no arranca.
+  \item \texttt{toggleSimulation()} activa \texttt{simulationRunning = true}.
+  \item \texttt{useSimulation} (hook) reinicia estado transitorio y datos del osciloscopio.
+  \item Cada $\Delta t = 1/60$ s (60 Hz): \texttt{runLocalSimulationStep()} avanza un paso MNA.
+  \item Se actualizan \texttt{simResults} (voltajes, corrientes) y \texttt{oscData} (series temporales).
+  \item \texttt{ComponentNode}, \texttt{MultimeterDisplay} y \texttt{GraphPanel} se re-renderizan con los nuevos valores.
+\end{enumerate}
+
+\subsection{Instrumentación virtual}
+
+\begin{itemize}
+  \item \textbf{Multímetro:} al seleccionar un componente, muestra $V$, $I$ y potencia disipada. Casos especiales para amperímetro (corriente en serie), voltímetro (diferencia de potencial) y LED (caída directa y estado encendido/apagado).
+  \item \textbf{Osciloscopio:} las sondas se añaden desde el panel de Propiedades con los botones \texttt{+V osc} y \texttt{+I osc}. Plotly.js renderiza las trazas con ventana deslizante de 10 s.
+\end{itemize}
+
+% ── 6. Circuito de demostración ──────────────────────────────────────
+\section{Circuito de demostración}
+
+El archivo \texttt{src/utils/loadDemo.ts} construye automáticamente un circuito en forma de \textbf{U} que incluye todos los tipos de componente del simulador:
+
+\begin{verbatim}
+Bat(+) → SW → Amm → R → D → LED → L → GND → Bat(−)
+Paralelos: VM y Cap sobre LED; Pot sobre R; Trans sobre LED
+\end{verbatim}
+
+\textbf{Parámetros:} batería 9 V, resistencia 470 $\Omega$, LED $V_f = 2$ V, capacitor 47 $\mu$F, inductor 10 mH. Incluye cuatro sondas de osciloscopio preconfiguradas (corriente del amperímetro y voltajes de LED, capacitor e inductor).
+
+Al iniciar la simulación, el LED se enciende en aproximadamente 1 segundo y la corriente de lazo es del orden de 12--14 mA.
+
+% ── 7. Backend ───────────────────────────────────────────────────────
+\section{Backend (FastAPI)}
+
+El backend es \textbf{opcional} para el uso educativo diario, pero aporta:
+
+\begin{itemize}
+  \item \texttt{POST /api/simulate} --- simulación MNA en Python (referencia cruzada).
+  \item \texttt{POST /api/simulate/validate} --- validación sin ejecutar.
+  \item \texttt{POST /api/netlist} --- generación de netlist SPICE.
+  \item \texttt{GET /api/health} --- comprobación de estado (\texttt{version: 0.1.2}).
+\end{itemize}
+
+\subsection{Estructura del backend}
+
+\begin{verbatim}
+backend/
+├── main.py                    # Aplicación FastAPI + CORS
+├── api/routes.py              # Endpoints REST
+├── simulation/engine.py       # Motor MNA NumPy
+├── validators/circuit_validator.py
+├── models/circuit.py          # DTOs Pydantic
+└── spice/builder.py           # Netlist SPICE
+\end{verbatim}
+
+% ── 8. Validaciones ──────────────────────────────────────────────────
+\section{Validaciones del circuito}
+
+Antes de simular, el validador comprueba:
+
+\begin{itemize}
+  \item Existencia de \textbf{un único nodo de tierra (GND)}.
+  \item \textbf{Batería:} polo positivo conectado al circuito; polo negativo a GND.
+  \item \textbf{Cortocircuitos} directos entre fuente y tierra.
+  \item \textbf{Nodos flotantes} sin camino eléctrico a tierra.
+  \item Cables duplicados entre los mismos terminales.
+  \item Componentes sueltos (generan advertencia, no bloquean la simulación).
+\end{itemize}
+
+% ── 9. Despliegue ────────────────────────────────────────────────────
+\section{Despliegue en la nube}
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Componente} & \textbf{Plataforma} & \textbf{Configuración} \\
+    \midrule
+    Frontend & Vercel & \texttt{vercel.json}, build Vite, salida \texttt{dist/} \\
+    Backend & Render & \texttt{render.yaml}, \texttt{render-start.sh} \\
+    Variable opcional & Vercel & \texttt{VITE\_API\_URL} = URL del backend \\
+    \bottomrule
+  \end{tabular}
+  \caption{Despliegue del sistema}
+\end{table}
+
+La simulación del simulador funciona \textbf{sin backend}; Vercel sirve únicamente archivos estáticos del frontend.
+
+% ── 10. Ejecución local ──────────────────────────────────────────────
+\section{Ejecución local y pruebas}
+
+\begin{lstlisting}
+# Instalar dependencias
+pnpm install
+
+# Frontend (http://localhost:5174)
+pnpm dev
+
+# Backend opcional (http://localhost:8000)
+python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+
+# Build de produccion
+pnpm run build
+
+# Test automatico del circuito demo
+pnpm dlx tsx src/engine/demo/demoCircuitTest.ts
+\end{lstlisting}
+
+\subsection{Guion de demostración recomendado}
+
+\begin{enumerate}[label=\arabic*.]
+  \item Abrir la aplicación en el navegador.
+  \item Pulsar \textbf{Demo} en la paleta izquierda.
+  \item Pulsar \textbf{Iniciar simulación}.
+  \item Observar el LED encendido, la corriente en el amperímetro y las cuatro trazas del osciloscopio.
+  \item Seleccionar el LED y verificar el multímetro (caída directa, corriente, estado \textit{Encendido}).
+\end{enumerate}
+
+% ── 11. Equipo ───────────────────────────────────────────────────────
+\section{Equipo de desarrollo}
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Integrante} & \textbf{Rama Git} & \textbf{Área principal} \\
+    \midrule
+    Luisa & \texttt{feature/luisa-backend} & Motor MNA, backend, validación \\
+    Miguel & \texttt{feature/miguel-editor} & Editor React Flow, store, cables \\
+    Josue & \texttt{feature/josue-ui} & UI/UX, paneles, documentación, despliegue \\
+    \bottomrule
+  \end{tabular}
+  \caption{Distribución de responsabilidades}
+\end{table}
+
+% ── 12. Conclusiones ─────────────────────────────────────────────────
+\section{Conclusiones}
+
+Electro+ Lab demuestra la integración de:
+
+\begin{itemize}
+  \item \textbf{Ingeniería eléctrica:} análisis nodal modificado, modelos de componentes, instrumentación.
+  \item \textbf{Desarrollo frontend:} React, TypeScript, estado reactivo, visualización con Plotly.
+  \item \textbf{Algoritmos numéricos:} resolución de sistemas lineales, integración temporal, Newton para no linealidades.
+  \item \textbf{Desarrollo backend:} API REST con FastAPI, validación y exportación SPICE.
+  \item \textbf{DevOps:} despliegue en Vercel y Render con configuración reproducible.
+\end{itemize}
+
+El motor de simulación en el cliente garantiza respuesta inmediata sin latencia de red, lo que lo hace adecuado para uso en aula. El backend Python complementa con validación server-side y compatibilidad con herramientas SPICE estándar de la industria.
+
+\vspace{1em}
+\noindent\textbf{Documentación adicional en el repositorio:}
+\texttt{docs/DOCUMENTACION\_PROFESOR.md},
+\texttt{docs/arquitectura.md},
+\texttt{docs/DEPLOY.md}.
+
+\end{document}

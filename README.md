@@ -1,4 +1,4 @@
-# LabCircuitos
+# Electro+ Lab (LabCircuitos)
 
 Simulador de circuitos eléctricos interactivo con **tema claro profesional** (crema, verde bosque y dorado). Frontend React + TypeScript + Vite (pnpm). Backend Python + FastAPI + MNA/Ngspice.
 
@@ -13,6 +13,8 @@ Simulador de circuitos eléctricos interactivo con **tema claro profesional** (c
 
 | Documento | Contenido |
 |-----------|-----------|
+| **[docs/DOCUMENTACION_PROFESOR.md](docs/DOCUMENTACION_PROFESOR.md)** | **Explicación para el profesor (cómo funciona todo)** |
+| [docs/documentacion-profesor.tex](docs/documentacion-profesor.tex) | Versión LaTeX → compilar a PDF para entregar |
 | [docs/INFORME-AUDITORIA.md](docs/INFORME-AUDITORIA.md) | Auditoría técnica y deuda |
 | [docs/arquitectura.md](docs/arquitectura.md) | Arquitectura actual y objetivo FSD |
 | [docs/estructura-proyecto.md](docs/estructura-proyecto.md) | Carpetas y convenciones |

@@ -139,12 +139,12 @@ function GraphPanelInner() {
 
   const emptyMessage =
     probes.length === 0
-      ? 'Añade sondas con +V osc / +I osc en Propiedades'
+      ? 'Añade sondas con +V osc / +I osc en Propiedades del componente'
       : simulationRunning
         ? 'Capturando señales…'
         : hasSimData
-          ? 'Sin datos en el osciloscopio — inicia la simulación'
-          : 'Pulsa Iniciar simulación en la paleta';
+          ? 'Datos listos — pulsa Iniciar de nuevo o limpia y reinicia'
+          : 'Pulsa Iniciar simulación (paleta izquierda)';
 
   return (
     <div className="h-full flex flex-col bg-surface-900">

@@ -32,6 +32,12 @@ export class CircuitValidator {
     const snapshot = graph.buildFromCircuit(circuit);
     const { terminalNode, numericAdjacency } = snapshot;
 
+    const wiredTerminals = new Set<string>();
+    for (const w of Object.values(wires)) {
+      wiredTerminals.add(w.fromTerminalId);
+      wiredTerminals.add(w.toTerminalId);
+    }
+
     // Duplicate wires
     const wirePairs = new Set<string>();
     for (const w of Object.values(wires)) {
@@ -51,8 +57,26 @@ export class CircuitValidator {
       ids.add(comp.id);
     }
 
-    // Open circuits / dangling terminals
-    warnings.push(...graph.detectOpenCircuits(circuit));
+    // Open circuits / dangling terminals (warnings; fuentes con polo suelto = error)
+    for (const w of graph.detectOpenCircuits(circuit)) {
+      warnings.push(w);
+    }
+    for (const comp of Object.values(comps)) {
+      if (comp.type !== 'voltageSource' && comp.type !== 'currentSource') continue;
+      const wired = comp.terminalIds.filter((tid) => wiredTerminals.has(tid));
+      if (wired.length === 0) continue;
+      if (wired.length < comp.terminalIds.length) {
+        const openIdx = comp.terminalIds.findIndex((tid) => !wiredTerminals.has(tid));
+        if (comp.type === 'voltageSource') {
+          const pole = openIdx === 1 ? '+' : '−';
+          errors.push(
+            `${comp.label}: falta cable en el polo ${pole}. Conecta el − a GND y el + al circuito.`,
+          );
+        } else {
+          errors.push(`${comp.label}: falta cable en el terminal ${openIdx + 1}.`);
+        }
+      }
+    }
 
     // Short circuits
     errors.push(...graph.detectShortCircuits(circuit));
@@ -78,12 +102,21 @@ export class CircuitValidator {
 
         for (const comp of Object.values(comps)) {
           if (comp.type === 'ground') continue;
+          const wiredCount = comp.terminalIds.filter((tid) => wiredTerminals.has(tid)).length;
+          if (wiredCount === 0) continue;
+
           const nodes = comp.terminalIds
             .map((tid) => terminalNode.get(tid))
             .filter((n): n is number => n !== undefined);
           const reachesGround = nodes.some((n) => visited.has(n));
           if (!reachesGround) {
-            errors.push(`Componente '${comp.label || comp.id}' no tiene retorno a tierra.`);
+            if (comp.type === 'voltageSource') {
+              errors.push(
+                `${comp.label}: sin retorno a tierra. Une el polo − (azul) a GND o cierra el lazo hasta tierra.`,
+              );
+            } else {
+              errors.push(`Componente '${comp.label || comp.id}' no tiene retorno a tierra.`);
+            }
           }
         }
       }

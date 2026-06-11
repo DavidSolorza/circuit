@@ -1,5 +1,5 @@
 import { useCircuitStore } from '../../store/circuitStore';
-import { toastInfo } from '../../shared/store/toastStore';
+import { toastInfo, toastSuccess } from '../../shared/store/toastStore';
 import { COMPONENT_TEMPLATES } from '../../core/constants';
 import { useMultimeter } from '../../hooks/useMultimeter';
 import { fmtV, fmtI, fmtP } from '../../utils/formatElectrical';
@@ -117,6 +117,12 @@ export function PropertiesPanel() {
         {comp.type === 'voltmeter' && (
           <p className="text-[10px] text-ink-faint mt-1">Va en paralelo entre los dos puntos.</p>
         )}
+        {comp.type === 'voltageSource' && (
+          <p className="text-[10px] text-ink-faint mt-1">
+            Polo <span className="text-red-500 font-medium">+</span> (derecha) al circuito; polo{' '}
+            <span className="text-blue-500 font-medium">−</span> (izquierda) a GND.
+          </p>
+        )}
       </div>
 
       {template?.paramDefs && template.paramDefs.length > 0 && (
@@ -221,14 +227,32 @@ export function PropertiesPanel() {
           ⊞ Duplicar
         </button>
         <button
-          onClick={() => addProbe('voltage', comp.id, 0)}
+          onClick={() => {
+            const before = useCircuitStore.getState().probes.length;
+            addProbe('voltage', comp.id, 0);
+            const after = useCircuitStore.getState().probes.length;
+            if (after > before) {
+              toastSuccess('Sonda de voltaje', 'Añadida al osciloscopio');
+            } else {
+              toastInfo('Sonda existente', 'Ya hay una sonda V en este componente');
+            }
+          }}
           className="px-2 py-1.5 rounded-md text-[10px] bg-gold-50 text-gold-700 hover:bg-gold-100 transition-colors border border-gold-200 font-medium"
           title="Sonda de voltaje al osciloscopio"
         >
           +V osc
         </button>
         <button
-          onClick={() => addProbe('current', comp.id)}
+          onClick={() => {
+            const before = useCircuitStore.getState().probes.length;
+            addProbe('current', comp.id);
+            const after = useCircuitStore.getState().probes.length;
+            if (after > before) {
+              toastSuccess('Sonda de corriente', 'Añadida al osciloscopio');
+            } else {
+              toastInfo('Sonda existente', 'Ya hay una sonda I en este componente');
+            }
+          }}
           className="px-2 py-1.5 rounded-md text-[10px] bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors border border-primary-200 font-medium"
           title="Sonda de corriente al osciloscopio"
         >

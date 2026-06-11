@@ -7,7 +7,7 @@ from ..models.simulation import SimulationResponse, SimulationStatus, Validation
 from ..validators.circuit_validator import validate_circuit
 
 VOLTMETER_R = 1e12
-AMMETER_R = 1e-6
+AMMETER_R = 0.1
 DIODE_R_ON = 25.0
 DIODE_R_OFF = 1e9
 LED_R_ON = 40.0

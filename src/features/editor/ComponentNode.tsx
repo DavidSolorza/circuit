@@ -70,11 +70,11 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
   const compVoltage = readings?.voltage ?? null;
 
   const ledVf = data.params?.forwardVoltage ?? 2;
+  const forwardVd = compVoltage !== null ? -compVoltage : 0;
   const isLit =
     data.type === 'led' &&
     hasReadings &&
-    compVoltage !== null &&
-    -(compVoltage) >= ledVf * 0.8 &&
+    forwardVd >= ledVf * 0.75 &&
     Math.abs(current) > 1e-6;
 
   const showCurrent =
@@ -84,10 +84,11 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
     data.type === 'inductor' ||
     data.type === 'currentSource';
 
+  const displayCurrent = data.type === 'led' ? Math.abs(current) : current;
   const currentStr =
     hasReadings &&
     (data.type === 'ammeter' || (showCurrent && Math.abs(current) > 1e-12))
-      ? fmtI(current)
+      ? fmtI(displayCurrent)
       : null;
 
   const showVoltage =
@@ -97,14 +98,18 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
     data.type === 'capacitor' ||
     data.type === 'voltageSource';
 
+  const displayVoltage =
+    data.type === 'led' && compVoltage !== null ? -compVoltage : compVoltage;
+
   const voltageStr =
     hasReadings &&
     showVoltage &&
-    compVoltage !== null &&
+    displayVoltage !== null &&
     (data.type === 'voltmeter' ||
       data.type === 'voltageSource' ||
-      Math.abs(compVoltage) > 1e-9)
-      ? fmtV(compVoltage)
+      data.type === 'led' ||
+      Math.abs(displayVoltage) > 1e-9)
+      ? fmtV(displayVoltage)
       : null;
 
   const hc = selected ? '#C9A86A' : color;
