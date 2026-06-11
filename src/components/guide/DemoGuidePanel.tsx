@@ -1,3 +1,6 @@
+import { TEAM_MEMBERS } from '../../core/team';
+import { CircuitStatsPanel } from '../status/CircuitStatsPanel';
+
 const ITEMS = [
   {
     title: 'Batería · Interruptor',
@@ -20,6 +23,8 @@ const ITEMS = [
 export function DemoGuidePanel() {
   return (
     <div className="p-4 space-y-4 text-[12px] text-ink-muted leading-relaxed">
+      <CircuitStatsPanel />
+
       <div className="guide-card">
         <h3 className="text-sm font-semibold text-ink mb-1.5">El circuito de ejemplo</h3>
         <p>
@@ -41,6 +46,18 @@ export function DemoGuidePanel() {
             <p className="mt-1 text-[11px]">{item.desc}</p>
           </div>
         ))}
+      </div>
+
+      <div className="guide-card border-primary-500/20 bg-primary-950/20">
+        <h3 className="text-sm font-semibold text-ink mb-2">Equipo de desarrollo</h3>
+        <ul className="space-y-2">
+          {TEAM_MEMBERS.map((member) => (
+            <li key={member.name}>
+              <p className="text-ink text-[11px] font-medium">{member.name}</p>
+              <p className="text-[10px] text-ink-faint">{member.role}</p>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

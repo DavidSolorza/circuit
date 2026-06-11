@@ -16,6 +16,8 @@ export const TOOL_DESCRIPTIONS: Record<ToolType, string> = {
   diode: 'Conduce en directa con caída ~0,7 V; bloquea en inversa.',
   transistor: 'Alta impedancia (referencia). Sin amplificación aún.',
   potentiometer: 'Resistencia variable: R = Rmax × cursor.',
+  lamp: 'Bombilla resistiva; brilla según la potencia disipada.',
+  fuse: 'Fusible en serie. Fundido = circuito abierto (prop. Fundido).',
   ground: 'Tierra 0 V. Hace falta una en el circuito.',
   voltmeter: 'Mide tensión entre bornes (casi no consume).',
   ammeter: 'Mide corriente en serie (casi sin caída).',

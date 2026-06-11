@@ -16,7 +16,9 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier . --check",
-    "format:fix": "prettier . --write"
+    "format:fix": "prettier . --write",
+    "test:circuits": "tsx src/engine/demo/allCircuitsTest.ts",
+    "test:demo": "tsx src/engine/demo/demoCircuitTest.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

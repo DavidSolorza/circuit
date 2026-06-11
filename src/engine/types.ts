@@ -13,7 +13,9 @@ export type EngineElementType =
   | 'potentiometer'
   | 'transistor'
   | 'led'
-  | 'diode';
+  | 'diode'
+  | 'lamp'
+  | 'fuse';
 
 export interface EngineTerminal {
   id: string;

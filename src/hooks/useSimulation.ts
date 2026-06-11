@@ -9,6 +9,7 @@ import {
 import { toastError, toastWarning } from '../shared/store/toastStore';
 import { readProbeSample } from '../utils/probeSample';
 import { DT } from '../core/constants';
+import { appBus } from '../shared/bus/AppEventBus';
 
 const runtimeWarningsShown = new Set<string>();
 const MAX_OSC_POINTS = 3000;
@@ -131,6 +132,7 @@ export function useSimulation() {
       showPreSimulationWarnings(validation.warnings);
     }
 
+    appBus.emit('simulation:started', { mode: 'local' });
     resetLocalSimulation();
     useCircuitStore.getState().clearOscData();
     useCircuitStore.getState().setSimTime(0);
@@ -150,7 +152,12 @@ export function useSimulation() {
     };
 
     rafRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(rafRef.current);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      if (!useCircuitStore.getState().simulationRunning) {
+        appBus.emit('simulation:stopped', {});
+      }
+    };
   }, [simulationRunning]);
 
   return { simulationRunning };

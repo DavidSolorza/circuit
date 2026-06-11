@@ -9,6 +9,8 @@ export type ComponentType =
   | 'diode'
   | 'transistor'
   | 'potentiometer'
+  | 'lamp'
+  | 'fuse'
   | 'ground'
   | 'voltmeter'
   | 'ammeter';

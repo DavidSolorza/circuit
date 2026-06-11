@@ -1,13 +1,13 @@
 import { useCircuitStore } from '../../store/circuitStore';
+import { useCircuitStats } from '../../hooks/useCircuitStats';
+import { formatEnergyJ } from '../../utils/circuitStats';
 
 export function SimulationStatus() {
   const simulationRunning = useCircuitStore((s) => s.simulationRunning);
   const simError = useCircuitStore((s) => s.simError);
   const simResults = useCircuitStore((s) => s.simResults);
   const simTime = useCircuitStore((s) => s.simTime);
-  const compCount = useCircuitStore((s) => Object.keys(s.circuit.components).length);
-  const wireCount = useCircuitStore((s) => Object.keys(s.circuit.wires).length);
-  const components = useCircuitStore((s) => s.circuit.components);
+  const stats = useCircuitStats();
 
   const status = !simulationRunning
     ? 'stopped'
@@ -27,14 +27,6 @@ export function SimulationStatus() {
           : 'bg-surface-600';
 
   const ledPulse = status === 'running' || status === 'processing' ? 'animate-pulse' : '';
-
-  const groundCount = Object.values(components).filter((c) => c.type === 'ground').length;
-  const nodeCount = simResults?.status.success
-    ? Object.keys(simResults.nodeVoltages).length - 1
-    : 0;
-  const branchCount = simResults?.status.success
-    ? Object.keys(simResults.branchCurrents).length
-    : 0;
 
   return (
     <div className="flex items-center gap-2 text-[10px]">
@@ -72,9 +64,17 @@ export function SimulationStatus() {
         </span>
       )}
 
-      {(status === 'running' || status === 'stopped') && simResults?.status.success && (
-        <span className="text-ink-faint font-mono hidden lg:inline tabular-nums">
-          {nodeCount} nodos · {branchCount} ramas · {compCount} comp · {wireCount} cables
+      {stats.components > 0 && (
+        <span className="text-ink-faint font-mono hidden md:inline tabular-nums text-[10px]">
+          {stats.components} comp · {stats.wires} cables · {stats.electricalNodes} nodos
+          {stats.branches > 0 && ` · ${stats.branches} ramas`}
+          {stats.probes > 0 && ` · ${stats.probes} sondas`}
+        </span>
+      )}
+
+      {simResults?.status.success && stats.totalStoredEnergyJ > 1e-12 && (
+        <span className="text-cyan-700 font-mono hidden xl:inline tabular-nums text-[10px]">
+          E={formatEnergyJ(stats.totalStoredEnergyJ)}
         </span>
       )}
 
@@ -87,7 +87,7 @@ export function SimulationStatus() {
         </div>
       )}
 
-      {groundCount === 0 && compCount > 0 && (
+      {!stats.hasGround && stats.components > 0 && (
         <span className="text-gold-600 text-[9px] font-medium hidden sm:inline">
           ¡Falta tierra!
         </span>

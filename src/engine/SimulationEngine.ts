@@ -27,6 +27,8 @@ const SUPPORTED_TYPES = new Set([
   'transistor',
   'led',
   'diode',
+  'lamp',
+  'fuse',
 ]);
 
 export interface UnsupportedComponentInfo {

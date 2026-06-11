@@ -19,6 +19,9 @@ import { ShortcutsHelp } from './components/help/ShortcutsHelp';
 import { DemoGuidePanel } from './components/guide/DemoGuidePanel';
 import { AppLogo } from './components/brand/AppLogo';
 import { APP_NAME, APP_TAGLINE } from './core/brand';
+import { TEAM_LABEL, TEAM_MEMBERS } from './core/team';
+import { CircuitStatsPanel } from './components/status/CircuitStatsPanel';
+import { useCircuitStats } from './hooks/useCircuitStats';
 
 const CircuitEditor = React.lazy(() => import('./features/editor/CircuitEditor'));
 
@@ -45,6 +48,7 @@ function AppInner() {
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const { count: compCount, wireCount } = useCircuit();
+  const circuitStats = useCircuitStats();
   const { simulationRunning } = useSimulation();
   const { exportCircuit, importCircuit, clearCircuit } = useCircuitPersistence();
   const activeTool = useCircuitStore((s) => s.activeTool);
@@ -254,6 +258,20 @@ function AppInner() {
             <button onClick={handleLoadDemo} className="mt-2 btn-gold w-full">
               Ver circuito de ejemplo
             </button>
+
+            <div className="mt-5 pt-4 border-t border-surface-700">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint mb-2">
+                Desarrollado por
+              </p>
+              <ul className="space-y-1.5 text-left">
+                {TEAM_MEMBERS.map((m) => (
+                  <li key={m.name}>
+                    <p className="text-[11px] font-medium text-ink">{m.name}</p>
+                    <p className="text-[9px] text-ink-faint">{m.role}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       )}
@@ -358,26 +376,46 @@ function AppInner() {
 
       <ToastContainer />
 
-      <div className="h-7 bg-surface-900 border-t border-surface-700 flex items-center justify-between px-4 shrink-0">
-        <div className="flex items-center gap-2 text-[10px] text-ink-faint min-w-0">
-          <span className="text-primary-600 font-medium shrink-0">
+      <div className="min-h-7 bg-surface-900 border-t border-surface-700 flex flex-col sm:flex-row sm:items-center justify-between px-3 py-1.5 gap-2 shrink-0">
+        <div className="flex items-center gap-2 text-[10px] text-ink-faint min-w-0 flex-1">
+          <span className="text-primary-600 font-medium shrink-0 hidden sm:inline">
             {selectedWireId
-              ? 'Cable seleccionado — Supr elimina · arrastra un extremo para mover'
+              ? 'Cable — Supr elimina · arrastra extremo'
               : (toolHints[activeTool] ?? '')}
           </span>
+          {circuitStats.components > 0 && (
+            <div className="min-w-0 flex-1 hidden sm:block">
+              <CircuitStatsPanel compact />
+            </div>
+          )}
         </div>
-        <div className="flex items-center gap-3 text-ink-faint shrink-0 ml-4 text-[10px] font-mono tabular-nums">
+        <div className="flex items-center gap-2 text-ink-faint shrink-0 text-[10px] font-mono tabular-nums flex-wrap justify-end">
           {simulationRunning && (
             <>
-              <span className="text-green-600">{simTime.toFixed(2)} s</span>
+              <span className="text-green-600 font-semibold">{simTime.toFixed(2)} s</span>
               <span className="text-surface-600">·</span>
             </>
           )}
-          <span>{compCount} componentes</span>
+          <span>{circuitStats.components} comp</span>
           <span className="text-surface-600">·</span>
-          <span>{wireCount} cables</span>
+          <span>{circuitStats.wires} cables</span>
           <span className="text-surface-600">·</span>
-          <span>{probeCount} sondas</span>
+          <span className="text-primary-600">{circuitStats.electricalNodes} nodos</span>
+          <span className="text-surface-600">·</span>
+          <span>{circuitStats.branches} ramas</span>
+          {probeCount > 0 && (
+            <>
+              <span className="text-surface-600">·</span>
+              <span>{probeCount} sondas</span>
+            </>
+          )}
+          <span className="hidden lg:inline text-surface-600">·</span>
+          <span
+            className="hidden lg:inline truncate max-w-[200px] text-ink-faint/70"
+            title={TEAM_LABEL}
+          >
+            {TEAM_LABEL}
+          </span>
         </div>
       </div>
     </div>

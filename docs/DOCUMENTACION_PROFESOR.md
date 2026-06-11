@@ -281,9 +281,9 @@ pnpm dlx tsx src/engine/demo/demoCircuitTest.ts
 
 | Integrante | Rama | Área principal |
 |------------|------|----------------|
-| **Luisa** | `feature/luisa-backend` | Motor MNA, backend FastAPI, validación |
-| **Miguel** | `feature/miguel-editor` | Editor React Flow, store, cables, hooks |
-| **Josue** | `feature/josue-ui` | UI/UX, paneles, calculadora, documentación, despliegue |
+| **Miguel Angel Alvarez Ramirez** | `feature/miguel-editor` | Editor React Flow, store, cables, hooks |
+| **Luisa Fernanda Ibarra Tucano** | `feature/luisa-backend` | Motor MNA, backend FastAPI, validación |
+| **David Josué Solorza Viera** | `feature/josue-ui` | UI/UX, paneles, calculadora, documentación, despliegue |
 
 ---
 

@@ -149,31 +149,42 @@ export function buildDemoCircuit(): EngineCircuit {
   return { components, terminals, wires };
 }
 
-const engine = new SimulationEngine();
-engine.loadCircuit(buildDemoCircuit());
+export function runDemoCircuitSelfTest(): boolean {
+  const engine = new SimulationEngine();
+  engine.loadCircuit(buildDemoCircuit());
 
-const validation = engine.validate();
-console.log('valid:', validation.valid);
-console.log('errors:', validation.errors);
-console.log('warnings:', validation.warnings);
+  const validation = engine.validate();
+  console.log('valid:', validation.valid);
+  console.log('errors:', validation.errors);
+  console.log('warnings:', validation.warnings);
 
-if (!validation.valid) process.exit(1);
+  if (!validation.valid) return false;
 
-let last: ReturnType<SimulationEngine['advanceStep']> | null = null;
-for (let i = 0; i < 120; i++) {
-  last = engine.advanceStep(1 / 60);
-  if (!last.results.status.success) {
-    console.log('step fail at', i, last.results.status.error);
-    process.exit(1);
+  let last: ReturnType<SimulationEngine['advanceStep']> | null = null;
+  for (let i = 0; i < 120; i++) {
+    last = engine.advanceStep(1 / 60);
+    if (!last.results.status.success) {
+      console.log('step fail at', i, last.results.status.error);
+      return false;
+    }
   }
-}
-console.log('120 steps OK');
-console.log('I_led last:', last?.results.branchCurrents.led);
-console.log('I_amm last:', last?.results.branchCurrents.amm);
+  console.log('120 steps OK');
+  console.log('I_led last:', last?.results.branchCurrents.led);
+  console.log('I_amm last:', last?.results.branchCurrents.amm);
 
-const iLed = Math.abs(last?.results.branchCurrents.led?.at(-1) ?? 0);
-if (iLed < 1e-4) {
-  console.warn('WARN: LED current very low — check diode model');
+  const iLed = Math.abs(last?.results.branchCurrents.led?.at(-1) ?? 0);
+  if (iLed < 1e-4) {
+    console.warn('WARN: LED current very low — check diode model');
+  }
+
+  console.log('Demo circuit OK');
+  return true;
 }
 
-console.log('Demo circuit OK');
+const isDirectRun =
+  typeof process !== 'undefined' &&
+  Boolean(process.argv[1]?.replace(/\\/g, '/').includes('demoCircuitTest'));
+
+if (isDirectRun) {
+  if (!runDemoCircuitSelfTest()) process.exit(1);
+}

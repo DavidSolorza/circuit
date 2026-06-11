@@ -12,6 +12,8 @@ const DIFFERENTIAL_VOLTAGE_TYPES = new Set<ComponentType>([
   'potentiometer',
   'voltmeter',
   'ammeter',
+  'lamp',
+  'fuse',
   'voltageSource',
   'currentSource',
 ]);

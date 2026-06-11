@@ -15,6 +15,8 @@ const colors: Record<string, string> = {
   ground: '#6B7280',
   voltmeter: '#60a5fa',
   ammeter: '#60a5fa',
+  lamp: '#fcd34d',
+  fuse: '#f97316',
 };
 
 export function getSymbolColor(type: ComponentType): string {
@@ -517,6 +519,68 @@ export const AmmeterSvg: React.FC<{ size?: number; color?: string; highlight?: b
   );
 };
 
+export const LampSvg: React.FC<{ size?: number; color?: string; highlight?: boolean }> = ({
+  size = 80,
+  color = colors.lamp,
+  highlight,
+}) => {
+  const left = -size / 2;
+  const right = size / 2;
+  const hc = highlight ? '#fde68a' : color;
+  const r = size * 0.22;
+  return (
+    <svg width={size} height={size * 0.55} viewBox={`${left} ${-size * 0.28} ${size} ${size * 0.55}`}>
+      <line x1={left} y1={0} x2={-r} y2={0} {...sp(hc, 2)} />
+      <line x1={r} y1={0} x2={right} y2={0} {...sp(hc, 2)} />
+      <circle cx={0} cy={0} r={r} {...sp(hc, 2)} fill={hc} fillOpacity={0.15} />
+      <path
+        d={`M-${r * 0.35},${r * 0.15} Q0,${-r * 0.55} ${r * 0.35},${r * 0.15}`}
+        {...sp(hc, 1.5)}
+        fill="none"
+      />
+      <TerminalDot x={left} y={0} color={hc} />
+      <TerminalDot x={right} y={0} color={hc} />
+    </svg>
+  );
+};
+
+export const FuseSvg: React.FC<{
+  size?: number;
+  color?: string;
+  highlight?: boolean;
+  closed?: boolean;
+}> = ({ size = 80, color = colors.fuse, highlight, closed = true }) => {
+  const left = -size / 2;
+  const right = size / 2;
+  const hc = highlight ? '#fdba74' : color;
+  const blown = !closed;
+  return (
+    <svg width={size} height={size * 0.5} viewBox={`${left} ${-size * 0.25} ${size} ${size * 0.5}`}>
+      <line x1={left} y1={0} x2={-size * 0.12} y2={0} {...sp(hc, 2)} />
+      <line x1={size * 0.12} y1={0} x2={right} y2={0} {...sp(hc, 2)} />
+      {blown ? (
+        <>
+          <line x1={-size * 0.12} y1={0} x2={-size * 0.04} y2={-size * 0.18} {...sp('#ef4444', 2)} />
+          <line x1={size * 0.04} y1={-size * 0.18} x2={size * 0.12} y2={0} {...sp('#ef4444', 2)} />
+        </>
+      ) : (
+        <rect
+          x={-size * 0.12}
+          y={-size * 0.08}
+          width={size * 0.24}
+          height={size * 0.16}
+          rx={2}
+          {...sp(hc, 1.5)}
+          fill={hc}
+          fillOpacity={0.2}
+        />
+      )}
+      <TerminalDot x={left} y={0} color={hc} />
+      <TerminalDot x={right} y={0} color={hc} />
+    </svg>
+  );
+};
+
 export const symbolComponents: Record<
   string,
   React.FC<{ size?: number; color?: string; highlight?: boolean; closed?: boolean }>
@@ -534,4 +598,6 @@ export const symbolComponents: Record<
   ground: GroundSvg,
   voltmeter: VoltmeterSvg,
   ammeter: AmmeterSvg,
+  lamp: LampSvg,
+  fuse: FuseSvg,
 };

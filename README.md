@@ -95,13 +95,13 @@ Resistencia, Capacitor, Inductor, Batería (+/−), Fuente Corriente, LED, Diodo
 
 ## Estrategia de ramas
 
-| Rama | Persona | Rol |
-|------|---------|-----|
+| Rama | Desarrollador | Rol |
+|------|---------------|-----|
 | `main` | — | Código estable (fuente de verdad) |
 | `release/v1.0` | Equipo | Integración pre-entrega |
-| `feature/luisa-backend` | Luisa | Backend + SPICE |
-| `feature/miguel-editor` | Miguel | Editor React Flow + store |
-| `feature/josue-ui` | Josue | UI/UX + documentación + calidad |
+| `feature/miguel-editor` | Miguel Angel Alvarez Ramirez | Editor React Flow + store |
+| `feature/luisa-backend` | Luisa Fernanda Ibarra Tucano | Backend + SPICE + motor MNA |
+| `feature/josue-ui` | David Josué Solorza Viera | UI/UX + documentación + despliegue |
 | `fix/critical-bugs` | Equipo | Hotfixes |
 
 **Regla:** Nada se mergea a `main` sin aprobación unánime de las 3 personas.

@@ -6,6 +6,8 @@ import {
   GroundElement,
   InductorElement,
   DiodeElement,
+  FuseElement,
+  LampElement,
   LedElement,
   PotentiometerElement,
   ResistorElement,
@@ -41,6 +43,8 @@ export class ElementRegistry {
     this.register('transistor', new TransistorElement());
     this.register('led', new LedElement());
     this.register('diode', new DiodeElement());
+    this.register('lamp', new LampElement());
+    this.register('fuse', new FuseElement());
   }
 
   register(type: EngineElementType, element: BaseElement): void {

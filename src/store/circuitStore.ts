@@ -11,6 +11,7 @@ import type {
 import { genId, makeComponent, makeTerminal, initCircuitState, snapToGrid } from '../utils/circuit';
 import type { WireConnectResult } from '../utils/wireConnect';
 import { stampOscTransition } from '../utils/probeSample';
+import { appBus } from '../shared/bus/AppEventBus';
 
 interface CircuitStore extends AppState {
   addComponent: (type: ComponentType, position: Point) => void;
@@ -38,6 +39,7 @@ interface CircuitStore extends AppState {
   appendOscData: (probeId: string, t: number, v: number) => void;
   clearOscData: () => void;
   resetSimulation: () => void;
+  dischargeCircuit: () => void;
   undo: () => void;
   redo: () => void;
   pushUndo: () => void;
@@ -102,6 +104,13 @@ function addWireBetweenTerminals(
     ...state.circuit.wires,
     [wireId]: { id: wireId, fromTerminalId, toTerminalId },
   });
+
+  const fComp = state.circuit.terminals[fromTerminalId]?.componentId;
+  const tComp = state.circuit.terminals[toTerminalId]?.componentId;
+  if (fComp) appBus.emit('wire:connected', { componentId: fComp, wireId });
+  if (tComp && tComp !== fComp) appBus.emit('wire:connected', { componentId: tComp, wireId });
+  appBus.emit('topology:changed', { wireId });
+
   return { ok: true };
 }
 
@@ -127,6 +136,10 @@ function reconnectWireEndpoints(
     ...state.circuit.wires,
     [wireId]: { id: wireId, fromTerminalId, toTerminalId },
   });
+
+  appBus.emit('wire:reconnected', { wireId, fromTerminalId, toTerminalId });
+  appBus.emit('topology:changed', { wireId });
+
   return { ok: true };
 }
 
@@ -211,6 +224,7 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
       simError: null,
       simTime: 0,
     });
+    appBus.emit('component:added', { componentId: c.id, type });
   },
 
   removeComponent: (id) => {
@@ -245,6 +259,8 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
       simTime: 0,
       simError: null,
     });
+    appBus.emit('component:removed', { componentId: id });
+    appBus.emit('topology:changed', { componentId: id });
   },
 
   updateComponentParam: (id, key, value) => {
@@ -284,15 +300,17 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
     const state = get();
     const comp = state.circuit.components[id];
     if (!comp) return;
+    const snapped = snapToGrid(position);
     set({
       circuit: {
         ...state.circuit,
         components: {
           ...state.circuit.components,
-          [id]: { ...comp, position: snapToGrid(position) },
+          [id]: { ...comp, position: snapped },
         },
       },
     });
+    appBus.emit('component:moved', { componentId: id, position: snapped });
   },
 
   rotateComponent: (id) => {
@@ -312,6 +330,8 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
       simTime: 0,
       simError: null,
     });
+    const newRotation = (comp.rotation + 90) % 360;
+    appBus.emit('component:rotated', { componentId: id, rotation: newRotation });
   },
 
   duplicateComponent: (id) => {
@@ -369,6 +389,8 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
       simError: null,
       simTime: 0,
     });
+    appBus.emit('wire:removed', { wireId });
+    appBus.emit('topology:changed', { wireId });
   },
 
   startConnection: (terminalId) => {
@@ -468,4 +490,14 @@ export const useCircuitStore = create<CircuitStore>((set, get) => ({
   },
 
   resetSimulation: () => set({ simTime: 0, simResults: null, simError: null }),
+
+  dischargeCircuit: () => {
+    set({
+      simulationRunning: false,
+      simResults: null,
+      simTime: 0,
+      simError: null,
+    });
+    appBus.emit('circuit:discharged', {});
+  },
 }));

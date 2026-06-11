@@ -146,6 +146,10 @@
     stroke-width: 3.5 !important;
   }
 
+  .react-flow__edge-path {
+    transition: stroke 0.15s ease;
+  }
+
   .react-flow__node {
     pointer-events: all;
   }
@@ -320,5 +324,26 @@
 
   .osc-probe-chip-off {
     @apply text-ink-faint border-surface-700 bg-transparent;
+  }
+
+  .stats-chip {
+    @apply flex flex-col items-center justify-center px-2 py-1 rounded-md
+           bg-surface-800/80 border border-surface-700 min-w-[52px];
+  }
+
+  .stats-chip-value {
+    @apply text-[11px] font-bold font-mono tabular-nums text-ink;
+  }
+
+  .stats-chip-label {
+    @apply text-[8px] text-ink-faint uppercase tracking-wide;
+  }
+
+  .stats-chip-primary .stats-chip-value {
+    @apply text-primary-600;
+  }
+
+  .stats-chip-gold .stats-chip-value {
+    @apply text-gold-600;
   }
 }

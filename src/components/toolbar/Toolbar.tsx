@@ -6,15 +6,16 @@ import { COMPONENT_CATEGORIES, COMPONENT_TEMPLATES, GRID_SIZE } from '../../core
 import { getComponentTooltip, TOOL_DESCRIPTIONS } from '../../core/tooltips';
 import { getComponentModelStatus } from '../../utils/circuitModelInfo';
 import { loadDemo } from '../../utils/loadDemo';
-import { validateLocalCircuit } from '../../services/localSimulation';
-import { toastError } from '../../shared/store/toastStore';
+import { validateLocalCircuit, resetLocalSimulation } from '../../services/localSimulation';
+import { toastError, toastSuccess } from '../../shared/store/toastStore';
+import { useCircuitStats } from '../../hooks/useCircuitStats';
 import type React from 'react';
 
 const CATEGORY_ACCENT: Record<string, string> = {
   Fuentes: 'bg-red-400',
   Pasivos: 'bg-violet-400',
   Semiconductores: 'bg-amber-400',
-  Lógicos: 'bg-emerald-400',
+  Protección: 'bg-orange-400',
   Medidores: 'bg-sky-400',
   Misceláneos: 'bg-slate-400',
 };
@@ -35,8 +36,7 @@ export function Toolbar() {
   const redo = useCircuitStore((s) => s.redo);
   const undoCount = useCircuitStore((s) => s.undoStack.length);
   const redoCount = useCircuitStore((s) => s.redoStack.length);
-  const compCount = useCircuitStore((s) => Object.keys(s.circuit.components).length);
-  const wireCount = useCircuitStore((s) => Object.keys(s.circuit.wires).length);
+  const stats = useCircuitStats();
 
   const handleDragStart = useCallback((e: React.DragEvent, type: ComponentType) => {
     e.dataTransfer.setData('componentType', type);
@@ -76,7 +76,7 @@ export function Toolbar() {
         <div className="flex items-baseline justify-between gap-2 mb-2.5">
           <h2 className="text-sm font-bold text-ink">Paleta</h2>
           <span className="text-[10px] font-mono text-ink-faint tabular-nums">
-            {compCount} pzs
+            {stats.components} comp · {stats.wires} cables · {stats.electricalNodes} nodos
           </span>
         </div>
         <input
@@ -182,6 +182,22 @@ export function Toolbar() {
           {simulationRunning ? 'Detener' : 'Iniciar simulación'}
         </button>
 
+        <button
+          type="button"
+          onClick={() => {
+            const store = useCircuitStore.getState();
+            if (store.simulationRunning) store.toggleSimulation();
+            store.dischargeCircuit();
+            resetLocalSimulation();
+            store.clearOscData();
+            toastSuccess('Circuito descargado', 'C, L y resultados reiniciados a 0.');
+          }}
+          className="btn-toolbar-secondary w-full"
+          title="Reinicia cargas de capacitores e inductores"
+        >
+          Descargar C / L
+        </button>
+
         <div className="flex gap-2">
           <button type="button" onClick={undo} disabled={undoCount === 0} className="btn-toolbar-icon">
             ↶ Deshacer
@@ -192,9 +208,9 @@ export function Toolbar() {
         </div>
 
         <p className="text-[10px] text-ink-faint text-center leading-snug">
-          {wireCount} cables
-          {compCount > 0 && !simulationRunning && ' · listo para Iniciar'}
-          {compCount > 0 && simulationRunning && ' · simulando…'}
+          {stats.electricalNodes} nodos · {stats.wires} cables · {stats.branches} ramas
+          {stats.components > 0 && !simulationRunning && ' · listo para Iniciar'}
+          {stats.components > 0 && simulationRunning && ' · simulando…'}
         </p>
       </div>
     </div>

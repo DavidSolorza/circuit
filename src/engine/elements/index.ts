@@ -356,6 +356,60 @@ export class LedElement extends PiecewiseDiodeElement {
   }
 }
 
+/** Bombilla incandescente — modelo resistivo (R + brillo por potencia). */
+export class LampElement extends BaseElement {
+  readonly type = 'lamp';
+
+  stamp(ctx: StampContext, component: EngineComponent): void {
+    const nodes = this.getNodes(ctx, component);
+    if (!nodes) return;
+    const R = component.params.resistance ?? 220;
+    if (R <= 0) return;
+    this.stampConductance(ctx, nodes[0], nodes[1], 1 / R);
+  }
+
+  protected calculateCurrentFromVoltage(voltage: number, _ctx: StampContext, component: EngineComponent): number {
+    const R = component.params.resistance ?? 220;
+    if (R <= 0) return 0;
+    return voltage / R;
+  }
+
+  validate(component: EngineComponent): string[] {
+    const R = component.params.resistance ?? 0;
+    if (R <= 0) return [`Bombilla '${component.label}' debe tener R > 0.`];
+    return [];
+  }
+}
+
+/** Fusible — conducta serie; abierto = alta impedancia. */
+export class FuseElement extends BaseElement {
+  readonly type = 'fuse';
+  private static readonly R_ON = 0.05;
+  private static readonly R_OFF = 1e9;
+
+  stamp(ctx: StampContext, component: EngineComponent): void {
+    const nodes = this.getNodes(ctx, component);
+    if (!nodes) return;
+    const blown = (component.params.isBlown ?? 0) >= 0.5;
+    const R = blown ? FuseElement.R_OFF : FuseElement.R_ON;
+    this.stampConductance(ctx, nodes[0], nodes[1], 1 / R);
+  }
+
+  protected calculateCurrentFromVoltage(voltage: number, _ctx: StampContext, component: EngineComponent): number {
+    const blown = (component.params.isBlown ?? 0) >= 0.5;
+    const R = blown ? FuseElement.R_OFF : FuseElement.R_ON;
+    return voltage / R;
+  }
+
+  validate(component: EngineComponent): string[] {
+    const b = component.params.isBlown;
+    if (b !== undefined && b !== 0 && b !== 1) {
+      return [`Fusible '${component.label}': estado inválido (0 = OK, 1 = fundido).`];
+    }
+    return [];
+  }
+}
+
 /** Placeholder: alta impedancia entre terminales (aún no hay modelo BJT). */
 export class TransistorElement extends BaseElement {
   readonly type = 'transistor';

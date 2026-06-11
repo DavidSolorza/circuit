@@ -16,19 +16,24 @@ export function wireToReactFlowEdge(
   const targetComp = components[toTerm.componentId];
   if (!sourceComp || !targetComp) return null;
 
+  const srcRot = sourceComp.rotation ?? 0;
+  const tgtRot = targetComp.rotation ?? 0;
+
   return {
     id: wire.id,
     source: fromTerm.componentId,
     target: toTerm.componentId,
     sourceHandle: `term${fromTerm.index}`,
     targetHandle: `term${toTerm.index}`,
-    type: 'step',
-    pathOptions: { borderRadius: 10, offset: 6 },
+    type: 'smoothstep',
+    pathOptions: { borderRadius: 18, offset: 10 },
     deletable: true,
     reconnectable: true,
     selected,
     zIndex: selected ? 20 : 10,
     interactionWidth: 28,
+    animated: false,
+    data: { srcRot, tgtRot },
     style: {
       stroke: selected ? '#C9A86A' : '#4B5563',
       strokeWidth: selected ? 3.5 : 2.5,

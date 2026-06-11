@@ -1,5 +1,5 @@
-import React, { memo } from 'react';
-import { Handle, Position, type NodeProps } from 'reactflow';
+import React, { memo, useEffect } from 'react';
+import { Handle, Position, useUpdateNodeInternals, type NodeProps } from 'reactflow';
 import {
   ResistorSvg,
   CapacitorSvg,
@@ -14,11 +14,18 @@ import {
   GroundSvg,
   VoltmeterSvg,
   AmmeterSvg,
+  LampSvg,
+  FuseSvg,
   getSymbolColor,
 } from '../../components/symbols';
 import type { ComponentType } from '../../types';
 import { useCircuitStore } from '../../store/circuitStore';
-import { getHandleConfig, getHandlePositionCSS } from '../../utils/componentHandles';
+import {
+  getRotatedHandleConfig,
+  getHandlePositionCSS,
+  sideToFlowPosition,
+  type HandleConfig,
+} from '../../utils/componentHandles';
 import { getComponentReadings } from '../../utils/componentReadings';
 import { fmtI, fmtV } from '../../utils/formatElectrical';
 
@@ -39,6 +46,8 @@ const symbolMap: Record<
   ground: GroundSvg,
   voltmeter: VoltmeterSvg,
   ammeter: AmmeterSvg,
+  lamp: LampSvg,
+  fuse: FuseSvg,
 };
 
 export interface ComponentNodeData {
@@ -53,6 +62,7 @@ const NODE_SIZE = 96;
 const GROUND_SIZE = 80;
 
 function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
+  const updateNodeInternals = useUpdateNodeInternals();
   const Sym = symbolMap[data.type];
   const color = getSymbolColor(data.type);
   const isGround = data.type === 'ground';
@@ -60,22 +70,34 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
   const symbolSize = isGround ? 56 : 68;
 
   const simulationRunning = useCircuitStore((s) => s.simulationRunning);
-  const circuit = useCircuitStore((s) => s.circuit);
+  const comp = useCircuitStore((s) => s.circuit.components[id]);
   const simResults = useCircuitStore((s) => s.simResults);
-  const comp = circuit.components[id];
+  /** Store es la fuente de verdad — data.rotation de React Flow puede ir desfasado. */
+  const rotation = comp?.rotation ?? data.rotation ?? 0;
+
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, rotation, updateNodeInternals]);
   const hasReadings = simResults?.status?.success ?? false;
-  const readings = comp && hasReadings ? getComponentReadings(circuit, simResults, comp) : null;
+  const readings =
+    comp && hasReadings
+      ? getComponentReadings(useCircuitStore.getState().circuit, simResults, comp)
+      : null;
 
   const current = readings?.current ?? 0;
   const compVoltage = readings?.voltage ?? null;
 
   const ledVf = data.params?.forwardVoltage ?? 2;
   const forwardVd = compVoltage !== null ? -compVoltage : 0;
+  const lampPower = readings?.power ?? 0;
+  const isLampLit =
+    data.type === 'lamp' && hasReadings && lampPower > 0.01 && Math.abs(current) > 1e-6;
   const isLit =
-    data.type === 'led' &&
-    hasReadings &&
-    forwardVd >= ledVf * 0.75 &&
-    Math.abs(current) > 1e-6;
+    (data.type === 'led' &&
+      hasReadings &&
+      forwardVd >= ledVf * 0.75 &&
+      Math.abs(current) > 1e-6) ||
+    isLampLit;
 
   const showCurrent =
     data.type === 'ammeter' ||
@@ -114,7 +136,8 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
 
   const hc = selected ? '#C9A86A' : color;
   const switchClosed = data.params?.isClosed === 1;
-  const handleConfigs = getHandleConfig(data.type);
+  const fuseOk = (data.params?.isBlown ?? 0) < 0.5;
+  const handleConfigs = getRotatedHandleConfig(data.type, rotation);
   const hasMeasurement = Boolean(voltageStr || currentStr);
 
   const positionMap: Record<string, Position> = {
@@ -127,7 +150,7 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
   const handleBase =
     '!w-4 !h-4 !border-2 !border-surface-900 !cursor-crosshair !transition-all !duration-150 hover:!scale-125 !shadow-md';
 
-  const getHandleColor = (handleCfg: ReturnType<typeof getHandleConfig>[0]) => {
+  const getHandleColor = (handleCfg: HandleConfig) => {
     if (handleCfg.isPositive === true) return handleBase + ' !bg-red-500 hover:!bg-red-400';
     if (handleCfg.isPositive === false) return handleBase + ' !bg-blue-500 hover:!bg-blue-400';
     return handleBase + ' !bg-primary-500 hover:!bg-primary-400';
@@ -136,7 +159,7 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
   return (
     <div
       className={`
-      relative flex items-center justify-center rounded-xl transition-all duration-200 select-none
+      relative flex items-center justify-center rounded-xl transition-shadow duration-200 select-none
       border shadow-sm
       ${isGround ? 'w-20 h-20' : 'w-24 h-24'}
       ${
@@ -146,15 +169,16 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
       }
       ${isLit ? 'ring-2 ring-yellow-400/90 border-yellow-500/40 shadow-lg shadow-yellow-400/20' : ''}
     `}
-      style={{ transform: `rotate(${data.rotation}deg)`, zIndex: selected ? 10 : 1 }}
+      style={{ zIndex: selected ? 10 : 1 }}
     >
       {handleConfigs.map((handleCfg) => {
-        const pos = positionMap[handleCfg.position] || Position.Left;
-        const isHidden = isGround && handleCfg.position !== 'top';
+        const flowSide = sideToFlowPosition(handleCfg.position);
+        const pos = positionMap[flowSide] || Position.Left;
+        const isHidden = false;
 
         return (
           <Handle
-            key={handleCfg.id}
+            key={`${handleCfg.id}-${rotation}`}
             type="source"
             position={pos}
             id={handleCfg.id}
@@ -164,14 +188,31 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
                 ? '!w-0 !h-0 !opacity-0'
                 : `${getHandleColor(handleCfg)} circuit-handle !opacity-100`
             }
-            style={isHidden ? {} : getHandlePositionCSS(handleCfg, { width: box, height: box })}
+            style={
+              isHidden
+                ? {}
+                : getHandlePositionCSS(
+                    { ...handleCfg, position: flowSide },
+                    { width: box, height: box },
+                  )
+            }
           />
         );
       })}
 
-      {Sym && (
-        <Sym size={symbolSize} color={isLit ? '#ffdd44' : hc} highlight={selected} closed={switchClosed} />
-      )}
+      <div
+        className="flex items-center justify-center"
+        style={{ transform: `rotate(${rotation}deg)` }}
+      >
+        {Sym && (
+          <Sym
+            size={symbolSize}
+            color={isLit ? '#ffdd44' : hc}
+            highlight={selected}
+            closed={data.type === 'fuse' ? fuseOk : switchClosed}
+          />
+        )}
+      </div>
       {isLit && (
         <div className="absolute inset-0 rounded-xl pointer-events-none shadow-[0_0_14px_6px_rgba(255,220,50,0.22)]" />
       )}
