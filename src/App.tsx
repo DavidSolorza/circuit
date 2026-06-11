@@ -263,11 +263,10 @@ function AppInner() {
               <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint mb-2">
                 Desarrollado por
               </p>
-              <ul className="space-y-1.5 text-left">
+              <ul className="space-y-1 text-left">
                 {TEAM_MEMBERS.map((m) => (
-                  <li key={m.name}>
-                    <p className="text-[11px] font-medium text-ink">{m.name}</p>
-                    <p className="text-[9px] text-ink-faint">{m.role}</p>
+                  <li key={m.name} className="text-[11px] font-medium text-ink">
+                    {m.name}
                   </li>
                 ))}
               </ul>

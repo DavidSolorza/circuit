@@ -50,11 +50,10 @@ export function DemoGuidePanel() {
 
       <div className="guide-card border-primary-500/20 bg-primary-950/20">
         <h3 className="text-sm font-semibold text-ink mb-2">Equipo de desarrollo</h3>
-        <ul className="space-y-2">
+        <ul className="space-y-1">
           {TEAM_MEMBERS.map((member) => (
-            <li key={member.name}>
-              <p className="text-ink text-[11px] font-medium">{member.name}</p>
-              <p className="text-[10px] text-ink-faint">{member.role}</p>
+            <li key={member.name} className="text-ink text-[11px] font-medium">
+              {member.name}
             </li>
           ))}
         </ul>
