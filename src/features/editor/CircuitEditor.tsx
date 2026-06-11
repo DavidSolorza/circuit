@@ -1,6 +1,7 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import ReactFlow, {
   Background,
+  BackgroundVariant,
   Controls,
   MiniMap,
   ConnectionMode,
@@ -21,6 +22,7 @@ import { wireConnectMessage } from '../../utils/wireConnect';
 import { wireToReactFlowEdge } from '../../utils/wireToEdge';
 import type { ComponentType, Point } from '../../types';
 import { GRID_SIZE } from '../../core/constants';
+import { registerDemoLoadedHandler } from '../../utils/demoUi';
 
 const nodeTypes = { component: ComponentNode };
 
@@ -31,6 +33,15 @@ interface Props {
 
 function CanvasInner({ width, height }: Props) {
   const rf = useReactFlow();
+
+  useEffect(() => {
+    return registerDemoLoadedHandler(() => {
+      window.setTimeout(
+        () => rf.fitView({ padding: 0.22, maxZoom: 1.15, duration: 350 }),
+        80,
+      );
+    });
+  }, [rf]);
   const components = useCircuitStore((s) => s.circuit.components);
   const wires = useCircuitStore((s) => s.circuit.wires);
   const terminals = useCircuitStore((s) => s.circuit.terminals);
@@ -273,18 +284,32 @@ function CanvasInner({ width, height }: Props) {
         elementsSelectable={true}
         nodeDragThreshold={0}
         fitView
-        fitViewOptions={{ padding: 0.3, maxZoom: 1.5 }}
+        fitViewOptions={{ padding: 0.22, maxZoom: 1.15 }}
         minZoom={0.1}
         maxZoom={3}
         defaultEdgeOptions={{
-          type: 'smoothstep',
-          style: { stroke: '#374151', strokeWidth: 3 },
+          type: 'step',
+          pathOptions: { borderRadius: 10, offset: 6 },
+          style: { stroke: '#4B5563', strokeWidth: 2.5 },
           interactionWidth: 24,
           deletable: true,
           reconnectable: true,
         }}
+        proOptions={{ hideAttribution: true }}
       >
-        <Background color="#E8E0D0" gap={GRID_SIZE} size={1} />
+        <Background
+          variant={BackgroundVariant.Lines}
+          color="#E0D8C8"
+          gap={GRID_SIZE}
+          size={1}
+        />
+        <Background
+          variant={BackgroundVariant.Dots}
+          color="#C9BFA8"
+          gap={GRID_SIZE}
+          size={1.2}
+          style={{ opacity: 0.45 }}
+        />
         <Controls
           showInteractive={false}
           className="!bg-surface-800 !border-surface-700 !rounded-lg !shadow-sm !text-surface-500"

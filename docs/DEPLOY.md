@@ -25,9 +25,11 @@ git push origin main
 
 1. Entra en [vercel.com](https://vercel.com) → **Add New Project**.
 2. Importa el repo de GitHub.
-3. Vercel detecta Vite; el archivo `vercel.json` ya define el build:
+3. En **Settings → General** del proyecto Vercel:
+   - **Framework Preset:** `Other` (no elijas FastAPI ni Python)
+   - **Root Directory:** vacío
    - **Install:** `pnpm install`
-   - **Build:** `pnpm build`
+   - **Build:** `pnpm build` (o deja que use `vercel-build` del `package.json`)
    - **Output:** `dist`
 4. **Deploy** (sin tocar nada más).
 
@@ -92,7 +94,7 @@ Copia local: `.env.example` → `.env`
 | Problema | Solución |
 |----------|----------|
 | Build falla en Vercel | Framework = **Vite** (no FastAPI). `vercel.json` ya fuerza `framework: vite`. Root Directory vacío. |
-| `No FastAPI entrypoint found` | Vercel confundió el repo con Python. Redeploy tras el fix; el backend va solo en **Render**. |
+| `No FastAPI entrypoint found` | En Vercel → Settings → General → **Framework Preset = Other** (no FastAPI). `vercel.json` usa `@vercel/static-build` solo para el front. Backend solo en **Render**. |
 | `No Output Directory named dist` | En Vercel → Settings → **Output Directory** = `dist`. El `.vercelignore` ya incluye `!dist`. |
 | Pantalla en blanco | Revisa la consola del navegador; `vercel.json` ya incluye rewrite SPA. |
 | API en Render “duerme” (plan free) | La primera petición tarda ~30 s; es normal en el plan gratuito. |

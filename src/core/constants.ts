@@ -4,8 +4,8 @@ export const GRID_SIZE = 30;
 export const CANVAS_WIDTH = 2000;
 export const CANVAS_HEIGHT = 2000;
 
-export const COMPONENT_WIDTH = 100;
-export const COMPONENT_HEIGHT = 50;
+export const COMPONENT_WIDTH = 96;
+export const COMPONENT_HEIGHT = 96;
 export const TERMINAL_RADIUS = 6;
 
 export const DT = 1 / 60;

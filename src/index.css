@@ -130,19 +130,24 @@
   }
 
   .react-flow__edge-path {
-    stroke: #374151 !important;
-    stroke-width: 3 !important;
+    stroke: #4b5563 !important;
+    stroke-width: 2.5 !important;
     stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
   .react-flow__edge:hover .react-flow__edge-path {
     stroke: #1f4d3a !important;
-    stroke-width: 4 !important;
+    stroke-width: 3.5 !important;
   }
 
   .react-flow__edge.selected .react-flow__edge-path {
     stroke: #c9a86a !important;
-    stroke-width: 4 !important;
+    stroke-width: 3.5 !important;
+  }
+
+  .react-flow__node {
+    pointer-events: all;
   }
 
   .react-flow__handle {

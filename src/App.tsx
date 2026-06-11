@@ -57,7 +57,7 @@ function AppInner() {
   const handleLoadDemo = useCallback(() => loadDemo(), []);
 
   useEffect(() => {
-    registerDemoLoadedHandler(() => {
+    return registerDemoLoadedHandler(() => {
       setSidebarOpen(true);
       setSidebarTab('guide');
     });

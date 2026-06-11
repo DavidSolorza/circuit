@@ -19,21 +19,25 @@ function byType(s: Store, type: ComponentType) {
   return c;
 }
 
+/** Espaciado uniforme de la cuadrícula del demo (cuadrado). */
+export const DEMO_CELL = GRID_SIZE * 5;
+
 /**
  * Circuito demo completo — todos los tipos de componente.
  *
- * Rama principal: Bat → SW → A → R → D → LED → L → GND
- * Paralelos: C y VM sobre LED; Pot sobre R; Trans sobre LED (visual).
- * Fuente de corriente en el canvas (sin cablear) para mostrar el símbolo.
+ * Lazo en U compacto (~5×4 celdas):
+ *        VM   Pot
+ *   Bat → SW → A → R
+ *   |              ↓
+ *   GND ← L ← LED ← D
+ *              Cap
  */
 export function loadDemo(onReady?: () => void): void {
-  const colGap = GRID_SIZE * 7;
-  const originX = 90;
-  const rowMain = 200;
-  const rowVisual = rowMain - GRID_SIZE * 4;
-  const rowAux = rowMain + GRID_SIZE * 4;
-  const rowGnd = rowMain + GRID_SIZE * 5;
-  const x = (col: number) => originX + col * colGap;
+  const gap = DEMO_CELL;
+  const originX = 180;
+  const originY = 130;
+  const at = (col: number, row: number) =>
+    snap({ x: originX + col * gap, y: originY + row * gap });
 
   useCircuitStore.setState({
     circuit: initCircuitState(),
@@ -52,19 +56,21 @@ export function loadDemo(onReady?: () => void): void {
 
   const gs = () => useCircuitStore.getState();
 
-  gs().addComponent('voltageSource', snap({ x: x(0), y: rowMain }));
-  gs().addComponent('switch', snap({ x: x(1), y: rowMain }));
-  gs().addComponent('ammeter', snap({ x: x(2), y: rowMain }));
-  gs().addComponent('resistor', snap({ x: x(3), y: rowMain }));
-  gs().addComponent('diode', snap({ x: x(4), y: rowMain }));
-  gs().addComponent('led', snap({ x: x(5), y: rowMain }));
-  gs().addComponent('inductor', snap({ x: x(6), y: rowMain }));
-  gs().addComponent('capacitor', snap({ x: x(7), y: rowMain }));
-  gs().addComponent('ground', snap({ x: x(5), y: rowGnd }));
-  gs().addComponent('voltmeter', snap({ x: x(5), y: rowAux }));
-  gs().addComponent('currentSource', snap({ x: x(2), y: rowAux }));
-  gs().addComponent('potentiometer', snap({ x: x(3), y: rowVisual }));
-  gs().addComponent('transistor', snap({ x: x(5), y: rowVisual }));
+  // Rama serie (→ y luego ←)
+  gs().addComponent('voltageSource', at(1, 1));
+  gs().addComponent('switch', at(2, 1));
+  gs().addComponent('ammeter', at(3, 1));
+  gs().addComponent('resistor', at(4, 1));
+  gs().addComponent('diode', at(4, 2));
+  gs().addComponent('led', at(3, 2));
+  gs().addComponent('inductor', at(2, 2));
+  gs().addComponent('ground', at(1, 3));
+  // Paralelos alineados
+  gs().addComponent('capacitor', at(3, 3));
+  gs().addComponent('voltmeter', at(3, 0));
+  gs().addComponent('potentiometer', at(4, 0));
+  gs().addComponent('transistor', at(0, 2));
+  gs().addComponent('currentSource', at(0, 0));
 
   const s = gs();
   const bat = byType(s, 'voltageSource');

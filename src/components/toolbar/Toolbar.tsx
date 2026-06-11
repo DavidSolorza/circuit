@@ -44,11 +44,12 @@ export function Toolbar() {
   const handleAddComponent = useCallback(
     (type: ComponentType) => {
       const count = Object.keys(useCircuitStore.getState().circuit.components).length;
-      const col = count % 3;
-      const row = Math.floor(count / 3);
+      const col = count % 4;
+      const row = Math.floor(count / 4);
+      const cell = GRID_SIZE * 5;
       addComponent(type, {
-        x: 180 + col * GRID_SIZE * 8,
-        y: 180 + row * GRID_SIZE * 6,
+        x: 180 + col * cell,
+        y: 130 + row * cell,
       });
       setActiveTool('select');
     },
