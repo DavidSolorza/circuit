@@ -1,20 +1,69 @@
 import { useCircuitStore } from '../../store/circuitStore';
+import { toastInfo, toastSuccess } from '../../shared/store/toastStore';
 import { COMPONENT_TEMPLATES } from '../../core/constants';
 import { useMultimeter } from '../../hooks/useMultimeter';
-import { fmtV, fmtI } from '../../utils/formatElectrical';
+import { fmtV, fmtI, fmtP } from '../../utils/formatElectrical';
+import { currentDirectionLabel } from '../../utils/componentReadings';
+import { getComponentModelStatus } from '../../utils/circuitModelInfo';
+import { ParamNumberField } from './ParamNumberField';
 
 export function PropertiesPanel() {
   const selectedId = useCircuitStore((s) => s.selectedComponentId);
+  const selectedWireId = useCircuitStore((s) => s.selectedWireId);
+  const wires = useCircuitStore((s) => s.circuit.wires);
+  const terminals = useCircuitStore((s) => s.circuit.terminals);
   const components = useCircuitStore((s) => s.circuit.components);
   const comp = selectedId ? components[selectedId] : null;
+  const wire = selectedWireId ? wires[selectedWireId] : null;
   const updateParam = useCircuitStore((s) => s.updateComponentParam);
   const rotate = useCircuitStore((s) => s.rotateComponent);
   const duplicate = useCircuitStore((s) => s.duplicateComponent);
   const remove = useCircuitStore((s) => s.removeComponent);
+  const removeWire = useCircuitStore((s) => s.removeWire);
   const addProbe = useCircuitStore((s) => s.addProbe);
   const simulationRunning = useCircuitStore((s) => s.simulationRunning);
   const simResults = useCircuitStore((s) => s.simResults);
   const { readComponent } = useMultimeter();
+
+  if (!comp && wire) {
+    const fromTerm = terminals[wire.fromTerminalId];
+    const toTerm = terminals[wire.toTerminalId];
+    const fromComp = fromTerm ? components[fromTerm.componentId] : null;
+    const toComp = toTerm ? components[toTerm.componentId] : null;
+
+    return (
+      <div className="p-4 space-y-3">
+        <div className="panel-label">Cable seleccionado</div>
+        <div className="panel-section space-y-2 text-[11px] text-ink-muted">
+          <div>
+            <span className="text-ink-faint">Desde:</span>{' '}
+            <span className="font-medium text-ink">
+              {fromComp?.label ?? '?'} (T{(fromTerm?.index ?? 0) + 1})
+            </span>
+          </div>
+          <div>
+            <span className="text-ink-faint">Hasta:</span>{' '}
+            <span className="font-medium text-ink">
+              {toComp?.label ?? '?'} (T{(toTerm?.index ?? 0) + 1})
+            </span>
+          </div>
+        </div>
+        <p className="text-[10px] text-ink-faint leading-relaxed">
+          Arrastra un <span className="text-primary-600 font-medium">extremo</span> del cable hacia
+          otro punto de conexión para reconectar.
+        </p>
+        <button
+          onClick={() => {
+            removeWire(wire.id);
+            toastInfo('Cable eliminado');
+          }}
+          className="w-full py-2 rounded-lg text-[11px] bg-red-50 text-red-600 hover:bg-red-100 transition-colors border border-red-200 font-medium"
+        >
+          Eliminar cable
+        </button>
+      </div>
+    );
+  }
 
   if (!comp) {
     return (
@@ -32,59 +81,63 @@ export function PropertiesPanel() {
             <path d="M9 9h6v6H9z" />
           </svg>
         </div>
-        <p className="text-xs text-ink-muted">Ningún componente seleccionado</p>
-        <p className="text-[10px] text-ink-faint mt-1">Haz clic en un componente del canvas</p>
+        <p className="text-xs text-ink-muted">Nada seleccionado</p>
+        <p className="text-[10px] text-ink-faint mt-1">
+          Clic en componente o cable · Supr para eliminar
+        </p>
       </div>
     );
   }
 
   const template = COMPONENT_TEMPLATES[comp.type];
   const readings = readComponent(comp);
-  const simOk = simulationRunning && simResults?.status.success;
+  const hasSimResults = simResults?.status.success ?? false;
+  const simLive = simulationRunning && hasSimResults;
+  const modelStatus = getComponentModelStatus(comp);
 
   return (
     <div className="p-4 space-y-3">
+      {modelStatus.approximated && modelStatus.message && (
+        <div className="rounded-lg border border-gold-200 bg-gold-50 px-2.5 py-2 text-[10px] text-gold-800">
+          <div className="font-semibold">Modelo aproximado</div>
+          <div className="mt-0.5 opacity-90">{modelStatus.message}</div>
+        </div>
+      )}
+
       <div className="space-y-1">
         <div className="text-sm font-semibold text-ink uppercase tracking-wide">
           {template?.label ?? comp.type}
         </div>
-        <div className="text-[10px] text-ink-faint font-mono">ID: {comp.id.slice(0, 12)}</div>
         <div className="text-[10px] text-ink-faint font-mono tabular-nums">
-          Pos: ({Math.round(comp.position.x)}, {Math.round(comp.position.y)}) · Rot: {comp.rotation}
-          °
+          Pos ({Math.round(comp.position.x)}, {Math.round(comp.position.y)}) · {comp.rotation}°
         </div>
+        {comp.type === 'ammeter' && (
+          <p className="text-[10px] text-ink-faint mt-1">Va en serie con la rama que quieres medir.</p>
+        )}
+        {comp.type === 'voltmeter' && (
+          <p className="text-[10px] text-ink-faint mt-1">Va en paralelo entre los dos puntos.</p>
+        )}
+        {comp.type === 'voltageSource' && (
+          <p className="text-[10px] text-ink-faint mt-1">
+            Polo <span className="text-red-500 font-medium">+</span> (derecha) al circuito; polo{' '}
+            <span className="text-blue-500 font-medium">−</span> (izquierda) a GND.
+          </p>
+        )}
       </div>
 
       {template?.paramDefs && template.paramDefs.length > 0 && (
         <div className="panel-section space-y-2.5">
           <div className="panel-label">Parámetros</div>
-          {template.paramDefs.map((def) => (
-            <div key={def.key}>
-              <label className="text-[10px] text-ink-faint">
-                {def.label} ({def.unit})
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="range"
-                  min={def.min}
-                  max={def.max}
-                  step={def.step}
-                  value={comp.params[def.key] ?? def.min}
-                  onChange={(e) => updateParam(comp.id, def.key, parseFloat(e.target.value))}
-                  className="flex-1 h-1 bg-surface-700 rounded-lg appearance-none cursor-pointer accent-primary-500"
-                />
-                <span className="text-[10px] text-ink-muted font-mono w-16 text-right tabular-nums">
-                  {comp.params[def.key]?.toFixed(
-                    def.step < 1
-                      ? def.key === 'capacitance' || def.key === 'inductance'
-                        ? 8
-                        : 1
-                      : 0,
-                  )}
-                </span>
-              </div>
-            </div>
-          ))}
+          {template.paramDefs
+            .filter((def) => def.key !== 'isClosed')
+            .map((def) => (
+              <ParamNumberField
+                key={def.key}
+                def={def}
+                value={comp.params[def.key] ?? def.min}
+                onCommit={(v) => updateParam(comp.id, def.key, v)}
+              />
+            ))}
           {comp.type === 'switch' && (
             <button
               onClick={() => updateParam(comp.id, 'isClosed', comp.params.isClosed ? 0 : 1)}
@@ -100,40 +153,65 @@ export function PropertiesPanel() {
         </div>
       )}
 
-      {simOk && (
+      {hasSimResults && (
         <div className="panel-section space-y-2">
           <div className="panel-label flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span
+              className={`w-2 h-2 rounded-full ${simLive ? 'bg-green-500 animate-pulse' : 'bg-surface-500'}`}
+            />
             Mediciones
+            {!simLive && (
+              <span className="text-[9px] text-ink-faint font-normal normal-case">(pausado)</span>
+            )}
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-surface-950/40 rounded-md p-2 border border-surface-700/50">
-              <div className="metric-label">Voltaje</div>
-              <div className="text-xs font-mono text-primary-600 font-semibold tabular-nums">
-                {fmtV(readings.voltage)}
-              </div>
-            </div>
-            <div className="bg-surface-950/40 rounded-md p-2 border border-surface-700/50">
-              <div className="metric-label">Corriente</div>
-              <div className="text-xs font-mono text-primary-600 font-semibold tabular-nums">
+          {comp.type === 'ammeter' ? (
+            <div className="bg-surface-950/40 rounded-md p-2.5 border border-primary-500/20 space-y-1">
+              <div className="metric-label">Corriente en serie</div>
+              <div className="text-sm font-mono text-primary-600 font-bold tabular-nums">
                 {fmtI(readings.current)}
               </div>
-            </div>
-            <div className="bg-surface-950/40 rounded-md p-2 border border-surface-700/50 col-span-2">
-              <div className="metric-label">Potencia</div>
-              <div className="text-xs font-mono text-gold-600 font-semibold tabular-nums">
-                {Math.abs(readings.voltage * readings.current) >= 1
-                  ? `${(readings.voltage * readings.current).toFixed(3)} W`
-                  : `${(readings.voltage * readings.current * 1e3).toFixed(2)} mW`}
+              <div className="text-[9px] text-ink-faint">
+                {currentDirectionLabel(readings.current)} · caída {fmtV(readings.voltage)}
               </div>
             </div>
-          </div>
+          ) : comp.type === 'voltmeter' ? (
+            <div className="bg-surface-950/40 rounded-md p-2.5 border border-primary-500/20 space-y-1">
+              <div className="metric-label">Voltaje medido</div>
+              <div className="text-sm font-mono text-primary-600 font-bold tabular-nums">
+                {fmtV(readings.voltage)}
+              </div>
+              <div className="text-[9px] text-ink-faint">
+                Fuga interna: {fmtI(readings.current)}
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-surface-950/40 rounded-md p-2 border border-surface-700/50">
+                <div className="metric-label">Voltaje</div>
+                <div className="text-xs font-mono text-primary-600 font-semibold tabular-nums">
+                  {fmtV(readings.voltage)}
+                </div>
+              </div>
+              <div className="bg-surface-950/40 rounded-md p-2 border border-surface-700/50">
+                <div className="metric-label">Corriente</div>
+                <div className="text-xs font-mono text-primary-600 font-semibold tabular-nums">
+                  {fmtI(readings.current)}
+                </div>
+              </div>
+              <div className="bg-surface-950/40 rounded-md p-2 border border-surface-700/50 col-span-2">
+                <div className="metric-label">Potencia</div>
+                <div className="text-xs font-mono text-gold-600 font-semibold tabular-nums">
+                  {fmtP(readings.power)}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       <div className="h-px bg-surface-700" />
 
-      <div className="grid grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5">
         <button
           onClick={() => rotate(comp.id)}
           className="px-2 py-1.5 rounded-md text-[10px] bg-surface-800 text-ink-muted hover:text-ink hover:bg-surface-700 transition-colors border border-surface-700"
@@ -149,11 +227,36 @@ export function PropertiesPanel() {
           ⊞ Duplicar
         </button>
         <button
-          onClick={() => addProbe('voltage', comp.id, 0)}
+          onClick={() => {
+            const before = useCircuitStore.getState().probes.length;
+            addProbe('voltage', comp.id, 0);
+            const after = useCircuitStore.getState().probes.length;
+            if (after > before) {
+              toastSuccess('Sonda de voltaje', 'Añadida al osciloscopio');
+            } else {
+              toastInfo('Sonda existente', 'Ya hay una sonda V en este componente');
+            }
+          }}
           className="px-2 py-1.5 rounded-md text-[10px] bg-gold-50 text-gold-700 hover:bg-gold-100 transition-colors border border-gold-200 font-medium"
-          title="Añadir sonda"
+          title="Sonda de voltaje al osciloscopio"
         >
-          Sonda
+          +V osc
+        </button>
+        <button
+          onClick={() => {
+            const before = useCircuitStore.getState().probes.length;
+            addProbe('current', comp.id);
+            const after = useCircuitStore.getState().probes.length;
+            if (after > before) {
+              toastSuccess('Sonda de corriente', 'Añadida al osciloscopio');
+            } else {
+              toastInfo('Sonda existente', 'Ya hay una sonda I en este componente');
+            }
+          }}
+          className="px-2 py-1.5 rounded-md text-[10px] bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors border border-primary-200 font-medium"
+          title="Sonda de corriente al osciloscopio"
+        >
+          +I osc
         </button>
       </div>
 

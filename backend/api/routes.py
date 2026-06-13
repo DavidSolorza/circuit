@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api")
 
 @router.get("/health")
 def health():
-    return {"status": "ok", "version": "0.1.1"}
+    return {"status": "ok", "version": "0.1.2"}
 
 
 @router.post("/simulate", response_model=SimulationResponse)

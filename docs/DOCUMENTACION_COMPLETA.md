@@ -23,9 +23,9 @@ Simulador de circuitos eléctricos interactivo con **tema claro profesional** (c
 
 | Persona    | Rama                    | Rol Principal                                                                 |
 | ---------- | ----------------------- | ----------------------------------------------------------------------------- |
-| **Luisa**  | `feature/luisa-backend` | **Simulación eléctrica** — `src/engine/`, backend MNA, validación, tests      |
-| **Miguel** | `feature/miguel-editor` | **Editor** — React Flow, store, cables, atajos (no toca `src/engine/`)        |
-| **Josue**  | `feature/josue-ui`      | **UI/UX**, paneles, calculadora, docs, coordinación del equipo                |
+| **Luisa Fernanda Ibarra Tucano** | `feature/luisa-backend` | **Simulación eléctrica** — `src/engine/`, backend MNA, validación, tests      |
+| **Miguel Angel Alvarez Ramirez** | `feature/miguel-editor` | **Editor** — React Flow, store, cables, atajos (no toca `src/engine/`)        |
+| **David Josué Solorza Viera** | `feature/josue-ui`      | **UI/UX**, paneles, calculadora, docs, coordinación del equipo                |
 
 > **Documentación de tareas por persona:** [TAREAS-POR-RAMA.md](TAREAS-POR-RAMA.md) · [TAREAS-LUISA.md](TAREAS-LUISA.md) · [TAREAS-MIGUEL.md](TAREAS-MIGUEL.md) · [TAREAS-JOSUE.md](TAREAS-JOSUE.md)
 
@@ -441,4 +441,4 @@ git push origin feature/josue-ui
 
 ---
 
-_3 Integrantes: Luisa (Simulación), Miguel (Editor), Josue (UI/UX + Coordinación)_
+_3 Integrantes: Luisa Fernanda Ibarra Tucano (Simulación), Miguel Angel Alvarez Ramirez (Editor), David Josué Solorza Viera (UI/UX + Coordinación)_

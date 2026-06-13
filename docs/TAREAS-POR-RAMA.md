@@ -21,6 +21,7 @@
 - [x] Tema claro + documentación + ESLint/Prettier
 - [x] Plotly lazy-load · `fmtV/fmtI` compartidos
 - [x] pnpm como gestor oficial (`packageManager`, `pnpm-lock.yaml`)
+- [x] Demo V→A→R→LED + GND + VM · toasts de conexión · osciloscopio operativo
 
 ---
 
@@ -97,21 +98,40 @@ pnpm dev
 
 ### Prioridad P0
 
-| ID | Tarea | Archivos |
-|----|-------|----------|
-| J-01 | Snackbar/toast errores de simulación (mensajes de Luisa/motor) | `SimulationStatus.tsx` |
-| J-02 | Mostrar warnings (componentes no modelados aún) | `PropertiesPanel.tsx` |
-| J-03 | Revisar PRs Luisa + Miguel antes de `release/v1.0` | GitHub |
-| J-04 | Mantener `docs/TAREAS-POR-RAMA.md` actualizado | `docs/` |
+| ID | Tarea | Estado | Archivos |
+|----|-------|--------|----------|
+| J-01 | Snackbar/toast errores de simulación (mensajes de Luisa/motor) | ✅ | `shared/store/toastStore.ts`, `shared/ui/ToastContainer.tsx`, `useSimulation.ts` |
+| J-02 | Mostrar warnings (componentes no modelados aún) | ✅ | `PropertiesPanel.tsx`, `utils/circuitModelInfo.ts` |
+| J-03 | Revisar PRs Luisa + Miguel antes de `release/v1.0` | Manual | GitHub |
+| J-04 | Mantener `docs/TAREAS-POR-RAMA.md` actualizado | ✅ | `docs/` |
 
 ### Prioridad P1
 
-| ID | Tarea | Archivos |
-|----|-------|----------|
-| J-05 | Export CSV osciloscopio | `GraphPanel.tsx` |
-| J-06 | Tooltips toolbar | `Toolbar.tsx` |
-| J-07 | FSD fase 1 (`shared/`, `widgets/`) | `src/` |
-| J-08 | Dividir `CalculatorPage` por tabs | `calculator/` |
+| ID | Tarea | Estado | Archivos |
+|----|-------|--------|----------|
+| J-05 | Export CSV osciloscopio | ✅ | `GraphPanel.tsx`, `shared/lib/exportOscCsv.ts` |
+| J-06 | Tooltips toolbar | ✅ | `Toolbar.tsx`, `core/tooltips.ts` |
+| J-07 | FSD fase 1 (`shared/`, `widgets/`) | ✅ | `src/shared/`, `src/widgets/` |
+| J-08 | Dividir `CalculatorPage` por tabs | ✅ | `calculator/tabs/` |
+
+### Prioridad P2 — Pulido integración (Jun 2026)
+
+| ID | Tarea | Estado | Archivos |
+|----|-------|--------|----------|
+| J-09 | Circuito demo ordenado (espaciado, amperímetro/voltímetro, sondas) | ✅ | `App.tsx` |
+| J-10 | Cables visibles + mensajes al conectar (toasts) | ✅ | `CircuitEditor.tsx`, `wireConnect.ts`, `index.css` |
+| J-11 | Osciloscopio Plotly estable + exportar CSV en español | ✅ | `PlotlyChart.tsx`, `GraphPanel.tsx` |
+| J-12 | Multímetro contextual (amperímetro/voltímetro, estado detenido) | ✅ | `MultimeterDisplay.tsx`, `PropertiesPanel.tsx` |
+
+### Prioridad P2 — Pulido UI (Jun 2026, ronda 2)
+
+| ID | Tarea | Estado | Archivos |
+|----|-------|--------|----------|
+| J-13 | Mediciones congeladas al pausar simulación | ✅ | `MultimeterDisplay.tsx`, `PropertiesPanel.tsx` |
+| J-14 | Ayuda de atajos (`?`) + botón Demo en header/toolbar | ✅ | `ShortcutsHelp.tsx`, `App.tsx`, `Toolbar.tsx` |
+| J-15 | Arreglar “Colocar primer componente” (colocaba sin añadir) | ✅ | `placeFirstComponent.ts`, `App.tsx` |
+| J-16 | Osciloscopio: eje Y con unidades V/A según sondas | ✅ | `GraphPanel.tsx` |
+| J-17 | Demo completo (13 componentes) + pestaña Guía explicativa | ✅ | `loadDemo.ts`, `DemoGuidePanel.tsx` |
 
 ### Comandos diarios
 

@@ -1,13 +1,21 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import ReactFlow, {
   Background,
+  BackgroundVariant,
   Controls,
   MiniMap,
-  MarkerType,
+  ConnectionMode,
+  ConnectionLineType,
+  applyNodeChanges,
+  applyEdgeChanges,
+  useNodesState,
+  useEdgesState,
+  useUpdateNodeInternals,
   type Node,
   type Edge,
   type Connection,
   type NodeChange,
+  type EdgeChange,
   useReactFlow,
   ReactFlowProvider,
   SelectionMode,
@@ -15,8 +23,14 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import ComponentNode, { type ComponentNodeData } from './ComponentNode';
 import { useCircuitStore } from '../../store/circuitStore';
+import { toastInfo, toastSuccess, toastWarning } from '../../shared/store/toastStore';
+import { wireConnectMessage } from '../../utils/wireConnect';
+import { wireToReactFlowEdge } from '../../utils/wireToEdge';
+import { getWireNeighborComponentIds } from '../../utils/wireTopology';
+import { useAppBus } from '../../hooks/useAppBus';
 import type { ComponentType, Point } from '../../types';
 import { GRID_SIZE } from '../../core/constants';
+import { registerDemoLoadedHandler } from '../../utils/demoUi';
 
 const nodeTypes = { component: ComponentNode };
 
@@ -25,12 +39,49 @@ interface Props {
   height: number;
 }
 
+function buildNodes(
+  components: ReturnType<typeof useCircuitStore.getState>['circuit']['components'],
+  selectedId: string | null,
+): Node<ComponentNodeData>[] {
+  return Object.values(components).map((c) => ({
+    id: c.id,
+    type: 'component',
+    position: c.position,
+    data: {
+      label: c.label,
+      type: c.type,
+      params: c.params,
+      rotation: c.rotation,
+      selected: c.id === selectedId,
+    },
+    selected: c.id === selectedId,
+    deletable: true,
+    draggable: true,
+    selectable: true,
+  }));
+}
+
+function buildEdges(
+  wires: ReturnType<typeof useCircuitStore.getState>['circuit']['wires'],
+  terminals: ReturnType<typeof useCircuitStore.getState>['circuit']['terminals'],
+  components: ReturnType<typeof useCircuitStore.getState>['circuit']['components'],
+  selectedWireId: string | null,
+): Edge[] {
+  return Object.values(wires)
+    .map((w) => wireToReactFlowEdge(w, terminals, components, w.id === selectedWireId))
+    .filter((e): e is Edge => e !== null);
+}
+
 function CanvasInner({ width, height }: Props) {
   const rf = useReactFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
+  const draggingRef = useRef(false);
+
   const components = useCircuitStore((s) => s.circuit.components);
   const wires = useCircuitStore((s) => s.circuit.wires);
   const terminals = useCircuitStore((s) => s.circuit.terminals);
   const selectedId = useCircuitStore((s) => s.selectedComponentId);
+  const selectedWireId = useCircuitStore((s) => s.selectedWireId);
   const activeTool = useCircuitStore((s) => s.activeTool);
   const addComponent = useCircuitStore((s) => s.addComponent);
   const moveComponent = useCircuitStore((s) => s.moveComponent);
@@ -39,115 +90,220 @@ function CanvasInner({ width, height }: Props) {
   const setActiveTool = useCircuitStore((s) => s.setActiveTool);
   const addProbe = useCircuitStore((s) => s.addProbe);
 
-  const nodes: Node<ComponentNodeData>[] = useMemo(
-    () =>
-      Object.values(components).map((c) => ({
-        id: c.id,
-        type: 'component',
-        position: c.position,
-        data: {
-          label: c.label,
-          type: c.type,
-          params: c.params,
-          rotation: c.rotation,
-          selected: c.id === selectedId,
-        },
-        selected: c.id === selectedId,
-        deletable: true,
-        draggable: true,
-        selectable: true,
-      })),
+  const storeNodes = useMemo(
+    () => buildNodes(components, selectedId),
     [components, selectedId],
   );
+  const storeEdges = useMemo(
+    () => buildEdges(wires, terminals, components, selectedWireId),
+    [wires, terminals, components, selectedWireId],
+  );
 
-  const edges: Edge[] = useMemo(() => {
-    const termToComp = (tid: string) => terminals[tid]?.componentId ?? '';
-    const termIndex = (tid: string) => terminals[tid]?.index ?? 0;
-    return Object.values(wires).map((w) => ({
-      id: w.id,
-      source: termToComp(w.fromTerminalId),
-      target: termToComp(w.toTerminalId),
-      sourceHandle: `term${termIndex(w.fromTerminalId)}`,
-      targetHandle: `term${termIndex(w.toTerminalId)}`,
-      type: 'bezier',
-      animated: true,
-      style: { stroke: '#6B7280', strokeWidth: 2.5 },
-      active: false,
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#6B7280' },
-    }));
-  }, [wires, terminals]);
+  const [nodes, setNodes, onNodesChange] = useNodesState(storeNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(storeEdges);
 
-  const onNodesChange = useCallback(
+  useEffect(() => {
+    if (draggingRef.current) return;
+    setNodes((current) =>
+      storeNodes.map((sn) => {
+        const prev = current.find((n) => n.id === sn.id);
+        if (!prev) return sn;
+        return {
+          ...prev,
+          position: sn.position,
+          selected: sn.selected,
+          data: sn.data,
+        };
+      }),
+    );
+  }, [storeNodes, setNodes]);
+
+  useEffect(() => {
+    setEdges(storeEdges);
+  }, [storeEdges, setEdges]);
+
+  const refreshWireLayout = useCallback(
+    (componentId: string) => {
+      const circuit = useCircuitStore.getState().circuit;
+      const ids = getWireNeighborComponentIds(circuit, componentId);
+      requestAnimationFrame(() => {
+        for (const id of ids) updateNodeInternals(id);
+      });
+    },
+    [updateNodeInternals],
+  );
+
+  useAppBus<{ componentId: string; rotation: number }>(
+    'component:rotated',
+    ({ componentId, rotation }) => {
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === componentId ? { ...n, data: { ...n.data, rotation } } : n,
+        ),
+      );
+      updateNodeInternals(componentId);
+      requestAnimationFrame(() => refreshWireLayout(componentId));
+    },
+  );
+
+  useAppBus<{ componentId: string }>('component:moved', ({ componentId }) => {
+    refreshWireLayout(componentId);
+  });
+
+  useAppBus<{ componentId: string }>('wire:connected', ({ componentId }) => {
+    refreshWireLayout(componentId);
+  });
+
+  useAppBus('wire:reconnected', () => {
+    requestAnimationFrame(() => {
+      for (const n of nodes) updateNodeInternals(n.id);
+    });
+  });
+
+  useEffect(() => {
+    return registerDemoLoadedHandler(() => {
+      window.setTimeout(
+        () => rf.fitView({ padding: 0.22, maxZoom: 1.15, duration: 400 }),
+        80,
+      );
+    });
+  }, [rf]);
+
+  const onNodesChangeHandler = useCallback(
     (changes: NodeChange[]) => {
+      setNodes((nds) => applyNodeChanges(changes, nds));
+
       for (const ch of changes) {
         if (ch.type === 'position' && ch.position) {
-          moveComponent(ch.id, ch.position as Point);
+          if (ch.dragging) {
+            draggingRef.current = true;
+          }
+          if (ch.dragging === false) {
+            draggingRef.current = false;
+            moveComponent(ch.id, ch.position as Point);
+            refreshWireLayout(ch.id);
+          }
         }
         if (ch.type === 'remove') {
           removeComponent(ch.id);
         }
-        if (ch.type === 'select') {
-          if (ch.selected) selectComponent(ch.id);
+        if (ch.type === 'select' && ch.selected) {
+          selectComponent(ch.id);
         }
       }
     },
-    [moveComponent, removeComponent, selectComponent],
+    [setNodes, moveComponent, removeComponent, selectComponent, refreshWireLayout],
   );
 
-  const onEdgesChange = useCallback(() => {}, []);
+  const removeWire = useCircuitStore((s) => s.removeWire);
+  const reconnectWire = useCircuitStore((s) => s.reconnectWire);
+  const selectWire = useCircuitStore((s) => s.selectWire);
 
-  const onConnect = useCallback((conn: Connection) => {
-    if (!conn.source || !conn.target || !conn.sourceHandle || !conn.targetHandle) return;
+  const onEdgesChangeHandler = useCallback(
+    (changes: EdgeChange[]) => {
+      setEdges((eds) => applyEdgeChanges(changes, eds));
+      for (const ch of changes) {
+        if (ch.type === 'remove') {
+          removeWire(ch.id);
+          toastInfo('Cable eliminado');
+        }
+      }
+    },
+    [setEdges, removeWire],
+  );
 
-    const state = useCircuitStore.getState();
-    const srcComp = state.circuit.components[conn.source];
-    const tgtComp = state.circuit.components[conn.target];
+  const resolveTerminalFromHandle = useCallback(
+    (componentId: string, handleId: string): string | null => {
+      const comp = useCircuitStore.getState().circuit.components[componentId];
+      if (!comp) return null;
+      return (
+        comp.terminalIds.find((tid) => {
+          const term = useCircuitStore.getState().circuit.terminals[tid];
+          return handleId === `term${term?.index ?? 0}`;
+        }) ?? null
+      );
+    },
+    [],
+  );
 
-    if (!srcComp || !tgtComp) return;
+  const onEdgeClick = useCallback(
+    (_e: React.MouseEvent, edge: Edge) => {
+      selectWire(edge.id);
+    },
+    [selectWire],
+  );
 
-    // Get handle IDs from connection
-    const srcHandleId = conn.sourceHandle;
-    const tgtHandleId = conn.targetHandle;
-
-    // Find terminal IDs that match the handles
-    const srcTerminal = srcComp.terminalIds.find((tid) => {
-      const term = state.circuit.terminals[tid];
-      const handleIndex = term?.index ?? 0;
-      return srcHandleId === `term${handleIndex}`;
-    });
-
-    const tgtTerminal = tgtComp.terminalIds.find((tid) => {
-      const term = state.circuit.terminals[tid];
-      const handleIndex = term?.index ?? 0;
-      return tgtHandleId === `term${handleIndex}`;
-    });
-
-    if (srcTerminal && tgtTerminal) {
-      state.connectTerminals(srcTerminal, tgtTerminal);
-
-      // Auto-add probes to interesting components for visualization
-      const componentsToProbe = ['led', 'capacitor', 'inductor', 'resistor'];
+  const onReconnect = useCallback(
+    (oldEdge: Edge, newConnection: Connection) => {
       if (
-        componentsToProbe.includes(srcComp.type) &&
-        !state.probes.some((p) => p.componentId === srcComp.id && p.type === 'current')
+        !newConnection.source ||
+        !newConnection.target ||
+        !newConnection.sourceHandle ||
+        !newConnection.targetHandle
       ) {
-        state.addProbe('current', srcComp.id);
-      }
-      if (
-        componentsToProbe.includes(tgtComp.type) &&
-        !state.probes.some((p) => p.componentId === tgtComp.id && p.type === 'current')
-      ) {
-        state.addProbe('current', tgtComp.id);
+        toastWarning('Reconexión cancelada', 'Suelta el cable sobre un punto de conexión válido.');
+        return;
       }
 
-      // Auto-start simulation after connection
-      if (!state.simulationRunning) {
-        setTimeout(() => {
-          state.toggleSimulation();
-        }, 300);
+      const fromTerminal = resolveTerminalFromHandle(
+        newConnection.source,
+        newConnection.sourceHandle,
+      );
+      const toTerminal = resolveTerminalFromHandle(newConnection.target, newConnection.targetHandle);
+
+      if (!fromTerminal || !toTerminal) {
+        toastWarning('No se pudo reconectar', 'El extremo debe ir a un punto de conexión.');
+        return;
       }
-    }
-  }, []);
+
+      const result = reconnectWire(oldEdge.id, fromTerminal, toTerminal);
+      if (!result.ok) {
+        toastWarning('No se pudo reconectar', wireConnectMessage(result.reason));
+        return;
+      }
+
+      selectWire(oldEdge.id);
+      toastSuccess('Cable reconectado', 'El extremo se movió al nuevo componente.');
+    },
+    [reconnectWire, selectWire, resolveTerminalFromHandle],
+  );
+
+  const onConnect = useCallback(
+    (conn: Connection) => {
+      if (!conn.source || !conn.target || !conn.sourceHandle || !conn.targetHandle) {
+        toastWarning(
+          'Conexión incompleta',
+          'Arrastra desde un punto de conexión (círculo azul/rojo) hasta otro componente.',
+        );
+        return;
+      }
+
+      const srcTerminal = resolveTerminalFromHandle(conn.source, conn.sourceHandle);
+      const tgtTerminal = resolveTerminalFromHandle(conn.target, conn.targetHandle);
+
+      if (!srcTerminal || !tgtTerminal) {
+        toastWarning(
+          'No se pudo conectar',
+          'Suelta el cable sobre el punto de conexión de otro componente.',
+        );
+        return;
+      }
+
+      const result = useCircuitStore.getState().connectTerminals(srcTerminal, tgtTerminal);
+      if (!result.ok) {
+        const wireCount = Object.keys(useCircuitStore.getState().circuit.wires).length;
+        const extra =
+          result.reason === 'duplicate'
+            ? ` (${wireCount} cable${wireCount === 1 ? '' : 's'} en el circuito)`
+            : '';
+        toastWarning('No se pudo conectar', wireConnectMessage(result.reason) + extra);
+        return;
+      }
+
+      toastSuccess('Cable conectado', 'Presiona INICIAR cuando el circuito esté listo (con tierra).');
+    },
+    [resolveTerminalFromHandle],
+  );
 
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -167,6 +323,12 @@ function CanvasInner({ width, height }: Props) {
   );
 
   const handlePaneClick = useCallback(() => {
+    const state = useCircuitStore.getState();
+    if (state.connectingFrom) {
+      state.cancelConnection();
+      toastInfo('Conexión cancelada');
+    }
+    state.selectWire(null);
     if (activeTool !== 'select' && activeTool !== 'wire' && activeTool !== 'probe') {
       setActiveTool('select');
     }
@@ -179,16 +341,10 @@ function CanvasInner({ width, height }: Props) {
         return;
       }
       if (activeTool === 'wire') {
-        const state = useCircuitStore.getState();
-        const comp = state.circuit.components[node.id];
-        if (!comp) return;
-        const terminalId =
-          state.connectingFrom === null ? comp.terminalIds[1] : comp.terminalIds[0];
-        if (state.connectingFrom) {
-          state.completeConnection(terminalId);
-        } else {
-          state.startConnection(terminalId);
-        }
+        toastInfo(
+          'Herramienta Cable',
+          'Arrastra desde los círculos de conexión de un componente hasta otro.',
+        );
         return;
       }
       selectComponent(node.id);
@@ -204,35 +360,57 @@ function CanvasInner({ width, height }: Props) {
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
+        onNodesChange={onNodesChangeHandler}
+        onEdgesChange={onEdgesChangeHandler}
+        onEdgeClick={onEdgeClick}
+        onReconnect={onReconnect}
+        reconnectRadius={28}
         onConnect={onConnect}
         onDrop={onDrop}
         onDragOver={onDragOver}
         onNodeClick={handleNodeClick}
         onPaneClick={handlePaneClick}
         nodeTypes={nodeTypes}
+        connectionMode={ConnectionMode.Loose}
+        connectionLineType={ConnectionLineType.SmoothStep}
+        connectionLineStyle={{ stroke: '#64748b', strokeWidth: 2.5 }}
+        elevateEdgesOnSelect
+        edgesFocusable
         deleteKeyCode="Delete"
         multiSelectionKeyCode="Shift"
         snapToGrid
         snapGrid={[GRID_SIZE, GRID_SIZE]}
         selectionMode={SelectionMode.Partial}
-        nodesDraggable={true}
-        nodesConnectable={true}
-        elementsSelectable={true}
-        nodeDragThreshold={0}
+        nodesDraggable
+        nodesConnectable
+        elementsSelectable
+        nodeDragThreshold={2}
         fitView
-        fitViewOptions={{ padding: 0.3, maxZoom: 1.5 }}
+        fitViewOptions={{ padding: 0.22, maxZoom: 1.15 }}
         minZoom={0.1}
         maxZoom={3}
         defaultEdgeOptions={{
-          type: 'bezier',
-          animated: true,
-          style: { stroke: '#6B7280', strokeWidth: 2.5 },
-          markerEnd: { type: MarkerType.ArrowClosed, color: '#6B7280' },
+          type: 'smoothstep',
+          style: { stroke: '#4B5563', strokeWidth: 2.5 },
+          interactionWidth: 28,
+          deletable: true,
+          reconnectable: true,
         }}
+        proOptions={{ hideAttribution: true }}
       >
-        <Background color="#E8E0D0" gap={GRID_SIZE} size={1} />
+        <Background
+          variant={BackgroundVariant.Lines}
+          color="#E0D8C8"
+          gap={GRID_SIZE}
+          size={1}
+        />
+        <Background
+          variant={BackgroundVariant.Dots}
+          color="#C9BFA8"
+          gap={GRID_SIZE}
+          size={1.2}
+          style={{ opacity: 0.45 }}
+        />
         <Controls
           showInteractive={false}
           className="!bg-surface-800 !border-surface-700 !rounded-lg !shadow-sm !text-surface-500"

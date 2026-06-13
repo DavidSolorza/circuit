@@ -1,11 +1,46 @@
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { useCircuitStore } from '../store/circuitStore';
+import type { CircuitState, MeasurementProbe, SimResults } from '../types';
 import {
-  getElectricalNodeForTerminal,
   resetLocalSimulation,
   runLocalSimulationStep,
+  validateLocalCircuit,
 } from '../services/localSimulation';
+import { toastError, toastWarning } from '../shared/store/toastStore';
+import { readProbeSample } from '../utils/probeSample';
 import { DT } from '../core/constants';
+import { appBus } from '../shared/bus/AppEventBus';
+
+const runtimeWarningsShown = new Set<string>();
+const MAX_OSC_POINTS = 3000;
+
+function appendProbeSamples(
+  probes: MeasurementProbe[],
+  oscData: Record<string, Array<{ t: number; v: number }>>,
+  circuit: CircuitState,
+  res: SimResults,
+  simTime: number,
+): Record<string, Array<{ t: number; v: number }>> {
+  const newOscData = { ...oscData };
+  const t = simTime + DT;
+
+  for (const probe of probes) {
+    const bucket = newOscData[probe.id];
+    if (!bucket) continue;
+    const raw = readProbeSample(circuit, res, probe);
+    const value = raw ?? 0;
+
+    const nd = [...bucket];
+    if (simTime === 0 && nd.length === 0) {
+      nd.push({ t: 0, v: value });
+    }
+    nd.push({ t, v: value });
+    if (nd.length > MAX_OSC_POINTS) nd.splice(0, nd.length - MAX_OSC_POINTS);
+    newOscData[probe.id] = nd;
+  }
+
+  return newOscData;
+}
 
 function applySimulationResults(): void {
   const state = useCircuitStore.getState();
@@ -16,48 +51,92 @@ function applySimulationResults(): void {
   const current = useCircuitStore.getState();
   if (!current.simulationRunning) return;
 
-  current.setSimResults(res);
-
   if (res.status.success) {
-    current.setSimError(null);
     const t = current.simTime + DT;
+    const newOscData = appendProbeSamples(
+      current.probes,
+      current.oscData,
+      circuit,
+      res,
+      current.simTime,
+    );
 
-    for (const probe of current.probes) {
-      const comp = circuit.components[probe.componentId];
-      if (!comp) continue;
+    useCircuitStore.setState({
+      simResults: res,
+      simError: null,
+      simTime: t,
+      oscData: newOscData,
+    });
 
-      const value =
-        probe.type === 'voltage'
-          ? (() => {
-              const termId = comp.terminalIds[probe.terminalIndex ?? 0];
-              const nodeId = getElectricalNodeForTerminal(circuit, termId);
-              return res.nodeVoltages[String(nodeId)]?.[0] ?? 0;
-            })()
-          : (res.branchCurrents[comp.id]?.[0] ?? 0);
-
-      current.appendOscData(probe.id, t, value);
+    for (const w of res.validation.warnings) {
+      if (!runtimeWarningsShown.has(w)) {
+        runtimeWarningsShown.add(w);
+        toastWarning('Advertencia de simulación', w);
+      }
     }
-
-    current.setSimTime(t);
   } else {
-    current.setSimError(res.status.error || res.validation.errors[0] || 'Simulación fallida');
+    const msg = res.status.error || res.validation.errors[0] || 'Simulación fallida';
+    useCircuitStore.setState({
+      simError: msg,
+      simResults: null,
+      simulationRunning: false,
+    });
+    toastError('Error de simulación', msg);
+  }
+}
+
+function showPreSimulationWarnings(warnings: string[]): void {
+  if (warnings.length === 0) return;
+
+  for (const w of warnings.slice(0, 3)) {
+    toastWarning('Antes de simular', w);
+  }
+  if (warnings.length > 3) {
+    toastWarning(
+      'Antes de simular',
+      `+${warnings.length - 3} advertencias más (ver propiedades)`,
+    );
   }
 }
 
 export function useSimulation() {
   const rafRef = useRef<number>(0);
   const lastTickRef = useRef<number>(0);
+  const preSimWarningsShown = useRef(false);
   const simulationRunning = useCircuitStore((s) => s.simulationRunning);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!simulationRunning) {
       cancelAnimationFrame(rafRef.current);
+      runtimeWarningsShown.clear();
+      preSimWarningsShown.current = false;
       return;
     }
 
+    const circuit = useCircuitStore.getState().circuit;
+    const validation = validateLocalCircuit(circuit);
+
+    if (!validation.valid) {
+      const msg = validation.errors.join('; ');
+      useCircuitStore.setState({
+        simulationRunning: false,
+        simError: msg,
+        simResults: null,
+      });
+      toastError('No se puede simular', msg);
+      return;
+    }
+
+    if (!preSimWarningsShown.current) {
+      preSimWarningsShown.current = true;
+      showPreSimulationWarnings(validation.warnings);
+    }
+
+    appBus.emit('simulation:started', { mode: 'local' });
     resetLocalSimulation();
     useCircuitStore.getState().clearOscData();
     useCircuitStore.getState().setSimTime(0);
+    useCircuitStore.getState().setSimError(null);
     lastTickRef.current = performance.now();
 
     const loop = (now: number) => {
@@ -73,7 +152,12 @@ export function useSimulation() {
     };
 
     rafRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(rafRef.current);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      if (!useCircuitStore.getState().simulationRunning) {
+        appBus.emit('simulation:stopped', {});
+      }
+    };
   }, [simulationRunning]);
 
   return { simulationRunning };

@@ -4,8 +4,8 @@ export const GRID_SIZE = 30;
 export const CANVAS_WIDTH = 2000;
 export const CANVAS_HEIGHT = 2000;
 
-export const COMPONENT_WIDTH = 100;
-export const COMPONENT_HEIGHT = 50;
+export const COMPONENT_WIDTH = 96;
+export const COMPONENT_HEIGHT = 96;
 export const TERMINAL_RADIUS = 6;
 
 export const DT = 1 / 60;
@@ -29,6 +29,8 @@ export const COLORS = {
   diode: '#f472b6',
   transistor: '#818cf8',
   potentiometer: '#64748b',
+  lamp: '#fcd34d',
+  fuse: '#f97316',
   ground: '#64748b',
   voltmeter: '#60a5fa',
   ammeter: '#60a5fa',
@@ -55,15 +57,15 @@ export const COMPONENT_CATEGORIES: ComponentCategory[] = [
   },
   {
     name: 'Pasivos',
-    types: ['resistor', 'capacitor', 'inductor', 'potentiometer'],
+    types: ['resistor', 'capacitor', 'inductor', 'potentiometer', 'lamp'],
+  },
+  {
+    name: 'Protección',
+    types: ['fuse', 'switch'],
   },
   {
     name: 'Semiconductores',
     types: ['led', 'diode', 'transistor'],
-  },
-  {
-    name: 'Lógicos',
-    types: ['switch'],
   },
   {
     name: 'Medidores',
@@ -196,5 +198,29 @@ export const COMPONENT_TEMPLATES: Record<string, ComponentTemplate> = {
     label: 'Amperímetro',
     defaultParams: {},
     paramDefs: [],
+  },
+  lamp: {
+    type: 'lamp',
+    label: 'Bombilla',
+    defaultParams: { resistance: 220 },
+    paramDefs: [
+      {
+        key: 'resistance',
+        label: 'Resistencia',
+        min: 10,
+        max: 5000,
+        step: 10,
+        unit: '\u03A9',
+      },
+    ],
+  },
+  fuse: {
+    type: 'fuse',
+    label: 'Fusible',
+    defaultParams: { isBlown: 0, maxCurrent: 0.5 },
+    paramDefs: [
+      { key: 'isBlown', label: 'Fundido', min: 0, max: 1, step: 1, unit: '' },
+      { key: 'maxCurrent', label: 'I máx. ref.', min: 0.01, max: 20, step: 0.05, unit: 'A' },
+    ],
   },
 };

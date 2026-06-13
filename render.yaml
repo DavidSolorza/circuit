@@ -1,0 +1,13 @@
+# Despliegue del backend en Render: https://render.com
+# New → Blueprint → conecta el repo. Root Directory debe quedar vacío (raíz del repo).
+services:
+  - type: web
+    name: labcircuitos-api
+    runtime: python
+    plan: free
+    buildCommand: pip install --upgrade pip && pip install -r backend/requirements-deploy.txt
+    startCommand: bash render-start.sh
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: '3.12.0'

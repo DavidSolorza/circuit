@@ -237,7 +237,7 @@ export class CircuitGraph {
             `Cortocircuito: fuente de voltaje '${comp.label || comp.id}' tiene ambos terminales en el mismo nodo.`,
           );
         }
-        if (comp.type === 'switch' && comp.params.isClosed) {
+        if (comp.type === 'switch' && (comp.params.isClosed ?? 0) >= 0.5) {
           errors.push(
             `Cortocircuito potencial: interruptor '${comp.label || comp.id}' con terminales en el mismo nodo.`,
           );

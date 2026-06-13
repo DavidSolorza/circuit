@@ -20,7 +20,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.api.routes import router
 
-app = FastAPI(title="Circuit Lab API", version="0.1.1")
+app = FastAPI(title="Electro+ Lab API", version="0.1.2")
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,6 +31,15 @@ app.add_middleware(
 )
 
 app.include_router(router)
+
+
+@app.get("/")
+def root():
+    return {
+        "service": "Electro+ Lab API",
+        "health": "/api/health",
+        "version": "0.1.2",
+    }
 
 if __name__ == "__main__":
     import uvicorn

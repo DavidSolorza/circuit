@@ -125,14 +125,33 @@
     border: 1px solid rgba(31, 77, 58, 0.4) !important;
   }
 
+  .react-flow__edges {
+    z-index: 2 !important;
+  }
+
   .react-flow__edge-path {
-    stroke: #6b7280 !important;
-    stroke-width: 2 !important;
+    stroke: #4b5563 !important;
+    stroke-width: 2.5 !important;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .react-flow__edge:hover .react-flow__edge-path {
+    stroke: #1f4d3a !important;
+    stroke-width: 3.5 !important;
   }
 
   .react-flow__edge.selected .react-flow__edge-path {
-    stroke: #1f4d3a !important;
-    stroke-width: 2.5 !important;
+    stroke: #c9a86a !important;
+    stroke-width: 3.5 !important;
+  }
+
+  .react-flow__edge-path {
+    transition: stroke 0.15s ease;
+  }
+
+  .react-flow__node {
+    pointer-events: all;
   }
 
   .react-flow__handle {
@@ -140,7 +159,11 @@
     transition: opacity 0.15s;
   }
 
-  .react-flow__node:hover .react-flow__handle {
+  .react-flow__handle.circuit-handle {
+    opacity: 1 !important;
+  }
+
+  .react-flow__node:hover .react-flow__handle:not(.circuit-handle) {
     opacity: 1;
   }
 }
@@ -176,15 +199,15 @@
   }
 
   .sidebar-tab {
-    @apply flex-1 h-9 text-[10px] font-semibold uppercase tracking-wider transition-all duration-150;
+    @apply flex-1 h-10 text-[10px] font-semibold uppercase tracking-wider transition-all duration-150;
   }
 
   .sidebar-tab-active {
-    @apply text-primary-600 border-b-2 border-primary-500 bg-primary-50/50;
+    @apply text-primary-600 border-b-2 border-primary-500 bg-primary-50/60;
   }
 
   .sidebar-tab-inactive {
-    @apply text-ink-faint hover:text-ink hover:bg-surface-800;
+    @apply text-ink-faint hover:text-ink hover:bg-surface-800/80;
   }
 
   .metric-card {
@@ -197,5 +220,130 @@
 
   .metric-label {
     @apply text-[10px] text-ink-faint mb-0.5;
+  }
+
+  .toolbar-header {
+    @apply px-3 pt-3 pb-2 border-b border-surface-700/80 bg-gradient-to-b from-surface-900 to-surface-950/30;
+  }
+
+  .toolbar-search {
+    @apply w-full px-3 py-2 text-xs bg-surface-800 border border-surface-700 rounded-lg text-ink
+           placeholder-ink-faint focus:border-primary-500 focus:ring-2 focus:ring-primary-500/15
+           transition-all duration-150 shadow-sm;
+  }
+
+  .toolbar-tool-compact {
+    @apply flex flex-col items-center justify-center gap-1 px-1 py-2 rounded-lg text-[10px] font-medium
+           text-ink-muted border border-surface-700/80 bg-surface-900/50
+           hover:text-ink hover:bg-surface-800 hover:border-surface-600
+           transition-all duration-150 active:scale-[0.98];
+  }
+
+  .toolbar-tool-compact-active {
+    @apply bg-primary-50 text-primary-600 border-primary-400/50 shadow-sm;
+  }
+
+  .toolbar-category {
+    @apply text-[10px] font-bold uppercase tracking-widest text-ink-faint px-1 mb-2
+           flex items-center gap-2;
+  }
+
+  .toolbar-category-dot {
+    @apply w-1.5 h-1.5 rounded-full shrink-0;
+  }
+
+  .component-card {
+    @apply flex items-center gap-3 w-full px-3 py-3 rounded-xl cursor-grab active:cursor-grabbing
+           border border-surface-700/70 bg-surface-900/80
+           hover:bg-surface-800 hover:border-surface-600 hover:shadow-panel
+           transition-all duration-150 min-h-[52px];
+  }
+
+  .component-card-active {
+    @apply bg-gold-50 border-gold-300/70 shadow-panel ring-1 ring-gold-400/25;
+  }
+
+  .component-card-icon {
+    @apply shrink-0 w-14 h-10 flex items-center justify-center rounded-lg
+           bg-surface-800 border border-surface-700;
+  }
+
+  .component-card-active .component-card-icon {
+    @apply bg-white border-gold-200;
+  }
+
+  .btn-toolbar-secondary {
+    @apply w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold
+           text-ink-muted bg-surface-800 border border-surface-700
+           hover:text-ink hover:bg-surface-700 hover:border-surface-600
+           active:scale-[0.98] transition-all duration-150;
+  }
+
+  .btn-sim-start {
+    @apply w-full flex items-center justify-center gap-2.5 py-2.5 rounded-xl text-xs font-bold
+           tracking-wide bg-gradient-to-b from-gold-500 to-gold-600 text-white
+           border border-gold-600 shadow-panel
+           hover:from-gold-600 hover:to-gold-700 active:scale-[0.98] transition-all duration-150;
+  }
+
+  .btn-sim-stop {
+    @apply w-full flex items-center justify-center gap-2.5 py-2.5 rounded-xl text-xs font-bold
+           tracking-wide bg-red-50 text-red-600 border border-red-200
+           hover:bg-red-100 active:scale-[0.98] transition-all duration-150;
+  }
+
+  .btn-toolbar-icon {
+    @apply flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium
+           text-ink-muted bg-surface-800 border border-surface-700
+           hover:text-ink hover:bg-surface-700 disabled:opacity-35 disabled:cursor-not-allowed
+           active:scale-[0.98] transition-all duration-150;
+  }
+
+  .toolbar-footer {
+    @apply border-t border-surface-700 px-3 py-3 space-y-2.5 bg-surface-950/50;
+  }
+
+  .guide-card {
+    @apply rounded-lg border border-surface-700 bg-surface-800/60 px-3 py-2.5;
+  }
+
+  .osc-toolbar-btn {
+    @apply text-[10px] text-ink-faint hover:text-ink px-2 py-1 rounded-md
+           bg-surface-900 border border-surface-700 hover:border-primary-500/30
+           disabled:opacity-40 disabled:cursor-not-allowed transition-colors;
+  }
+
+  .osc-probe-chip {
+    @apply flex items-center gap-1 px-2 py-1 rounded-md text-[9px] cursor-pointer
+           border transition-all max-w-full;
+  }
+
+  .osc-probe-chip-on {
+    @apply font-medium;
+  }
+
+  .osc-probe-chip-off {
+    @apply text-ink-faint border-surface-700 bg-transparent;
+  }
+
+  .stats-chip {
+    @apply flex flex-col items-center justify-center px-2 py-1 rounded-md
+           bg-surface-800/80 border border-surface-700 min-w-[52px];
+  }
+
+  .stats-chip-value {
+    @apply text-[11px] font-bold font-mono tabular-nums text-ink;
+  }
+
+  .stats-chip-label {
+    @apply text-[8px] text-ink-faint uppercase tracking-wide;
+  }
+
+  .stats-chip-primary .stats-chip-value {
+    @apply text-primary-600;
+  }
+
+  .stats-chip-gold .stats-chip-value {
+    @apply text-gold-600;
   }
 }

@@ -1,19 +1,51 @@
 import type { ComponentType } from '../types';
 import type React from 'react';
 
+export type HandleSide =
+  | 'left'
+  | 'right'
+  | 'top'
+  | 'bottom'
+  | 'topleft'
+  | 'topright'
+  | 'bottomleft'
+  | 'bottomright';
+
 export interface HandleConfig {
   id: string;
-  position:
-    | 'left'
-    | 'right'
-    | 'top'
-    | 'bottom'
-    | 'topleft'
-    | 'topright'
-    | 'bottomleft'
-    | 'bottomright';
+  position: HandleSide;
   label?: string;
-  isPositive?: boolean; // For battery/sources
+  isPositive?: boolean;
+}
+
+const CARDINAL_SIDES: Array<'left' | 'top' | 'right' | 'bottom'> = [
+  'left',
+  'top',
+  'right',
+  'bottom',
+];
+
+/** Rota un borne cardinal según grados del componente (0, 90, 180, 270). */
+export function rotateHandleSide(
+  side: HandleSide,
+  rotationDeg: number,
+): HandleSide {
+  if (!CARDINAL_SIDES.includes(side as (typeof CARDINAL_SIDES)[number])) {
+    return side;
+  }
+  const steps = ((rotationDeg % 360) + 360) % 360 / 90;
+  const idx = CARDINAL_SIDES.indexOf(side as (typeof CARDINAL_SIDES)[number]);
+  return CARDINAL_SIDES[(idx + steps) % 4]!;
+}
+
+export function getRotatedHandleConfig(
+  componentType: ComponentType,
+  rotationDeg: number,
+): HandleConfig[] {
+  return getHandleConfig(componentType).map((cfg) => ({
+    ...cfg,
+    position: rotateHandleSide(cfg.position, rotationDeg),
+  }));
 }
 
 // Define realistic terminal positions for each component type
@@ -58,6 +90,14 @@ export const componentHandleConfigs: Record<ComponentType, HandleConfig[]> = {
     { id: 'term0', position: 'left', label: '1' },
     { id: 'term1', position: 'right', label: '2' },
   ],
+  lamp: [
+    { id: 'term0', position: 'left', label: '1' },
+    { id: 'term1', position: 'right', label: '2' },
+  ],
+  fuse: [
+    { id: 'term0', position: 'left', label: '1' },
+    { id: 'term1', position: 'right', label: '2' },
+  ],
   ground: [{ id: 'term0', position: 'top', label: 'GND' }],
   voltmeter: [
     { id: 'term0', position: 'left', label: '-' },
@@ -74,6 +114,13 @@ export function getHandleConfig(componentType: ComponentType): HandleConfig[] {
 }
 
 // Get CSS position for handle based on its configuration
+export function sideToFlowPosition(side: HandleSide): 'left' | 'right' | 'top' | 'bottom' {
+  if (side === 'left' || side === 'right' || side === 'top' || side === 'bottom') return side;
+  if (side === 'topleft' || side === 'bottomleft') return 'left';
+  if (side === 'topright' || side === 'bottomright') return 'right';
+  return 'left';
+}
+
 export function getHandlePositionCSS(
   handleConfig: HandleConfig,
   _nodeSize: { width: number; height: number },

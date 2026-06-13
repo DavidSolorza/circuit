@@ -17,5 +17,11 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": [
+    "src/engine/demo/demoCircuitTest.ts",
+    "src/engine/demo/smokeTest.ts",
+    "src/engine/demo/allCircuitsTest.ts",
+    "src/engine/demo/circuitTestHelpers.ts"
+  ]
 }

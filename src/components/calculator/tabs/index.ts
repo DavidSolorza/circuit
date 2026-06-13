@@ -1,0 +1,10 @@
+export { OhmTab } from './OhmTab';
+export { ResistorTab } from './ResistorTab';
+export { ColorCodeTab } from './ColorCodeTab';
+export { RcTab } from './RcTab';
+export { RlTab } from './RlTab';
+export { ReactanceTab } from './ReactanceTab';
+export { ConverterTab } from './ConverterTab';
+export { PowerTab } from './PowerTab';
+export { DividerTab } from './DividerTab';
+export { FormulasTab } from './FormulasTab';

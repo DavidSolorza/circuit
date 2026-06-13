@@ -1,0 +1,292 @@
+export type FormulaCategory =
+  | 'fundamentos'
+  | 'leyes'
+  | 'transitorio'
+  | 'ac'
+  | 'combinacion'
+  | 'potencia'
+  | 'simulador';
+
+export interface FormulaEntry {
+  name: string;
+  eq: string;
+  desc: string;
+  vars: string;
+  category: FormulaCategory;
+  /** Componente o módulo del simulador donde aplica */
+  usedIn?: string;
+}
+
+export const FORMULA_CATEGORIES: Record<FormulaCategory, string> = {
+  fundamentos: 'Fundamentos',
+  leyes: 'Leyes de Kirchhoff',
+  transitorio: 'Transitorio RC / RL',
+  ac: 'Corriente alterna',
+  combinacion: 'Combinación de elementos',
+  potencia: 'Potencia y energía',
+  simulador: 'En este simulador',
+};
+
+export const FORMULA_LIBRARY: FormulaEntry[] = [
+  {
+    name: 'Ley de Ohm',
+    eq: 'V = I · R',
+    desc: 'Relación entre voltaje, corriente y resistencia',
+    vars: 'V [V], I [A], R [Ω]',
+    category: 'fundamentos',
+    usedIn: 'Resistencia, amperímetro, multímetro',
+  },
+  {
+    name: 'Conductancia',
+    eq: 'G = 1 / R',
+    desc: 'Inverso de la resistencia (modelo MNA)',
+    vars: 'G [S], R [Ω]',
+    category: 'fundamentos',
+    usedIn: 'Motor de simulación (MNA)',
+  },
+  {
+    name: 'Potencia instantánea',
+    eq: 'P = V · I',
+    desc: 'Potencia disipada o entregada',
+    vars: 'P [W], V [V], I [A]',
+    category: 'potencia',
+    usedIn: 'Panel multímetro y propiedades',
+  },
+  {
+    name: 'Potencia en resistencia',
+    eq: 'P = I² · R = V² / R',
+    desc: 'Equivalentes de potencia en una R',
+    vars: 'P [W], I [A], V [V], R [Ω]',
+    category: 'potencia',
+    usedIn: 'Resistencia, potenciómetro',
+  },
+  {
+    name: 'Ley de tensiones (KVL)',
+    eq: 'Σ V_malla = 0',
+    desc: 'Suma de caídas y subidas en una malla cerrada',
+    vars: 'V [V]',
+    category: 'leyes',
+    usedIn: 'Toda la simulación nodal',
+  },
+  {
+    name: 'Ley de corrientes (KCL)',
+    eq: 'Σ I_nodo = 0',
+    desc: 'Corrientes que entran = corrientes que salen',
+    vars: 'I [A]',
+    category: 'leyes',
+    usedIn: 'Nodos del circuito, amperímetro en serie',
+  },
+  {
+    name: 'Constante de tiempo RC',
+    eq: 'τ = R · C',
+    desc: 'Al 63,2 % de la carga o descarga del capacitor',
+    vars: 'τ [s], R [Ω], C [F]',
+    category: 'transitorio',
+    usedIn: 'Condensador, interruptor, osciloscopio',
+  },
+  {
+    name: 'Carga capacitor (RC)',
+    eq: 'V_C(t) = V_f · (1 − e^(−t/τ))',
+    desc: 'Respuesta al encender un RC',
+    vars: 'V_C [V], τ [s], t [s]',
+    category: 'transitorio',
+    usedIn: 'Condensador en paralelo (demo)',
+  },
+  {
+    name: 'Constante de tiempo RL',
+    eq: 'τ = L / R',
+    desc: 'Corriente del inductor al 63,2 % del valor final',
+    vars: 'τ [s], L [H], R [Ω]',
+    category: 'transitorio',
+    usedIn: 'Inductor en serie (demo)',
+  },
+  {
+    name: 'Corriente inductor (RL)',
+    eq: 'I_L(t) = I_f · (1 − e^(−t/τ))',
+    desc: 'Subida de corriente en una rama RL',
+    vars: 'I_L [A], τ [s], t [s]',
+    category: 'transitorio',
+    usedIn: 'Inductor, osciloscopio',
+  },
+  {
+    name: 'Capacitor (integración)',
+    eq: 'I_C = C · dV_C/dt',
+    desc: 'Corriente del condensador en transitorio',
+    vars: 'I_C [A], C [F], V_C [V]',
+    category: 'transitorio',
+    usedIn: 'Motor MNA — condensador',
+  },
+  {
+    name: 'Inductor (integración)',
+    eq: 'V_L = L · dI_L/dt',
+    desc: 'Caída de tensión en la bobina',
+    vars: 'V_L [V], L [H], I_L [A]',
+    category: 'transitorio',
+    usedIn: 'Motor MNA — inductor',
+  },
+  {
+    name: 'Reactancia capacitiva',
+    eq: 'X_C = 1 / (2π · f · C)',
+    desc: 'Oposición al paso de corriente AC',
+    vars: 'X_C [Ω], f [Hz], C [F]',
+    category: 'ac',
+    usedIn: 'Calculadora XL/XC',
+  },
+  {
+    name: 'Reactancia inductiva',
+    eq: 'X_L = 2π · f · L',
+    desc: 'Oposición al cambio de corriente en AC',
+    vars: 'X_L [Ω], f [Hz], L [H]',
+    category: 'ac',
+    usedIn: 'Calculadora XL/XC',
+  },
+  {
+    name: 'Frecuencia de corte RC',
+    eq: 'f_c = 1 / (2π · R · C)',
+    desc: 'Frecuencia a −3 dB de un filtro RC',
+    vars: 'f_c [Hz], R [Ω], C [F]',
+    category: 'ac',
+    usedIn: 'Pestaña RC de la calculadora',
+  },
+  {
+    name: 'Resonancia LC',
+    eq: 'f₀ = 1 / (2π · √(L · C))',
+    desc: 'Frecuencia donde X_L = X_C',
+    vars: 'f₀ [Hz], L [H], C [F]',
+    category: 'ac',
+    usedIn: 'Pestaña XL/XC',
+  },
+  {
+    name: 'Impedancia RC',
+    eq: '|Z| = √(R² + X_C²)',
+    desc: 'Magnitud de impedancia serie RC',
+    vars: 'Z [Ω], R [Ω], X_C [Ω]',
+    category: 'ac',
+    usedIn: 'Pestaña RC',
+  },
+  {
+    name: 'Resistencias en serie',
+    eq: 'R_t = R₁ + R₂ + … + R_n',
+    desc: 'Suma directa en la misma rama',
+    vars: 'R_t [Ω]',
+    category: 'combinacion',
+    usedIn: 'Rama serie del demo',
+  },
+  {
+    name: 'Resistencias en paralelo',
+    eq: '1/R_t = 1/R₁ + 1/R₂ + …',
+    desc: 'Conductancias se suman',
+    vars: 'R_t [Ω]',
+    category: 'combinacion',
+    usedIn: 'Potenciómetro // resistencia',
+  },
+  {
+    name: 'Capacitores en paralelo',
+    eq: 'C_t = C₁ + C₂ + …',
+    desc: 'Área efectiva combinada',
+    vars: 'C_t [F]',
+    category: 'combinacion',
+    usedIn: 'Condensador // LED en demo',
+  },
+  {
+    name: 'Capacitores en serie',
+    eq: '1/C_t = 1/C₁ + 1/C₂ + …',
+    desc: 'Inverso de capacitancias',
+    vars: 'C_t [F]',
+    category: 'combinacion',
+  },
+  {
+    name: 'Inductores en serie',
+    eq: 'L_t = L₁ + L₂ + …',
+    desc: 'Suma de inductancias en serie',
+    vars: 'L_t [H]',
+    category: 'combinacion',
+  },
+  {
+    name: 'Divisor de voltaje',
+    eq: 'V_out = V_in · R₂ / (R₁ + R₂)',
+    desc: 'Tensión en el borne inferior del divisor',
+    vars: 'V [V], R [Ω]',
+    category: 'combinacion',
+    usedIn: 'Potenciómetro, voltímetro',
+  },
+  {
+    name: 'Divisor de corriente',
+    eq: 'I₂ = I_total · R₁ / (R₁ + R₂)',
+    desc: 'Corriente por una rama en paralelo',
+    vars: 'I [A], R [Ω]',
+    category: 'combinacion',
+  },
+  {
+    name: 'Energía en capacitor',
+    eq: 'E_C = ½ · C · V²',
+    desc: 'Energía almacenada en el campo eléctrico',
+    vars: 'E [J], C [F], V [V]',
+    category: 'potencia',
+    usedIn: 'Condensador',
+  },
+  {
+    name: 'Energía en inductor',
+    eq: 'E_L = ½ · L · I²',
+    desc: 'Energía almacenada en el campo magnético',
+    vars: 'E [J], L [H], I [A]',
+    category: 'potencia',
+    usedIn: 'Inductor',
+  },
+  {
+    name: 'Fuente de voltaje DC',
+    eq: 'V_terminal = V_param',
+    desc: 'Batería impone diferencia de potencial',
+    vars: 'V [V]',
+    category: 'simulador',
+    usedIn: 'Fuente de voltaje',
+  },
+  {
+    name: 'Fuente de corriente',
+    eq: 'I_rama = I_param',
+    desc: 'Corriente fija independiente del voltaje',
+    vars: 'I [A]',
+    category: 'simulador',
+    usedIn: 'Fuente de corriente',
+  },
+  {
+    name: 'Diodo / LED (modelo simple)',
+    eq: 'V_on ≈ V_f,  I ≈ (V_d − V_f) / R_on',
+    desc: 'Conduce en directa con caída V_f; bloquea en inversa',
+    vars: 'V_f [V], R_on [Ω]',
+    category: 'simulador',
+    usedIn: 'Diodo y LED',
+  },
+  {
+    name: 'Potenciómetro',
+    eq: 'R = R_max · cursor',
+    desc: 'Resistencia variable entre extremos',
+    vars: 'R [Ω], cursor [0…1]',
+    category: 'simulador',
+    usedIn: 'Potenciómetro',
+  },
+  {
+    name: 'Voltímetro ideal',
+    eq: 'R_int → ∞,  I_fuga ≈ 0',
+    desc: 'Mide V sin cargar el circuito',
+    vars: 'V [V]',
+    category: 'simulador',
+    usedIn: 'Voltímetro, sonda +V osc',
+  },
+  {
+    name: 'Amperímetro ideal',
+    eq: 'R_int → 0,  V_caída ≈ 0',
+    desc: 'Mide I en serie sin alterar la rama',
+    vars: 'I [A]',
+    category: 'simulador',
+    usedIn: 'Amperímetro, sonda +I osc',
+  },
+  {
+    name: 'Muestreo osciloscopio',
+    eq: 'x(t) cada Δt = 1/60 s',
+    desc: 'Captura V o I vs tiempo en vivo',
+    vars: 't [s]',
+    category: 'simulador',
+    usedIn: 'Osciloscopio, export CSV',
+  },
+];

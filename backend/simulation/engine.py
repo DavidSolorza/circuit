@@ -6,6 +6,13 @@ from ..models.circuit import SimulationRequest, ComponentType
 from ..models.simulation import SimulationResponse, SimulationStatus, ValidationResult
 from ..validators.circuit_validator import validate_circuit
 
+VOLTMETER_R = 1e12
+AMMETER_R = 0.1
+DIODE_R_ON = 25.0
+DIODE_R_OFF = 1e9
+LED_R_ON = 40.0
+TRANSISTOR_R = 1e9
+
 
 def _resolve_nodes(
     req: SimulationRequest,
@@ -74,6 +81,61 @@ def _comp_terminals(
     return result
 
 
+def _stamp_conductance(
+    A: np.ndarray,
+    B: np.ndarray,
+    node_idx: dict[int, int],
+    pos: int,
+    neg: int,
+    G: float,
+) -> None:
+    """Stamp conductance G between pos and neg nodes (ground = node 0)."""
+    if G <= 0:
+        return
+    for nid, sign in ((pos, 1), (neg, -1)):
+        if nid == 0:
+            continue
+        i = node_idx[nid]
+        A[i, i] += G
+        other = neg if sign == 1 else pos
+        if other != 0:
+            j = node_idx[other]
+            A[i, j] -= G
+
+
+def _stamp_current_source(
+    B: np.ndarray,
+    node_idx: dict[int, int],
+    pos: int,
+    neg: int,
+    current: float,
+) -> None:
+    """Stamp current entering pos and leaving neg."""
+    if pos != 0:
+        B[node_idx[pos]] -= current
+    if neg != 0:
+        B[node_idx[neg]] += current
+
+
+def _effective_resistance(comp_type: ComponentType, params: dict[str, float]) -> float | None:
+    if comp_type == ComponentType.resistor:
+        R = params.get("resistance", 1000)
+        return R if R > 0 else None
+    if comp_type == ComponentType.voltmeter:
+        return VOLTMETER_R
+    if comp_type == ComponentType.ammeter:
+        return AMMETER_R
+    if comp_type == ComponentType.potentiometer:
+        Rmax = params.get("maxResistance", 10_000)
+        wiper = max(0.0, min(1.0, params.get("wiper", 0.5)))
+        if wiper < 0.001:
+            return DIODE_R_OFF
+        return Rmax * wiper
+    if comp_type == ComponentType.transistor:
+        return TRANSISTOR_R
+    return None
+
+
 def simulate_mna(req: SimulationRequest) -> SimulationResponse:
     """Run DC or transient simulation using numpy MNA solver."""
     valid, errors, warnings = validate_circuit(req)
@@ -121,11 +183,8 @@ def _run_simulation(req: SimulationRequest) -> SimulationResponse:
             continue
         p, n = nodes
 
-        if comp.type in (ComponentType.voltageSource, ComponentType.led):
-            v_val = comp.params.get(
-                "voltage" if comp.type == ComponentType.voltageSource else "forwardVoltage",
-                9 if comp.type == ComponentType.voltageSource else 2,
-            )
+        if comp.type == ComponentType.voltageSource:
+            v_val = comp.params.get("voltage", 9)
             vs_list.append({"id": cid, "pos": p, "neg": n, "v": v_val})
 
         elif comp.type == ComponentType.switch and comp.params.get("isClosed", 0):
@@ -160,6 +219,7 @@ def _run_simulation(req: SimulationRequest) -> SimulationResponse:
     # Time-stepping state
     cap_prev_v: dict[str, float] = {}
     ind_prev_i: dict[str, float] = {}
+    vd_state: dict[str, float] = {}
 
     time_axis: list[float] = []
     node_data: dict[str, list[float]] = {str(n): [] for n in non_ground}
@@ -172,27 +232,29 @@ def _run_simulation(req: SimulationRequest) -> SimulationResponse:
         A = np.zeros((total_vars, total_vars))
         B = np.zeros(total_vars)
 
-        # Resistor stamps
+        # Conductance stamps (R, medidores, potenciómetro, transistor)
         for cid, comp in req.components.items():
-            if comp.type != ComponentType.resistor:
-                continue
             nodes = comp_terms.get(cid)
             if nodes is None:
                 continue
             p, n = nodes
-            R = comp.params.get("resistance", 1000)
-            if R <= 0:
+            R = _effective_resistance(comp.type, comp.params)
+            if R is not None:
+                _stamp_conductance(A, B, node_idx, p, n, 1.0 / R)
                 continue
-            G = 1.0 / R
-            for nid, sign in [(p, 1), (n, -1)]:
-                if nid == 0:
-                    continue
-                i = node_idx[nid]
-                A[i, i] += G
-                other = n if sign == 1 else p
-                if other != 0:
-                    j = node_idx[other]
-                    A[i, j] -= G
+
+            if comp.type in (ComponentType.diode, ComponentType.led):
+                default_vf = 2.0 if comp.type == ComponentType.led else 0.7
+                r_on = LED_R_ON if comp.type == ComponentType.led else DIODE_R_ON
+                vf = comp.params.get("forwardVoltage", default_vf)
+                vd_prev = vd_state.get(cid, 0.0)
+                on = vd_prev >= vf * 0.65
+                if on:
+                    G = 1.0 / r_on
+                    _stamp_conductance(A, B, node_idx, p, n, G)
+                    _stamp_current_source(B, node_idx, p, n, G * vf)
+                else:
+                    _stamp_conductance(A, B, node_idx, p, n, 1.0 / DIODE_R_OFF)
 
         # Capacitor stamps (Backward Euler)
         for cap in cap_list:
@@ -290,21 +352,34 @@ def _run_simulation(req: SimulationRequest) -> SimulationResponse:
             branch_data[ind["id"]].append(i_val)
             ind_prev_i[ind["id"]] = i_val
 
-        # Resistor currents
+        # Branch currents for conductance elements
         for cid, comp in req.components.items():
-            if comp.type != ComponentType.resistor:
-                continue
             nodes = comp_terms.get(cid)
             if nodes is None:
                 continue
             p, n = nodes
-            R = comp.params.get("resistance", 1000)
-            if R <= 0:
-                continue
             vp = voltage_map.get(p, 0)
             vn = voltage_map.get(n, 0)
-            branch_data[cid] = branch_data.get(cid, [])
-            branch_data[cid].append(float((vp - vn) / R))
+            v_diff = vp - vn
+
+            R = _effective_resistance(comp.type, comp.params)
+            if R is not None:
+                branch_data[cid] = branch_data.get(cid, [])
+                branch_data[cid].append(float(v_diff / R))
+                continue
+
+            if comp.type in (ComponentType.diode, ComponentType.led):
+                default_vf = 2.0 if comp.type == ComponentType.led else 0.7
+                r_on = LED_R_ON if comp.type == ComponentType.led else DIODE_R_ON
+                vf = comp.params.get("forwardVoltage", default_vf)
+                vd = vn - vp
+                vd_state[cid] = vd
+                if vd >= vf:
+                    i_val = (vd - vf) / r_on
+                else:
+                    i_val = vd / DIODE_R_OFF
+                branch_data[cid] = branch_data.get(cid, [])
+                branch_data[cid].append(float(i_val))
 
         # Capacitor currents
         for cap in cap_list:

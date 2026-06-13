@@ -1,0 +1,5 @@
+# Dependencias mínimas para producción (sin PySpice ni SciPy — instalan más rápido en la nube)
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+numpy>=1.26.0
+pydantic>=2.9.0

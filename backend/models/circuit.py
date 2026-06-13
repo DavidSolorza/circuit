@@ -11,7 +11,12 @@ class ComponentType(str, Enum):
     currentSource = "currentSource"
     switch = "switch"
     led = "led"
+    diode = "diode"
     ground = "ground"
+    voltmeter = "voltmeter"
+    ammeter = "ammeter"
+    potentiometer = "potentiometer"
+    transistor = "transistor"
 
 
 class Component(BaseModel):

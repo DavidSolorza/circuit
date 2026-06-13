@@ -1,4 +1,4 @@
-# LabCircuitos
+# Electro+ Lab (LabCircuitos)
 
 Simulador de circuitos eléctricos interactivo con **tema claro profesional** (crema, verde bosque y dorado). Frontend React + TypeScript + Vite (pnpm). Backend Python + FastAPI + MNA/Ngspice.
 
@@ -13,6 +13,8 @@ Simulador de circuitos eléctricos interactivo con **tema claro profesional** (c
 
 | Documento | Contenido |
 |-----------|-----------|
+| **[docs/DOCUMENTACION_PROFESOR.md](docs/DOCUMENTACION_PROFESOR.md)** | **Explicación para el profesor (cómo funciona todo)** |
+| [docs/documentacion-profesor.tex](docs/documentacion-profesor.tex) | Versión LaTeX → compilar a PDF para entregar |
 | [docs/INFORME-AUDITORIA.md](docs/INFORME-AUDITORIA.md) | Auditoría técnica y deuda |
 | [docs/arquitectura.md](docs/arquitectura.md) | Arquitectura actual y objetivo FSD |
 | [docs/estructura-proyecto.md](docs/estructura-proyecto.md) | Carpetas y convenciones |
@@ -79,19 +81,27 @@ cd backend
 python main.py    # → http://localhost:8000
 ```
 
+## Desplegar en internet
+
+Guía paso a paso (Vercel + Render): **[docs/DEPLOY.md](docs/DEPLOY.md)**
+
+- **Frontend** → Vercel (`vercel.json` ya incluido)
+- **Backend** → Render (`render.yaml` ya incluido)
+- La simulación del simulador funciona **sin backend**; la API queda disponible por si la necesitas
+
 ## Componentes disponibles
 
 Resistencia, Capacitor, Inductor, Batería (+/−), Fuente Corriente, LED, Diodo, Transistor NPN, Potenciómetro, Interruptor, Tierra, Voltímetro, Amperímetro.
 
 ## Estrategia de ramas
 
-| Rama | Persona | Rol |
-|------|---------|-----|
+| Rama | Desarrollador | Rol |
+|------|---------------|-----|
 | `main` | — | Código estable (fuente de verdad) |
 | `release/v1.0` | Equipo | Integración pre-entrega |
-| `feature/luisa-backend` | Luisa | Backend + SPICE |
-| `feature/miguel-editor` | Miguel | Editor React Flow + store |
-| `feature/josue-ui` | Josue | UI/UX + documentación + calidad |
+| `feature/miguel-editor` | Miguel Angel Alvarez Ramirez | Editor React Flow + store |
+| `feature/luisa-backend` | Luisa Fernanda Ibarra Tucano | Backend + SPICE + motor MNA |
+| `feature/josue-ui` | David Josué Solorza Viera | UI/UX + documentación + despliegue |
 | `fix/critical-bugs` | Equipo | Hotfixes |
 
 **Regla:** Nada se mergea a `main` sin aprobación unánime de las 3 personas.

@@ -2,6 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { useCircuitStore } from '../store/circuitStore';
 import { initCircuitState } from '../utils/circuit';
 import type { CircuitState } from '../types';
+import { toastError, toastSuccess } from '../shared/store/toastStore';
 
 const STORAGE_KEY = 'labcircuitos_circuit';
 
@@ -71,15 +72,22 @@ export function useCircuitPersistence() {
           useCircuitStore.setState({
             circuit: loaded,
             selectedComponentId: null,
+            selectedWireId: null,
+            simulationRunning: false,
             simResults: null,
             simError: null,
+            simTime: 0,
+            probes: [],
+            oscData: {},
+            connectingFrom: null,
           });
+          toastSuccess('Circuito importado');
         } else {
           throw new Error('Invalid circuit file format');
         }
       } catch (err) {
         console.error('Failed to import circuit:', err);
-        alert('Error al importar circuito: archivo inválido');
+        toastError('Importación fallida', 'El archivo no tiene un formato de circuito válido.');
       }
     };
     reader.readAsText(file);
