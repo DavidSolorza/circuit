@@ -1,0 +1,31 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: electro-lab-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+    networks:
+      - electro-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: electro-lab-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - electro-network
+    restart: unless-stopped
+
+networks:
+  electro-network:
+    driver: bridge
