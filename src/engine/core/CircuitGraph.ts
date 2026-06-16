@@ -118,19 +118,28 @@ export class CircuitGraph {
       this.addAdjacency(nodeA, nodeB);
     }
 
-    // 4. Ground: merge ground terminal into GROUND_NODE_ID via UF
+    // 4. Ground: force terminal nodes in the same UF component as ground to GROUND_NODE_ID
     for (const comp of Object.values(circuit.components)) {
       if (comp.type !== 'ground') continue;
       const groundTerm = circuit.terminals[comp.terminalIds[0]];
-      if (groundTerm) {
-        uf.makeSet(GROUND_NODE_ID);
-        uf.union(groundTerm.nodeId, GROUND_NODE_ID);
+      if (!groundTerm) continue;
+      uf.makeSet(GROUND_NODE_ID);
+      const root = uf.find(groundTerm.nodeId);
+      const components = uf.getComponents();
+      const groundComponent = [...components.entries()].find(
+        ([, members]) => members.includes(groundTerm.nodeId) || members.includes(root),
+      )?.[1];
+      if (groundComponent) {
+        for (const m of groundComponent) {
+          this.nodeMap.set(m, GROUND_NODE_ID);
+        }
       }
     }
 
-    // 5. Resolve all nodes via Union-Find
+    // 5. Resolve all nodes via Union-Find (nodeMap overrides ground)
     for (const t of Object.values(circuit.terminals)) {
-      const canonical = uf.find(t.nodeId);
+      const mapped = this.nodeMap.get(t.nodeId);
+      const canonical = mapped !== undefined ? mapped : uf.find(t.nodeId);
       this.nodeMap.set(t.nodeId, canonical);
     }
 
