@@ -9,7 +9,7 @@ export function ConverterTab() {
 
   const V = parseFloat(vVal) || 0;
   const I = parseFloat(iVal) || 0;
-  const R = parseFloat(rVal) || 1;
+  const R = (n => isNaN(n) ? 1 : n)(parseFloat(rVal));
   const fHz = 60;
 
   return (

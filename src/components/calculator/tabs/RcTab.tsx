@@ -7,9 +7,9 @@ export function RcTab() {
   const [cVal, setCVal] = useState('1e-6');
   const [freq, setFreq] = useState('60');
 
-  const R = parseFloat(rVal) || 1000;
-  const C = parseFloat(cVal) || 1e-12;
-  const f = parseFloat(freq) || 60;
+  const R = (n => isNaN(n) ? 1000 : n)(parseFloat(rVal));
+  const C = (n => isNaN(n) ? 1e-12 : n)(parseFloat(cVal));
+  const f = (n => isNaN(n) ? 60 : n)(parseFloat(freq));
   const tau = R * C;
   const fc = 1 / (2 * Math.PI * R * C);
   const xc = 1 / (2 * Math.PI * f * C);

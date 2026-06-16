@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { appBus, type AppEventType } from '../shared/bus/AppEventBus';
 
 /** Suscribe un handler al bus de aplicación; se limpia al desmontar. */
@@ -7,8 +7,10 @@ export function useAppBus<T = unknown>(
   handler: (payload: T) => void,
   deps: unknown[] = [],
 ): void {
+  const handlerRef = useRef(handler);
+  handlerRef.current = handler;
   useEffect(() => {
-    return appBus.on<T>(type, (event) => handler(event.payload));
+    return appBus.on<T>(type, (event) => handlerRef.current(event.payload));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, ...deps]);
 }

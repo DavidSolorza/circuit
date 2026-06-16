@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, Suspense, memo } from 'react';
+import React, { useState, useCallback, useEffect, useRef, Suspense, memo } from 'react';
 import { Toolbar } from './components/toolbar/Toolbar';
 import { PropertiesPanel } from './components/properties/PropertiesPanel';
 import { MultimeterDisplay } from './components/multimeter/MultimeterDisplay';
@@ -27,13 +27,19 @@ const CircuitEditor = React.lazy(() => import('./features/editor/CircuitEditor')
 
 function useContainerSize() {
   const [size, setSize] = useState({ width: 800, height: 600 });
+  const roRef = useRef<ResizeObserver | null>(null);
   const ref = useCallback((node: HTMLDivElement | null) => {
+    if (roRef.current) {
+      roRef.current.disconnect();
+      roRef.current = null;
+    }
     if (!node) return;
     const ro = new ResizeObserver((entries) => {
       for (const e of entries)
         setSize({ width: e.contentRect.width, height: e.contentRect.height });
     });
     ro.observe(node);
+    roRef.current = ro;
   }, []);
   return { ref, ...size };
 }
