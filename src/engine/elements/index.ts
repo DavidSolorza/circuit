@@ -93,8 +93,9 @@ export class InductorElement extends BaseElement {
     ]) {
       if (nid === 0) continue;
       const i = nodeIndex.get(nid);
-      if (i !== undefined) ctx.A.add(i, col, coef);
-      ctx.A.add(col, i!, coef);
+      if (i === undefined) continue;
+      ctx.A.add(i, col, coef);
+      ctx.A.add(col, i, coef);
     }
     ctx.A.add(col, col, -Req);
     ctx.b[col] = -Veq;
@@ -131,8 +132,9 @@ export class VoltageSourceElement extends BaseElement {
     ]) {
       if (nid === 0) continue;
       const i = nodeIndex.get(nid);
-      if (i !== undefined) ctx.A.add(i, col, coef);
-      ctx.A.add(col, i!, coef);
+      if (i === undefined) continue;
+      ctx.A.add(i, col, coef);
+      ctx.A.add(col, i, coef);
     }
     ctx.b[col] = V;
   }
@@ -284,8 +286,7 @@ export class PotentiometerElement extends BaseElement {
   private effectiveResistance(component: EngineComponent): number {
     const Rmax = component.params.maxResistance ?? 10_000;
     const wiper = Math.min(1, Math.max(0, component.params.wiper ?? 0.5));
-    if (wiper < 0.001) return DIODE_R_OFF;
-    return Rmax * wiper;
+    return Rmax * Math.max(wiper, 1e-12);
   }
 }
 
