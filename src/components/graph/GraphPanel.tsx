@@ -65,7 +65,7 @@ function GraphPanelInner() {
   }, [traces, hasVoltage]);
 
   const plotRevision = useMemo(
-    () => plotTraces.reduce((sum, t) => sum + t.x.length, 0) + Math.round(simTime * 1000),
+    () => plotTraces.reduce((sum, t) => sum + t.x.length, 0) + Math.floor(simTime * 10),
     [plotTraces, simTime],
   );
 

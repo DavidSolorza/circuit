@@ -2,7 +2,6 @@ import { Matrix, Vector } from '../math/Matrix';
 import type { StampContext } from '../elements/BaseElement';
 import type { BaseElement } from '../elements/BaseElement';
 import type { ElementState, EngineCircuit, ResolvedTopology } from '../types';
-import { GROUND_NODE_ID } from '../types';
 import { getComponentTerminals } from '../core/NodeResolver';
 
 export interface MatrixSystem {
@@ -70,14 +69,6 @@ export class MatrixBuilder {
       const element = elements.get(comp.type);
       if (!element) continue;
       element.stamp(ctx, comp);
-    }
-
-    // Pin ground node if present in index map (reference)
-    if (topology.nodeIndex.has(GROUND_NODE_ID)) {
-      const gRow = topology.nodeIndex.get(GROUND_NODE_ID)!;
-      for (let c = 0; c < totalVars; c++) A.set(gRow, c, 0);
-      A.set(gRow, gRow, 1);
-      b.set(gRow, 0);
     }
 
     return { A, b, ctx };

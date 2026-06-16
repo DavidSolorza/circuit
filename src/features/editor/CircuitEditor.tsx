@@ -75,7 +75,7 @@ function buildEdges(
 function CanvasInner({ width, height }: Props) {
   const rf = useReactFlow();
   const updateNodeInternals = useUpdateNodeInternals();
-  const draggingRef = useRef(false);
+  const draggingNodesRef = useRef<Set<string>>(new Set());
 
   const components = useCircuitStore((s) => s.circuit.components);
   const wires = useCircuitStore((s) => s.circuit.wires);
@@ -103,11 +103,13 @@ function CanvasInner({ width, height }: Props) {
   const [edges, setEdges, onEdgesChange] = useEdgesState(storeEdges);
 
   useEffect(() => {
-    if (draggingRef.current) return;
     setNodes((current) =>
       storeNodes.map((sn) => {
         const prev = current.find((n) => n.id === sn.id);
         if (!prev) return sn;
+        if (draggingNodesRef.current.has(sn.id)) {
+          return { ...prev, selected: sn.selected, data: sn.data };
+        }
         return {
           ...prev,
           position: sn.position,
@@ -156,7 +158,8 @@ function CanvasInner({ width, height }: Props) {
 
   useAppBus('wire:reconnected', () => {
     requestAnimationFrame(() => {
-      for (const n of nodes) updateNodeInternals(n.id);
+      const ids = Object.keys(useCircuitStore.getState().circuit.components);
+      for (const id of ids) updateNodeInternals(id);
     });
   });
 
@@ -176,10 +179,9 @@ function CanvasInner({ width, height }: Props) {
       for (const ch of changes) {
         if (ch.type === 'position' && ch.position) {
           if (ch.dragging) {
-            draggingRef.current = true;
-          }
-          if (ch.dragging === false) {
-            draggingRef.current = false;
+            draggingNodesRef.current.add(ch.id);
+          } else {
+            draggingNodesRef.current.delete(ch.id);
             moveComponent(ch.id, ch.position as Point);
             refreshWireLayout(ch.id);
           }
