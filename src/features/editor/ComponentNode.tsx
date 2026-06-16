@@ -70,7 +70,8 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
   const symbolSize = isGround ? 56 : 68;
 
   const simulationRunning = useCircuitStore((s) => s.simulationRunning);
-  const comp = useCircuitStore((s) => s.circuit.components[id]);
+  const circuit = useCircuitStore((s) => s.circuit);
+  const comp = circuit.components[id];
   const simResults = useCircuitStore((s) => s.simResults);
   /** Store es la fuente de verdad — data.rotation de React Flow puede ir desfasado. */
   const rotation = comp?.rotation ?? data.rotation ?? 0;
@@ -81,7 +82,7 @@ function ComponentNode({ id, data, selected }: NodeProps<ComponentNodeData>) {
   const hasReadings = simResults?.status?.success ?? false;
   const readings =
     comp && hasReadings
-      ? getComponentReadings(useCircuitStore.getState().circuit, simResults, comp)
+      ? getComponentReadings(circuit, simResults, comp)
       : null;
 
   const current = readings?.current ?? 0;

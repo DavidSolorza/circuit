@@ -7,9 +7,9 @@ export function ReactanceTab() {
   const [cVal, setCVal] = useState('1e-6');
   const [freq, setFreq] = useState('60');
 
-  const L = parseFloat(lVal) || 1e-9;
-  const C = parseFloat(cVal) || 1e-12;
-  const f = parseFloat(freq) || 60;
+  const L = (n => isNaN(n) ? 1e-9 : n)(parseFloat(lVal));
+  const C = (n => isNaN(n) ? 1e-12 : n)(parseFloat(cVal));
+  const f = (n => isNaN(n) ? 60 : n)(parseFloat(freq));
   const xl = 2 * Math.PI * f * L;
   const xc = 1 / (2 * Math.PI * f * C);
   const fr = 1 / (2 * Math.PI * Math.sqrt(L * C));

@@ -16,6 +16,7 @@ export function useCircuitPersistence() {
       localStorage.setItem(STORAGE_KEY, data);
     } catch (err) {
       console.error('Failed to save circuit:', err);
+      toastError('No se pudo guardar', 'El almacenamiento local está lleno.');
     }
   }, [circuit]);
 

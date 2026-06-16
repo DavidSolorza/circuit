@@ -7,8 +7,8 @@ export function RlTab() {
   const [lVal, setLVal] = useState('0.01');
   const [vin, setVin] = useState('9');
 
-  const R = parseFloat(rVal) || 1;
-  const L = parseFloat(lVal) || 1e-9;
+  const R = (n => isNaN(n) ? 1 : n)(parseFloat(rVal));
+  const L = (n => isNaN(n) ? 1e-9 : n)(parseFloat(lVal));
   const V = parseFloat(vin) || 0;
   const tau = L / R;
   const iFinal = V / R;
