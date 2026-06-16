@@ -156,7 +156,8 @@ function CanvasInner({ width, height }: Props) {
 
   useAppBus('wire:reconnected', () => {
     requestAnimationFrame(() => {
-      for (const n of nodes) updateNodeInternals(n.id);
+      const ids = Object.keys(useCircuitStore.getState().circuit.components);
+      for (const id of ids) updateNodeInternals(id);
     });
   });
 
@@ -177,8 +178,7 @@ function CanvasInner({ width, height }: Props) {
         if (ch.type === 'position' && ch.position) {
           if (ch.dragging) {
             draggingRef.current = true;
-          }
-          if (ch.dragging === false) {
+          } else {
             draggingRef.current = false;
             moveComponent(ch.id, ch.position as Point);
             refreshWireLayout(ch.id);
